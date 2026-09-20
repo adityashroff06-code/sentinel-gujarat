@@ -1,0 +1,524 @@
+[
+ {
+  "camera_id": "cam01",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 30.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:32:37.324921+00:00"
+ },
+ {
+  "camera_id": "cam02",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 30.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:32:37.326314+00:00"
+ },
+ {
+  "camera_id": "cam03",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 720,
+   "declared_fps": 30.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:32:37.326874+00:00"
+ },
+ {
+  "camera_id": "cam04",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "Main",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:32:37.327480+00:00"
+ },
+ {
+  "camera_id": "cam05",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 30.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:32:37.329929+00:00"
+ },
+ {
+  "camera_id": "cam06",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "hevc",
+   "profile": "Main",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": null,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-14T12:32:37.332238+00:00"
+ },
+ {
+  "camera_id": "cam07",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-14T12:32:37.333489+00:00"
+ },
+ {
+  "camera_id": "cam08",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "checked_at": "2026-09-14T12:32:37.334088+00:00"
+ },
+ {
+  "camera_id": "cam09",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:33:05.901350+00:00"
+ },
+ {
+  "camera_id": "cam10",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:33:06.838345+00:00"
+ },
+ {
+  "camera_id": "cam11",
+  "hls": {
+   "ok": false,
+   "error": "https://cctv.corp8.cloud/cam11/index.m3u8: Invalid data found when processing input"
+  },
+  "rtsp": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "checked_at": "2026-09-14T12:33:10.090285+00:00"
+ },
+ {
+  "camera_id": "cam12",
+  "hls": {
+   "ok": false,
+   "error": "https://cctv.corp8.cloud/cam12/index.m3u8: Invalid data found when processing input"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "hevc",
+   "profile": "Main",
+   "width": 1280,
+   "height": 720,
+   "declared_fps": 20.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:33:10.386173+00:00"
+ },
+ {
+  "camera_id": "cam13",
+  "hls": {
+   "ok": false,
+   "error": "https://cctv.corp8.cloud/cam13/index.m3u8: Invalid data found when processing input"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 10.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-14T12:33:10.793378+00:00"
+ },
+ {
+  "camera_id": "cam14",
+  "hls": {
+   "ok": false,
+   "error": "https://cctv.corp8.cloud/cam14/index.m3u8: Invalid data found when processing input"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 10.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-14T12:33:15.296559+00:00"
+ },
+ {
+  "camera_id": "cam15",
+  "hls": {
+   "ok": false,
+   "error": "https://cctv.corp8.cloud/cam15/index.m3u8: Invalid data found when processing input"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 10.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-14T12:33:19.181332+00:00"
+ },
+ {
+  "camera_id": "cam16",
+  "hls": {
+   "ok": false,
+   "error": "https://cctv.corp8.cloud/cam16/index.m3u8: Invalid data found when processing input"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "Baseline",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 10.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-14T12:33:23.797427+00:00"
+ },
+ {
+  "camera_id": "cam17",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "hevc",
+   "profile": "Main",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-14T12:33:35.939652+00:00"
+ },
+ {
+  "camera_id": "cam18",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "hevc",
+   "profile": "Main",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-14T12:33:38.591699+00:00"
+ },
+ {
+  "camera_id": "cam19",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 720,
+   "declared_fps": 25.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:33:40.707430+00:00"
+ },
+ {
+  "camera_id": "cam20",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 720,
+   "declared_fps": 25.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:33:43.190799+00:00"
+ },
+ {
+  "camera_id": "cam21",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-14T12:33:45.757644+00:00"
+ },
+ {
+  "camera_id": "cam22",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "hevc",
+   "profile": "Main",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:33:47.171857+00:00"
+ },
+ {
+  "camera_id": "cam23",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 720,
+   "declared_fps": 25.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:33:53.972732+00:00"
+ },
+ {
+  "camera_id": "cam24",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 960,
+   "height": 576,
+   "declared_fps": 12.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:33:54.260371+00:00"
+ },
+ {
+  "camera_id": "cam25",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 960,
+   "declared_fps": 25.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-14T12:34:08.473467+00:00"
+ },
+ {
+  "camera_id": "cam26",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "hevc",
+   "profile": "Main",
+   "width": 2560,
+   "height": 1440,
+   "declared_fps": 14.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:34:09.217372+00:00"
+ },
+ {
+  "camera_id": "cam27",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 960,
+   "declared_fps": 25.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:34:14.165197+00:00"
+ },
+ {
+  "camera_id": "cam28",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 960,
+   "declared_fps": 25.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:34:20.359883+00:00"
+ },
+ {
+  "camera_id": "cam29",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 960,
+   "declared_fps": 25.0,
+   "bitrate_kbps": null,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-14T12:34:22.522971+00:00"
+ },
+ {
+  "camera_id": "cam30",
+  "hls": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "rtsp": {
+   "ok": false,
+   "error": "timeout"
+  },
+  "checked_at": "2026-09-14T12:34:22.828205+00:00"
+ }
+]

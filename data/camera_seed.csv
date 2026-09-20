@@ -1,0 +1,31 @@
+camera_id,department,location_name,lat,lon,fps_tier
+cam01,Police,Chimanbhai Patel Bridge,23.0512,72.5560,registered
+cam02,Municipal,Janpath,23.0225,72.5714,registered
+cam03,Health,O.N.G.C. Office,23.1010,72.5940,registered
+cam04,Police,Paldi Circle,23.0117,72.5624,registered
+cam05,Police,Visat Teen Rasta,23.1128,72.5797,registered
+cam06,GSRTC,Timbavadi Gate Junagadh,21.4922,70.4530,active
+cam07,Municipal,Hero Showroom Gir Somnath,20.9159,70.3629,registered
+cam08,Police,Majewadi Gate Junagadh,21.5330,70.4650,registered
+cam09,Police,New Bypass Circle Junagadh,21.5480,70.4890,active
+cam10,Municipal,Char Chowk Road Junagadh,21.5250,70.4580,registered
+cam11,GSRTC,Dolatpara Junagadh,21.5590,70.4760,registered
+cam12,GSRTC,Tri Mandir Adalaj Tollnaka,23.1645,72.5800,registered
+cam13,Municipal,CN Vidhyalaya,23.0217,72.5520,registered
+cam14,Police,Delight RLVD,22.3050,70.8020,registered
+cam15,Health,Suvidha Park,23.0450,72.5290,registered
+cam16,Police,Visat P2,23.1160,72.5810,registered
+cam17,GSRTC,Rajkot Bus Port,22.3012,70.7936,registered
+cam18,Police,Rajkot CCTV,22.2970,70.7980,registered
+cam19,Panchayat,Khaparia Gram Panchayat Gandevi Navsari,20.8110,72.9930,registered
+cam20,Panchayat,Mohanpura,22.2680,70.7580,registered
+cam21,Panchayat,Patan Dethali Char Rasta,23.7810,72.1900,registered
+cam22,Police,BK Mervada Tran Rasta,24.1710,72.4340,registered
+cam23,Panchayat,Kheram,20.9500,72.9200,registered
+cam24,Panchayat,Dehgam,23.1710,72.8180,registered
+cam25,Panchayat,Dhanori,20.7420,72.9350,registered
+cam26,Panchayat,Tankal,20.7460,73.0620,active
+cam27,Municipal,Bilimora 36,20.7690,72.9650,active
+cam28,Health,Bilimora 37,20.7720,72.9700,active
+cam29,Municipal,Bilimora 38,20.7660,72.9610,registered
+cam30,Police,Gandhidham Rambaugh P2,23.0780,70.1330,registered

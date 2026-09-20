@@ -1,0 +1,45 @@
+# Secrets — never committed (CLAUDE.md rule 1)
+.env
+*.env
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / built frontend
+node_modules/
+frontend/dist/
+
+# Runtime data (kept: data/camera_seed.csv, data/cameras_raw.json, data/probe_results.json)
+data/logs/
+data/crops/
+data/hls/
+data/snaps/
+data/evidence/
+data/buf/
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.log
+data/*_stats.json
+data/*_pids.txt
+data/replay/
+
+# Downloaded binaries and weights (checksum-pinned, fetched by the launcher)
+models/
+tools/ffmpeg/
+
+# Archived footage (own footage for replay; never sandbox downloads)
+archive/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
