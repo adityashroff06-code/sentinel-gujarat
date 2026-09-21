@@ -1,3 +1,5 @@
+> **Editor's note (fresh build):** copied verbatim from the previous build's `05-demo-script.md`. The screens it names exist in the fresh build under the same names except Command (`Dashboard`); the walkthrough the videos follow is task S3.4, the recording task is S5.4.
+
 # 05 — Demo script (run sheet for both videos)
 
 Max 2–3 minutes each. Rehearse with a timer. Narrate over a screen recording; no slides inside the video.

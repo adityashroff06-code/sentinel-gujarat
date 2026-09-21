@@ -1,3 +1,5 @@
+> **Editor's note (fresh build):** copied verbatim from the previous build's `06-submission-checklist.md`. Read `plan/P6-submission.md` as `docs/reference/old-build/P6-submission.md`, `docs/04-feed-rules.md` as `docs/feed-rules.md`, and "before 15 September" as the deadline in `docs/brief.md` §0. Ticked in task S5.5.
+
 # 06 — Submission checklist
 
 Tick against an observation, never an intention.

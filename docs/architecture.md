@@ -117,7 +117,7 @@ Inference cannot live inside the API process (GPU session, threads, crashes), so
 
 ## B5. Plates are small, cameras are overview PTZ units
 
-Wide traffic-overview cameras put plates at 10–25 px even on close vehicles. The cascade that worked: motion gate → YOLOX-S vehicle detection → vehicle crop → **upscale (~400 px wide, ≤4×) + CLAHE** → PaddleOCR mobile det/rec on the crop → structural plate filter (Indian format, ambiguity-coerced) → dedupe. Skip boxes in the top ~5 % of the frame (burned-in caption). Reads shorter than 8 characters are partial: stored, never alerted.
+Wide traffic-overview cameras put plates at 10–25 px even on close vehicles. The cascade that worked: motion gate → YOLOX-S vehicle detection → vehicle crop → **upscale (~400 px wide, ≤4×) + CLAHE** → PaddleOCR mobile det/rec on the crop → structural plate filter (Indian format, ambiguity-coerced) → dedupe. Skip boxes in the top ~5 % of the frame (burned-in caption). A read that is not structurally full (`docs/api.md` §6) is partial: stored, never alerted, never fuzzy-matched.
 
 ## B6. The cross-camera route needs a plan of its own
 
@@ -137,7 +137,7 @@ launch.py / task runner
 SQLite (WAL) is the only channel between the two.
 ```
 
-The fresh build keeps this shape and fixes what the review found (`docs/decisions.md` §3): one time base, sequence-based alert ids, a single DB-tailing broadcaster for alerts *and* high-severity zone events, a stall watchdog on every pull, log files for every process, and auth on every endpoint.
+The fresh build keeps this shape and fixes what the review found (`docs/decisions.md` §3): one time base, sequence-based alert ids, zone alerts written as `alerts` rows so one DB-tailing broadcaster serves both kinds, a stall watchdog on every pull, log files for every process, and auth on every endpoint (header, plus a cookie for the browser's `<img>`/hls.js/SSE requests).
 
 ---
 

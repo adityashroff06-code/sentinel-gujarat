@@ -6,16 +6,21 @@ The API process: FastAPI + uvicorn on `:8000`. Owns storage (SQLite, WAL), the b
 
 - **The contract is `docs/api.md`.** Every endpoint declares a `response_model`; the exported OpenAPI is the Model 1 API-documentation deliverable, so it must be true. A stored shape or endpoint changes only with `docs/api.md` in the same commit.
 - **Credentials never leave the process** (root rule 1): no URL with a credential is stored, logged, returned or placed in `argv`. Stream URLs in responses are templates or backend-relayed paths.
-- **Persist before you notify** (root §4): sighting row committed before matching; alert row committed before broadcast. The SSE stream **tails the database** (alerts *and* high-severity zone events, with `Last-Event-ID`), because alerts fire in the worker process — never an in-process bus.
+- **Persist before you notify** (root §4): sighting row committed before matching; alert row committed before broadcast. The SSE stream **tails the `alerts` table** (watchlist and zone alerts are both `alerts` rows, `kind` tells them apart; `id:` frames + `Last-Event-ID`), because alerts fire in the worker process — never an in-process bus (decision F27).
 - **Alert ids come from an AUTOINCREMENT sequence**, never `COUNT(*)+1` (`docs/api.md` B7).
 - **One time base**: canonicalise every timestamp at the boundary to the stored `+00:00` form; never compare ISO strings of mixed shape; route reconstruction never crosses clock domains (`docs/api.md` B6).
-- **Auth on every endpoint** (`X-API-Key`, roles viewer/admin), `/crops` included; `TrustedHostMiddleware`; CORS only to the dev origin. **Audit** every mutation and every plate/route query (`docs/api.md` B12).
+- **Auth on every `/api/*` and `/crops/*` path** (`X-API-Key`, roles viewer/admin); the `sentinel_key` cookie set by `POST /api/session` is accepted only for GET on `/crops/*`, `/api/hls/*`, `/api/alerts/stream` (browsers cannot add headers to `<img>`, hls.js or `EventSource`); mutations need the header **and** admin; open: `/`, `/assets/*`, `/docs`, `/openapi.json`, `/api/health`; the API refuses to start with a key unset. `TrustedHostMiddleware`; CORS only to the dev origin. **Audit** every mutation and every plate/route query (`docs/api.md` B12, decision F23).
 - **Input hygiene** (`docs/api.md` B11): `camera_id` matches `^[A-Za-z0-9_-]{1,64}$`; the relay fetches only inside the configured CDN origin and only playlist-listed names; report HTML escapes inputs; CSV cells starting `= + - @` are prefixed; pagination `total` reuses the row query's WHERE.
 - **SQLite**: `busy_timeout=30 s`, `synchronous=NORMAL` under WAL, `foreign_keys=ON`; short transactions only — the health checker probes first and writes after, never holds a write across network calls. Indexes on `events(occurred_at)` and `events(camera_id, occurred_at)`; `plate_canonical` indexed on sightings and watchlist.
-- **Health of active RTSP cameras is judged by local tee freshness**, never by probing the CDN (`docs/decisions.md` C14).
+- **Health of active RTSP cameras is judged by local tee freshness**, other cameras by a paced RTSP `ffprobe` — never by probing the CDN (`docs/decisions.md` C14, F31).
+- **ffmpeg/ffprobe only through `backend.core.config.ffmpeg()` / `ffprobe()`** (`SENTINEL_FFMPEG_DIR` → PATH); they are not on the laptop's PATH. Every downloaded binary's SHA-256 goes into the root `CHECKSUMS.txt` (F25). `.env` is loaded by `config.py` (`python-dotenv`, `override=False`).
 - The relay caches upstream playlists (~10 min) and retries with backoff plus one re-login; the CDN rate-limits bursts for minutes.
 - **Every process writes a rotating log file under `data/logs/`**; the launcher polls the port and fails loudly if the API never binds; `python-multipart` is a pinned dependency (the CSV `Form` endpoint imports it).
-- Migrations: a `schema_version` table and ordered migration scripts from the first schema.
+- Migrations: a `schema_version` table and ordered migration scripts from the first schema. Register `/api/cameras/gap-analysis` and `/api/cameras/import` **before** `/api/cameras/{camera_id}` (FastAPI route-order trap).
+
+## Package layout (decision F12)
+
+`backend/core/` — shared with `ml/`: `config.py`, `logging_setup.py`, `db.py` + `migrations/`, `timeline.py`, `plates.py`, `matcher.py`, `alerts.py`, `cdn_session.py`. `backend/app/` — `__main__.py`, `main.py`, `auth.py`, `audit.py`, `schemas.py`, `routes_cameras.py`, `routes_meta.py`, `routes_analytics.py`, `routes_reports.py`, `routes_hls.py`. `backend/services/` — `gap_analysis.py`, `route.py`, `reports.py`, `health.py`. `backend/tools/` — `probe.py`, `seed_registry.py`, `seed_watchlist.py`, `export_openapi.py`, `demo_seed.py`. Run from the repo root: `python -m backend.app` (API) and `python -m backend.tools.<tool>` — where `python` is **`.venv/Scripts/python`** (plain `python` in Git Bash is Anaconda and has none of these packages; `docs/tasks.md` protocol step 5).
 
 ## What the previous build did here (read-only reference)
 

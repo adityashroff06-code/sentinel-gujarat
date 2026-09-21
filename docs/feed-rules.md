@@ -1,3 +1,5 @@
+> **Editor's note (fresh build):** copied verbatim from the previous build's `04-feed-rules.md`. `frame_source.py` below is the fresh build's `ml/ingest/` package (`base.py`, `rtsp.py`, `replay.py`, `hls_vod.py`); the nine required behaviours are its acceptance test (`docs/tasks.md` S2.1–S2.2).
+
 # 04 — Feed rules: the sandbox's contract, in executable form
 
 Source: the official *Consuming the Sentinel Camera Grid* guide. Every item below is stated by the organisers. Treat this list as a scoring rubric in disguise — these read like the exact failure modes they watched teams hit last time, and every one is a cheap defensive fix but an expensive bug on demo day.

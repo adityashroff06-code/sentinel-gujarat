@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "D:/projects/Sentinel_Repo"
+    ],
+    "allow": [
+      "Read(//d/projects/Sentinel_Repo/**)"
+    ],
+    "deny": [
+      "Edit(//d/projects/Sentinel_Repo/**)",
+      "Read(//d/projects/Sentinel_Repo/.env)",
+      "Read(.env)",
+      "Read(./.env)"
+    ]
+  },
+  "env": {
+    "BASH_DEFAULT_TIMEOUT_MS": "300000",
+    "BASH_MAX_TIMEOUT_MS": "3600000"
+  }
+}

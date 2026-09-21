@@ -9,8 +9,8 @@ This repo is a **fresh, structured rebuild** started 20 September 2026. The prev
 
 ## 1. Situation
 
-- **Deadline: 28 September 2026** (per Adi, 20 Sep — the original dates were 15 Sep submission and 22–23 Sep finale; confirm on the portal exactly which milestone the 28th is). **Target: full-stack application plus every deliverable complete in 4 days (by 24 Sep)**, leaving the remaining days for soak runs, rehearsal and fixes. Nothing built in the final 48 hours before an evaluation gets demoed.
-- Solo developer (Adi). One machine. No team to parallelise across.
+- **Deadline: 28 September 2026** (per Adi, 20 Sep — the original dates were 15 Sep submission and 22–23 Sep finale; confirm on the portal exactly which milestone the 28th is). **Build window: Mon 21 – Thu 24 Sep for the application, Fri 25 for the deliverables (GATE D at 09:00), Sat 26 soak and rehearsal, Sun 27 submit; Mon 28 is buffer** (`docs/tasks.md` calendar, decision F22). Nothing built in the final 48 hours before an evaluation gets demoed.
+- Solo developer (Adi), one machine, work done in Claude Code sessions of one task each (`docs/tasks.md`, "How a session runs"). No team to parallelise across.
 - **Hardware ceiling:** Windows 10/11 · Ryzen 5 3550H (4c/8t) · **8 GB RAM** · **GTX 1650, 4 GB VRAM** · 477 GB SSD. Python 3.13.9 (Anaconda, `D:\Anaconda\python.exe`); a portable ffmpeg already exists at `D:\projects\Sentinel_Repo\tools\ffmpeg\`.
 - The organisers grade a **working system**, not a prototype. Their words: *"Mock-ups, animations, simulated interfaces, or concept videos without an operational backend will not be considered."*
 
@@ -43,7 +43,7 @@ Everything else is supporting cast. If you are ever unsure what to work on, work
 
 Two rules added for the fresh build, from the previous build's post-mortem (`docs/decisions.md`):
 
-9. **One time base.** Every stored timestamp carries which clock produced it and every row carries its provenance (`live | harvest | demo`). Never mix clocks in one route, never let a demo row pass as a live read.
+9. **One time base.** Every stored timestamp carries which clock produced it and every row carries its provenance (`live | harvest | demo | test`). Never mix clocks in one route, never let a demo or test row pass as a live read.
 10. **Everything runs under version control with a test for every bug fixed.** Commit after every completed task; a working commit is a fallback demo.
 
 ---
@@ -72,21 +72,23 @@ The architecture is **locked**: Model 1 (mandatory registry + GIS) + Model 2 (un
 | `docs/architecture.md` | The locked target design, and what the sandbox forces on it |
 | `docs/api.md` | The data contracts and API surface (binding), with the corrections learned |
 | `docs/decisions.md` | Every choice carried over or still open, and why |
-| `docs/tasks.md` | The checklist — the plan is written here next, then executed in order |
+| `docs/tasks.md` | **The plan and the checklist**: one session per task, with the protocol every session follows (start → work → finish + write-off). Execute in order |
 | `docs/progress.md` | Session handoff: current state, measurements, log |
 | `docs/demo-script.md`, `docs/submission-checklist.md` | Run sheets for the videos and the submission (verbatim) |
 | `docs/reference/` | The design record: hackathon scrape, sandbox spec, 80k review, Model 2/2.1 specs, glossary |
-| `docs/reference/old-build/` | The previous build's own docs, verbatim — its `STATUS.md` is the findings log, its `P7-enhancements.md` the defect register |
+| `docs/reference/old-build/` | The previous build's own docs, verbatim — its `STATUS.md` is the findings log, its `P7-enhancements.md` the defect register, its `CONSTITUTION.md` the old `CLAUDE.md` (renamed so Claude Code never loads it as instructions: it says "today is 13 September" and forbids real authentication — **this file outranks it everywhere**) |
+| `.claude/settings.json` | Claude Code permissions for every session (decision F38): the old repo is readable without prompting and never editable; `.env` is never readable or creatable by a session (Adi owns it); Bash timeouts raised to 5 min / 60 min for the soaks |
 | `deliverables/` | The documents as submitted on 15 Sep (HLD, deck, diagram, API doc, reports) — the base for the revised submission |
 | `data/` | The raw catalogue, the laptop probe results and the committed camera seed (department, coordinates, tier — disclosed) |
-| `backend/`, `frontend/`, `ml/` | The three layers of the fresh build; each has its own `CLAUDE.md` with layer rules |
+| `backend/`, `frontend/`, `ml/` | The three layers of the fresh build; each has its own `CLAUDE.md` with layer rules and package layout (decision F12) |
+| `tests/`, `scripts/`, `CHECKSUMS.txt` | Pytest suite (`pytest.ini` at the root); one-off helpers (`doctor.py`, `replay_publish.py`, `smoke_frontend.py`); SHA-256 of every downloaded binary |
 | `D:\projects\Sentinel_Repo\src`, `\ui`, `\launch.py` | The previous build's code. Read-only reference; consult when a doc cites a module |
 
 ---
 
 ## 6. How to work
 
-1. Workflow is **discuss → plan → execute → review → test**, in that order. The plan lives in `docs/tasks.md`; do not start a phase before its predecessor's exit criteria are met.
+1. Workflow is **discuss → plan → execute → review → test**, in that order. The plan lives in `docs/tasks.md`; every session follows its **"How a session runs"** protocol: read `docs/progress.md` → Current state, do one task, run its acceptance check, write the progress block, tick the task, commit. A task's *Read first* line is authoritative for what that session reads; the reading advice elsewhere in these docs yields to it. Do not start a phase before its predecessor's exit criteria are met.
 2. Each task states its acceptance check. **A task is not done until its acceptance check has actually been run and passed** — not until the code looks right.
 3. After each task, append a block to `docs/progress.md`: task id, status, what was actually observed, anything that surprised you. Record observations, not intentions.
 4. Commit after every completed task. One fix, one test, one commit.
@@ -110,7 +112,7 @@ The architecture is **locked**: Model 1 (mandatory registry + GIS) + Model 2 (un
 - **Config lives in `config.py`**, read from environment with documented defaults. No magic constants scattered through modules.
 - **The data contracts in `docs/03-data-contracts.md` are binding.** Do not add, rename, or retype a field without updating that document in the same commit.
 
-For the fresh build the binding contract file is `docs/api.md`. Every process writes a rotating log file under `data/logs/`. Dependencies are pinned. Downloaded binaries and model weights are checksum-verified.
+For the fresh build the binding contract file is `docs/api.md`. Every process writes a rotating log file under `data/logs/`. Dependencies are pinned to exact versions. Downloaded binaries and model weights are checksum-verified against the root `CHECKSUMS.txt`. ffmpeg/ffprobe are called only through `backend.core.config.ffmpeg()`/`ffprobe()`.
 
 ---
 

@@ -12,34 +12,45 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
-# Node / built frontend
+# Node / built frontend (the build is zipped into deliverables/ on the submission tag — decision F30)
 node_modules/
 frontend/dist/
 
-# Runtime data (kept: data/camera_seed.csv, data/cameras_raw.json, data/probe_results.json)
+# Runtime data. Committed on purpose: data/camera_seed.csv, data/cameras_raw.json,
+# data/probe_results.json, data/measurements/ (the evidence behind every [measured] claim)
 data/logs/
 data/crops/
 data/hls/
 data/snaps/
+data/screens/
 data/evidence/
 data/buf/
+data/replay/
 data/*.db
 data/*.db-wal
 data/*.db-shm
 data/*.log
 data/*_stats.json
 data/*_pids.txt
-data/replay/
+data/stop
 
-# Downloaded binaries and weights (checksum-pinned, fetched by the launcher)
-models/
-tools/ffmpeg/
+# Test fixtures generated on the fly
+tests/fixtures/*.mp4
+
+# Downloaded binaries and weights — their SHA-256 lives in the committed root CHECKSUMS.txt (F25).
+# Anchored to the repo root: backend/tools/ and ml/tools/ are source packages and must be committed.
+/models/
+/tools/
 
 # Archived footage (own footage for replay; never sandbox downloads)
-archive/
+/archive/
 
 # OS / editors
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+
+# Claude Code: the shared permissions file .claude/settings.json IS committed (decision F38);
+# personal "don't ask again" approvals are not.
+.claude/settings.local.json

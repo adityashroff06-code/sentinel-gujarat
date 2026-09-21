@@ -10,7 +10,7 @@
 |---|---|
 | Previous submission | 15 September 2026 — documents plus demo material, from `D:\projects\Sentinel_Repo` |
 | **Current deadline** | **28 September 2026** (per Adi, 20 Sep). The portal originally listed 15 Sep for submission and 22–23 Sep for the Grand Finale at i-Hub Gandhinagar; **confirm on the portal which milestone the 28th is** and whether Phase-1 shortlisting was announced |
-| Build window | 20–24 Sep: full-stack application plus every deliverable in §7 · 25–27 Sep: soak runs, rehearsal, fallback recordings · nothing built in the last 48 h is demoed |
+| Build window | Mon 21 – Thu 24 Sep: the application · Fri 25: every deliverable in §7 (GATE D 09:00, code freeze at end of day) · Sat 26: soak and rehearsal · Sun 27: submit · Mon 28: buffer · nothing built in the last 48 h is demoed (`docs/tasks.md` calendar) |
 | Entry category | Category 1 (student / small startup) unless registered otherwise — check the registration |
 | Sandbox | `https://cctv.corp8.cloud` — 30 cameras in the catalogue, 5 departments (see `docs/sandbox-findings.md`) |
 

@@ -330,15 +330,15 @@ The UI editor (`ui/src/pages/Zones.jsx`) and the analytics (`src/analytics/zones
 
 ## B6. Time base (review defect D3 — the one that breaks the scored route)
 
-RTSP sightings were stamped with wall-clock `now()`; HLS and harvest sightings with a synthetic `RECORDING_EPOCH + offset` (June 2026, in UTC although the footage clock is IST). The two never align, so a route mixing transports computes nonsense. **Contract change:** every sighting and event stores `stream_time` (the recording-timeline instant), `wall_time` (when this system observed it), and `clock_source` (`rtsp-live | hls-vod | harvest | demo`), plus `provenance` (`live | harvest | demo`) on every row and in every export. Route reconstruction orders within one clock domain and returns an explicit warning field instead of a speed when it would have to cross domains. `seen_at` in §2 becomes the display alias of `stream_time`.
+RTSP sightings were stamped with wall-clock `now()`; HLS and harvest sightings with a synthetic `RECORDING_EPOCH + offset` (June 2026, in UTC although the footage clock is IST). The two never align, so a route mixing transports computes nonsense. **Contract change (decision F13):** `seen_at` keeps its name and means the **stream-time instant** (the recording-timeline instant for HLS/harvest, `pull_start + PTS` for RTSP); every sighting and event additionally stores `wall_time` (when this system observed it), `clock_source` (`rtsp-live | hls-vod | harvest | demo | replay`) and `provenance` (`live | harvest | demo | test` — `test` is what replay-transport reads carry, decision F26), on every row and in every export; `events` rows carry the same three columns. Route reconstruction groups stops by `clock_source`, computes elapsed time and speed only within a group, and returns a `warnings[]` field instead of a speed when it would have to cross groups.
 
 ## B7. Alert ids (defect D4)
 
-`alert_id` was allocated as `COUNT(*)+1` for the day — a thread race loses alerts, and after `demo-clear` the primary key collides and **every later alert that day fails**. The SSE cursor used the reusable implicit `rowid`. **Contract change:** `alert_seq INTEGER PRIMARY KEY AUTOINCREMENT`; the human id `ALERT-YYYYMMDD-NNNN` is derived from it, never counted; SSE frames carry `id: <alert_seq>` and honour `Last-Event-ID`.
+`alert_id` was allocated as `COUNT(*)+1` for the day — a thread race loses alerts, and after `demo-clear` the primary key collides and **every later alert that day fails**. The SSE cursor used the reusable implicit `rowid`. **Contract change (decisions F27):** `alert_seq INTEGER PRIMARY KEY AUTOINCREMENT`; the human id `ALERT-YYYYMMDD-NNNN` is derived from it, never counted; SSE frames carry `id: <alert_seq>` and honour `Last-Event-ID`. The row gains `kind` (`watchlist | zone`), nullable `event_id` and `zone_id`, and `sighting_id`, `watchlist_id`, `plate`, `category` become nullable so a zone alert can exist; `match_type` ∈ `exact | ambiguity | fuzzy | none` (default `none`), `match_distance` becomes `REAL` (the confusion-weighted distance of §6 is fractional), and `clock_source` is stored so the 5-minute cooldown is derived from the last matching `alerts` row in the same clock domain — never from memory, so a purge resets it.
 
 ## B8. Zone alerts never reached the dashboard (defect D5)
 
-High-severity zone events were broadcast on an in-process bus inside the worker process, which the API never sees. **Contract change:** the API runs one background tailer over the database that broadcasts both new `alerts` rows and high-severity `events` rows on the same SSE stream, with a `kind` field.
+High-severity zone events were broadcast on an in-process bus inside the worker process, which the API never sees. **Contract change (decision F27):** a high-severity zone hit writes an `alerts` row with `kind='zone'` and `event_id` set; the API runs **one** background tailer over `alerts` (only) that broadcasts every new row on the SSE stream with its `kind`.
 
 ## B9. Matching semantics and indexes (defect D6)
 
@@ -346,7 +346,14 @@ Route lookup scanned the whole `sightings` table with per-row Levenshtein; watch
 
 ## B10. Plate grammar (defect D11)
 
-The structural filter rejected the national **BH-series** format (`##BH####LL`), making an entire registration class invisible, and the regex was duplicated in two files. §6 must state both formats (`SS DD L{1,3} NNNN` and `YY BH NNNN LL`) with a state-code whitelist, in one module.
+The structural filter rejected the national **BH-series** format (`##BH####LL`), making an entire registration class invisible, and the regex was duplicated in two files. §6 must be rewritten to exactly this (one module, `backend/core/plates.py`; S1.2 implements it):
+
+- `normalise(raw)`: uppercase, strip everything that is not `A-Z0-9`. Stored alongside `plate_raw`, never overwriting it.
+- `canonical(plate)`: the ambiguity map folded to one form (`O→0, I→1, S→5, B→8, Z→2, G→6, Q→0`), stored as `plate_canonical` and indexed on `sightings` and `watchlist`.
+- `plate_like(s)` → `full` when, after **position-aware ambiguity coercion** (where a letter is expected `0→O, 1→I, 5→S, 8→B, 2→Z, 6→G`; where a digit is expected the reverse), `s` matches the standard form `^[A-Z]{2}[0-9]{2}[A-Z]{1,3}[0-9]{4}$` with a state code in `AN AP AR AS BR CG CH DD DL DN GA GJ HP HR JH JK KA KL LA LD MH ML MN MP MZ NL OD OR PB PY RJ SK TN TR TS UK UP WB`, **or** the BH-series form `^[0-9]{2}BH[0-9]{4}[A-Z]{1,2}$`; `partial` when `s` (uncoerced) is a structural prefix of either form with length ≥ 4 and not full; otherwise `None` (rejected — e.g. burned-in captions).
+- A read is **partial** when `plate_like(s) != "full"`. Partial reads are stored with their confidence, may appear on a route as low-confidence candidates clearly labelled, and **never fire an alert and never fuzzy-match**.
+- `plate_match(a, b)` → `(matched, distance, rule)`: `exact` (distance 0) → `ambiguity` (same length, differs only inside ambiguity classes; distance 0) → `fuzzy` (both sides `full`; confusion-weighted edit distance where a substitution inside an ambiguity class costs 0.25 and any other substitution or indel costs 1.0; matched when ≤ 1.0) → `none`.
+- Alerts fire on `exact` and `ambiguity`; on `fuzzy` only when `SENTINEL_ALERT_ON_FUZZY=true` (decision F21). Fuzzy candidates are always shown on a route, flagged.
 
 ## B11. Input and output hygiene (defects D7, D8)
 
@@ -354,12 +361,21 @@ Server-side fetch of an arbitrary `hls_url` (SSRF); un-validated segment `name` 
 
 ## B12. Authentication and audit (defect D2)
 
-Every endpoint was open, including watchlist add/delete, camera edits and alert acknowledgement, and plate crops (PII) were served openly. **Contract addition:** an `X-API-Key` header (which forces a CORS preflight and so closes the CSRF hole), roles `viewer` and `admin`, `/crops` behind auth, `TrustedHostMiddleware`; and an append-only `audit` table (actor, action, entity, before/after, timestamp) written by middleware for every mutation **and every plate or route query** — operator-misuse lookups are the documented ANPR scandal pattern.
+Every endpoint was open, including watchlist add/delete, camera edits and alert acknowledgement, and plate crops (PII) were served openly. **Contract addition (decisions F4, F23):** an `X-API-Key` header (which forces a CORS preflight and so closes the CSRF hole), roles `viewer` and `admin` from two configured keys; additionally a `sentinel_key` cookie (`SameSite=Strict`, `HttpOnly`, set by `POST /api/session`, cleared by `DELETE /api/session`) is accepted for **GET** on `/crops/*`, `/api/hls/*` and `/api/alerts/stream` only, because `<img>`, hls.js and `EventSource` cannot send custom headers; mutations always require the header **and** admin. Open paths: `/`, `/assets/*`, `/docs`, `/openapi.json`, `/api/health`. `TrustedHostMiddleware` on. An append-only `audit` table (actor, role, action, entity, entity_id, before_json, after_json, timestamp) written by middleware for every mutation **and every plate or route query** — operator-misuse lookups are the documented ANPR scandal pattern; handlers supply `before/after`.
 
 ## B13. Dedupe and cooldown bounds (defect D12)
 
-The 60-second dedupe in §2 had no upper time bound (out-of-order writers swallowed real sightings), the object-event throttle did not reset on `stream_restart`, and cooldowns were keyed on wall clock rather than stream time. State the bounds in §2 and key cooldowns on `stream_time`.
+The 60-second dedupe in §2 had no upper time bound (out-of-order writers swallowed real sightings), the object-event throttle did not reset on `stream_restart`, and cooldowns were keyed on wall clock rather than stream time. State the bounds in §2 and key cooldowns on `seen_at` (the stream-time instant).
 
 ## B14. Provenance in every export
 
 Detection reports and route exports must carry the `provenance` column so a demo row can never pass as a live detection (defect D15). The sample `deliverables/detection-report.csv` on disk contains the demo vehicle's rows and must be regenerated.
+
+## B15. Small contract facts settled by the plan (21 Sep)
+
+- `cameras.transport` ∈ `hls | rtsp | replay | none`; for `replay` (a local file used by tests and the soak) `rtsp_url_template` holds the file path.
+- `sightings.bbox_json` stays `[x, y, w, h]` in source-frame pixels; the detector's internal `xyxy` is converted when the sighting is written.
+- `sightings.vehicle_class` keeps `auto` as an allowed value; the COCO detector emits `car | truck | bus | motorcycle` or `unknown`.
+- `alerts.fired_at` and every cooldown are stream-time instants (`seen_at`), not wall clock.
+- `GET /api/sightings` accepts a `provenance` filter; every report carries the column (B14).
+- New endpoints: `POST /api/session`, `DELETE /api/session` (F23); `GET /api/reports/route/{plate}`; `GET /api/workers` returns the supervisor's stats snapshot.

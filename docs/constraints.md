@@ -2,7 +2,7 @@
 
 **Editor's note (20 Sep 2026).** The body below is the previous build's `02-hard-constraints.md`, **copied verbatim** — it is the budget every design decision is made against and none of it has changed. Three things to read with the date in mind:
 
-- **"Time"** (last section) describes the 13–15 Sep sprint. The current clock is in `docs/brief.md` §0: deadline 28 Sep, build window 20–24 Sep.
+- **"Time"** (last section) describes the 13–15 Sep sprint. The current clock is in `docs/brief.md` §0: deadline 28 Sep, application Mon 21 – Thu 24 Sep, deliverables Fri 25.
 - **"Stack — locked"** lists the previous build's choices. They were all validated on this laptop and are the fresh build's defaults, but they are *decisions*, not constraints — the plan may confirm or change any of them in `docs/decisions.md`. The **licensing traps** table, however, is a hard constraint: the hackathon states *"All solutions should use open-source technologies"* and the traps are procurement blockers.
 - **"Python 3.11"**: the laptop runs Python 3.13.9 (Anaconda) and every dependency ships a cp313 wheel (validated 14 Sep — `docs/reference/old-build/STATUS.md`, "LAUNCHER FIX 2").
 

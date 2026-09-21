@@ -1,6 +1,6 @@
 # frontend/ — layer rules
 
-React 18 + Vite, Leaflet (BSD-2), hls.js (Apache-2.0). Served in production by the API from the built `dist/`; in development Vite on `:5173` proxies `/api` to `:8000`. Reads the root `CLAUDE.md` first; these rules add to it.
+React **18.3.1** + Vite 6 (`npm create vite@6`, Node **20.19+**), `react-router-dom@6`, Leaflet 1.9.4 + `react-leaflet@4.2.1` (BSD-2), `hls.js@1` (Apache-2.0) — decision F28. Served in production by the API from the built `dist/` (ignored by git; zipped into `deliverables/` on the submission tag, F30); in development Vite on `:5173` proxies `/api` and `/crops` to `:8000`. Reads the root `CLAUDE.md` first; these rules add to it.
 
 ## Screens (all required)
 
@@ -13,11 +13,15 @@ Command (dashboard: live tiles, mini-map, alert feed, latest reads, object count
 - **Alerts** arrive over SSE (`/api/alerts/stream`) newest first, severity-coded for every severity value including `critical`, each with plate, **crop**, camera, department, timestamp, category, match type; acknowledge persists; one click to the route; the list is capped. Zone alerts carry no route link.
 - **Times are shown in IST** through one `formatTs()` (`Intl.DateTimeFormat`, `Asia/Kolkata`) — never `slice()` on an ISO string, never raw UTC. Storage stays UTC.
 - **No silent failure**: every fetch checks `r.ok`; one shared data layer / poller (not Header and Dashboard polling separately); a connection-status strip that distinguishes "quiet night" from "pipeline dead"; zone save reports the real result.
-- **Provenance is visible**: rows labelled `live | harvest | demo` in Search, Route and Reports.
-- **Auth**: the API key is entered once and kept in memory (or `sessionStorage`), sent as `X-API-Key`; admin-only actions hidden for viewers.
+- **Provenance is visible**: rows labelled `live | harvest | demo | test` in Search, Route and Reports.
+- **Auth**: the API key is entered once in the key dialog, kept in memory + `sessionStorage`, sent as `X-API-Key` on every fetch; the dialog also calls `POST /api/session` so the `sentinel_key` cookie lets `<img>` crops, hls.js segments and the `EventSource` alert stream through (decision F23); admin-only actions hidden for viewers.
 - **Offline venue**: Leaflet CSS bundled, not from a CDN; basemap tiles need internet (state it in the UI when tiles fail); pins and route render regardless. OSM attribution stays on (ODbL). No `leaflet.offline` pre-seeding.
 - **Nothing on screen may show a credential** — check every address bar, tooltip and error toast before a screen is recorded.
 - Plates in URLs are `encodeURIComponent`-ed; navigation uses router `<Link>`s.
+
+## Package layout (decision F12)
+
+Vite + React in `frontend/` — `src/lib/{api,time,poll}.js`, `src/components/{Shell,Header,StatusStrip,KeyDialog,DeptLegend,Tile,FitBounds}.jsx`, `src/pages/{Command,Map,LiveWall,Search,Route,Alerts,Watchlist,Cameras,Zones,Reports}.jsx`. `npm --prefix frontend run dev` (port 5173, proxies `/api` to 8000) and `npm --prefix frontend run build` → `frontend/dist`, served by the API.
 
 ## What the previous build did here (read-only reference)
 
