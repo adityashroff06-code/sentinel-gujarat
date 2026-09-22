@@ -1,0 +1,21 @@
+# Pinned to the versions read off the old build's .venv on 21 Sep 2026 —
+# the set that actually ran the 15 Sep demo on this laptop (decision F37).
+# Exactly ONE OpenCV distribution (the contrib superset paddlex pins) and
+# NEVER the plain onnxruntime wheel on Windows: both would unpack over the
+# folder of the wheel that works and silently replace it.
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+python-multipart==0.0.32
+python-dotenv==1.2.3
+httpx==0.28.1
+pydantic==2.13.5
+numpy==2.3.5
+opencv-contrib-python==4.10.0.84
+Pillow==12.3.0
+cryptography==50.0.1
+psutil==7.2.2
+onnxruntime-directml==1.24.4; sys_platform == "win32"
+onnxruntime==1.24.4; sys_platform != "win32"
+paddlepaddle==3.3.1
+paddleocr==3.7.0
+paddlex==3.7.2

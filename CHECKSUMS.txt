@@ -1,0 +1,5 @@
+# SHA-256 of every downloaded binary (decision F25). Format:
+#   <sha256>  <version-or-url>  <relative path>
+# Written by the tool that downloads the file; verified on every later run.
+# Entries land here from: scripts/replay_publish.py --fetch (mediamtx),
+# ml/tools/fetch_models.py (yolox_s.onnx), the launcher (ffmpeg zip, if fetched).

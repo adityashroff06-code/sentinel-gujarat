@@ -2,6 +2,8 @@
 
 **Editor's note (20 Sep 2026).** Part A is the previous build's `03-data-contracts.md`, **copied verbatim**. It is the shape the submitted deliverables already describe (`deliverables/HLD.md` §1.4, `deliverables/registry-api.json`), so it is the fresh build's starting contract. Part B records, from the previous build's code and its review (`docs/reference/old-build/P7-enhancements.md`), every place the implementation diverged from Part A or learned something Part A does not say. **The API plan must resolve each item in Part B and fold the result back into Part A in the same commit** — after that, Part A alone is binding and Part B is history.
 
+**Resolved in S1.1 (22 Sep 2026):** every Part B item is folded into Part A below (schema v1, `backend/core/migrations/0001_initial.sql`). **Part A alone is binding**; Part B is kept verbatim as history because other documents cite its item numbers.
+
 Stale pointers inside Part A: `docs/04-feed-rules.md` → `docs/feed-rules.md`; `plan/STATUS.md` → `docs/progress.md`; `src/anpr/plates.py` and the §8 layout → the fresh build's layout (`docs/decisions.md`).
 
 ---
@@ -40,9 +42,10 @@ CREATE TABLE cameras (
     measured_fps     REAL,                   -- counted over a wall-clock window
     bitrate_kbps     INTEGER,
     hls_url          TEXT,                   -- no credentials
-    rtsp_url_template TEXT,                  -- with <email>/<password> placeholders
+    rtsp_url_template TEXT,                  -- <email>/<password> placeholders or a plain local
+                                             -- URL; for transport='replay' the local file path
     whep_url_template TEXT,
-    transport        TEXT,                   -- hls | rtsp | none
+    transport        TEXT,                   -- hls | rtsp | replay | none
     ownership        TEXT DEFAULT 'government',  -- government | private
     health           TEXT,                   -- online | degraded | offline
     last_seen        TEXT,                   -- ISO8601 UTC
@@ -61,6 +64,8 @@ CREATE INDEX idx_cameras_tier   ON cameras(fps_tier);
 
 **Department and coordinates:** if the catalogue supplies them, use them verbatim. If it does not, assign them once in a committed seed file (`data/camera_seed.csv`), never silently in code, and state in the submission that geography was assigned for demonstration because the catalogue did not carry it. Do not fabricate it invisibly.
 
+**`camera_id` hygiene (B11):** `camera_id` matches `^[A-Za-z0-9_-]{1,64}$` — it flows into filesystem paths and URLs, so nothing else is accepted, at every boundary. `rtsp_url_template` may carry `<email>`/`<password>` placeholders (filled from the environment in memory) **or** be a plain local URL used as-is; no stored URL ever contains a credential.
+
 ---
 
 ## 2. `sightings` — every plate read, the spine of the whole system
@@ -68,27 +73,34 @@ CREATE INDEX idx_cameras_tier   ON cameras(fps_tier);
 ```sql
 CREATE TABLE sightings (
     sighting_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-    plate            TEXT NOT NULL,          -- normalised
-    plate_raw        TEXT NOT NULL,          -- exactly what OCR returned
+    plate            TEXT NOT NULL,          -- normalised (§6)
+    plate_raw        TEXT NOT NULL,          -- exactly what OCR returned; never overwritten
+    plate_canonical  TEXT NOT NULL,          -- ambiguity-folded at write time (§6)
     confidence       REAL NOT NULL,          -- 0.0-1.0
     camera_id        TEXT NOT NULL REFERENCES cameras(camera_id),
-    seen_at          TEXT NOT NULL,          -- ISO8601 UTC, derived from PTS + stream epoch
+    seen_at          TEXT NOT NULL,          -- the STREAM-TIME instant — see Time base below
+    wall_time        TEXT NOT NULL,          -- when this system observed it
+    clock_source     TEXT NOT NULL,          -- rtsp-live | hls-vod | harvest | demo | replay
+    provenance       TEXT NOT NULL,          -- live | harvest | demo | test
     pts_ms           REAL,                   -- raw presentation timestamp, for audit
-    bbox_json        TEXT,                   -- [x,y,w,h] in source pixels
+    bbox_json        TEXT,                   -- [x,y,w,h] in source pixels (the detector's
+                                             -- internal xyxy is converted when the row is written)
     vehicle_class    TEXT,                   -- car | truck | bus | motorcycle | auto | unknown
+                                             -- (the COCO detector emits the first four or unknown)
     crop_path        TEXT,                   -- plate crop on disk (~2 KB)
     frame_path       TEXT,                   -- full frame — ONLY for watchlist hits
     track_id         TEXT,                   -- within-camera tracker id
     created_at       TEXT NOT NULL
 );
-CREATE INDEX idx_sightings_plate  ON sightings(plate, seen_at);
-CREATE INDEX idx_sightings_camera ON sightings(camera_id, seen_at);
-CREATE INDEX idx_sightings_time   ON sightings(seen_at);
+CREATE INDEX idx_sightings_plate     ON sightings(plate, seen_at);
+CREATE INDEX idx_sightings_canonical ON sightings(plate_canonical, seen_at);
+CREATE INDEX idx_sightings_camera    ON sightings(camera_id, seen_at);
+CREATE INDEX idx_sightings_time      ON sightings(seen_at);
 ```
 
-**Dedupe rule (mandatory):** the same normalised plate on the same camera within **60 seconds** is one sighting, not many. Update the existing row's confidence if the new read is better; do not insert. Without this, a parked vehicle produces hundreds of rows and the route view becomes unreadable.
+**Time base (B6, decision F13):** `seen_at` keeps its name and means the **stream-time instant** — for RTSP, `pull_start + PTS` (never `datetime.now()` at detection: inference latency and GOP replay both corrupt it); for HLS-VOD/harvest, `RECORDING_EPOCH + position`; for replay, `pull_start + index/fps`, continuous across loops (F36). `wall_time` is when this system observed it. `clock_source` names the clock; `provenance` ∈ `live | harvest | demo | test` — replay-transport reads are `test` (F26). Route reconstruction groups stops by `clock_source`, computes elapsed time and speed only within a group, and returns `warnings[]` instead of a speed when it would have to cross groups. Every export carries `provenance` (B14).
 
-**`seen_at` derivation:** take the stream's wall-clock anchor at connect, add the PTS delta. Never use `datetime.now()` at the moment of detection — inference latency and GOP replay both corrupt it.
+**Dedupe rule (mandatory, bounded — B13):** the same `plate_canonical` on the same camera **in the same `clock_source`** within **60 seconds of `seen_at`** (absolute difference — the bound is two-sided, so an out-of-order writer can never swallow a distant real sighting) is one sighting, not many. Keep the existing row and raise its confidence if the new read is better; do not insert. Every cooldown and throttle keys on `seen_at` (stream time), never on wall clock, and derives from stored rows, never from process memory.
 
 ---
 
@@ -98,16 +110,21 @@ CREATE INDEX idx_sightings_time   ON sightings(seen_at);
 CREATE TABLE watchlist (
     watchlist_id     INTEGER PRIMARY KEY AUTOINCREMENT,
     plate            TEXT NOT NULL UNIQUE,   -- normalised
+    plate_canonical  TEXT NOT NULL,          -- ambiguity-folded (§6), indexed
     category         TEXT NOT NULL,          -- stolen_vehicle | wanted_person | missing_person | blacklisted | suspect
     severity         TEXT NOT NULL,          -- high | medium | low
     description      TEXT,
+    reason           TEXT,
+    authority        TEXT,
     source_ref       TEXT,                   -- notional FIR / case reference
+    expires_at       TEXT,                   -- nullable
     active           INTEGER NOT NULL DEFAULT 1,
     added_at         TEXT NOT NULL
 );
+CREATE INDEX idx_watchlist_canonical ON watchlist(plate_canonical);
 ```
 
-Representative data created by us, which the rules permit. Seed it partly from **plates actually observed in the feeds** so the demo produces genuine hits, and partly from invented entries so the table looks like a real watchlist. Record in `plan/STATUS.md` which entries were seeded from observation.
+Representative data created by us, which the rules permit. Seed it partly from **plates actually observed in the feeds** so the demo produces genuine hits, and partly from invented entries so the table looks like a real watchlist. Record in `docs/progress.md` which entries were seeded from observation.
 
 ---
 
@@ -115,38 +132,49 @@ Representative data created by us, which the rules permit. Seed it partly from *
 
 ```sql
 CREATE TABLE alerts (
-    alert_id         TEXT PRIMARY KEY,       -- ALERT-YYYYMMDD-NNNN
-    sighting_id      INTEGER NOT NULL REFERENCES sightings(sighting_id),
-    watchlist_id     INTEGER NOT NULL REFERENCES watchlist(watchlist_id),
-    plate            TEXT NOT NULL,
-    camera_id        TEXT NOT NULL,
-    category         TEXT NOT NULL,
-    severity         TEXT NOT NULL,
-    match_type       TEXT NOT NULL,          -- exact | fuzzy
-    match_distance   INTEGER NOT NULL DEFAULT 0,
-    fired_at         TEXT NOT NULL,
+    alert_seq        INTEGER PRIMARY KEY AUTOINCREMENT,  -- the SSE cursor; never COUNT(*)+1 (B7)
+    alert_id         TEXT NOT NULL UNIQUE,   -- ALERT-YYYYMMDD-NNNN, derived from alert_seq
+    kind             TEXT NOT NULL,          -- watchlist | zone
+    sighting_id      INTEGER NULL REFERENCES sightings(sighting_id),
+    watchlist_id     INTEGER NULL REFERENCES watchlist(watchlist_id),
+    event_id         INTEGER NULL REFERENCES events(event_id),
+    zone_id          TEXT NULL,              -- zone cooldowns key on it (F34)
+    plate            TEXT NULL,
+    plate_canonical  TEXT NULL,
+    camera_id        TEXT NOT NULL REFERENCES cameras(camera_id),
+    category         TEXT NULL,
+    severity         TEXT NOT NULL,          -- high | medium | low | critical
+    match_type       TEXT NOT NULL DEFAULT 'none',  -- exact | ambiguity | fuzzy | none
+    match_distance   REAL NOT NULL DEFAULT 0,       -- confusion-weighted (§6), fractional
+    clock_source     TEXT NOT NULL,          -- rtsp-live | hls-vod | harvest | demo | replay
+    fired_at         TEXT NOT NULL,          -- stream-time instant (the seen_at domain)
     acknowledged_at  TEXT,
     acknowledged_by  TEXT,
     clip_path        TEXT,                   -- Pipeline 3, nullable
     clip_sha256      TEXT
 );
-CREATE INDEX idx_alerts_fired ON alerts(fired_at);
+CREATE INDEX idx_alerts_fired     ON alerts(fired_at);
+CREATE INDEX idx_alerts_canonical ON alerts(plate_canonical, camera_id, fired_at);
 ```
 
-**Ordering invariant:** the sighting row is committed **before** the matcher runs. An alert always references a sighting that already exists on disk. Never the reverse.
+A **watchlist** alert has `sighting_id`, `watchlist_id`, `plate`, `plate_canonical` and `category` set; a **zone** alert (B8/F27) has `event_id` and `zone_id` set and those five NULL — one table, one SSE stream, `kind` tells them apart.
+
+**Ordering invariant:** the sighting (or event) row is committed **before** the matcher/alert logic runs. An alert always references a row that already exists on disk. Never the reverse.
+
+**Ids and cooldowns (B7, F27):** `alert_seq` is the allocation and the SSE cursor — SSE frames carry `id: <alert_seq>` and honour `Last-Event-ID`; the human id `ALERT-YYYYMMDD-NNNN` is derived from `alert_seq`, never counted. The 5-minute alert cooldown per (plate_canonical, camera) — for zone alerts per (zone_id, camera) — derives from the last matching `alerts` row **in the same `clock_source` domain**, never from process memory, so a purge resets it.
 
 ---
 
 ## 5. Camera zones (P5, intrusion detection)
 
-`cameras.zones_json`:
+`cameras.zones_json` — the canonical shape (B1; what the UI editor and the analytics actually use):
 
 ```json
-[{"zone_id":"z1","name":"Platform edge","type":"intrusion","polygon":[[0.1,0.6],[0.9,0.6],[0.9,1.0],[0.1,1.0]],"classes":["person"]},
- {"zone_id":"z2","name":"Exit lane","type":"line_cross","line":[[0.0,0.5],[1.0,0.5]],"direction":"down","classes":["car","truck"]}]
+[{"zone_id":"z1","name":"Platform edge","type":"intrusion","severity":"high","points":[[0.1,0.6],[0.9,0.6],[0.9,1.0],[0.1,1.0]]},
+ {"zone_id":"z2","name":"Exit lane","type":"line","severity":"medium","points":[[0.0,0.5],[1.0,0.5]]}]
 ```
 
-Coordinates normalised 0–1 so they survive resolution differences. `events` table for zone hits:
+`type` ∈ `intrusion | line`; the geometry is always `points` (a polygon for intrusion, two points for a line); `severity` ∈ `high | medium | low` — a **high-severity** zone hit also writes an `alerts` row (`kind='zone'`, §4). Line crossing fires once, downward; upward is ignored. Coordinates normalised 0–1 so they survive resolution differences. `events` table for zone and object hits:
 
 ```sql
 CREATE TABLE events (
@@ -156,37 +184,33 @@ CREATE TABLE events (
     event_type  TEXT NOT NULL,               -- intrusion | line_cross | object_detected
     object_class TEXT,
     confidence  REAL,
-    occurred_at TEXT NOT NULL,
+    occurred_at TEXT NOT NULL,               -- stream-time instant (same rule as sightings.seen_at)
+    wall_time   TEXT NOT NULL,
+    clock_source TEXT NOT NULL,              -- rtsp-live | hls-vod | harvest | demo | replay
+    provenance  TEXT NOT NULL,               -- live | harvest | demo | test
     bbox_json   TEXT,
     crop_path   TEXT
 );
+CREATE INDEX idx_events_time   ON events(occurred_at);
+CREATE INDEX idx_events_camera ON events(camera_id, occurred_at);
 ```
+
+The object-event throttle resets on `stream_restart` and keys on `occurred_at` (B13).
 
 ---
 
-## 6. Plate normalisation (one implementation, `src/anpr/plates.py`)
+## 6. Plate grammar and matching (one implementation, `backend/core/plates.py` — B10)
 
-Indian plate format: `SS DD LL NNNN` — two-letter state, two-digit district, one-to-three-letter series, four-digit number. Gujarat plates begin `GJ`.
+Indian plate formats: standard `SS DD L(LL) NNNN` — two-letter state, two-digit district, one-to-three-letter series, four-digit number (Gujarat plates begin `GJ`) — **and** the national BH-series `NN BH NNNN L(L)`.
 
-```
-normalise(raw):
-  uppercase, strip everything that is not A-Z0-9
-  return the cleaned string
-```
+- `normalise(raw)`: uppercase, strip everything that is not `A-Z0-9`. Stored alongside `plate_raw`, never overwriting it.
+- `canonical(plate)`: the ambiguity map folded to one form (`O→0, I→1, S→5, B→8, Z→2, G→6, Q→0`), stored as `plate_canonical` and indexed on `sightings`, `watchlist` and `alerts`.
+- `plate_like(s)` → `full` when, after **position-aware ambiguity coercion** (where a letter is expected `0→O, 1→I, 5→S, 8→B, 2→Z, 6→G`; where a digit is expected the reverse), `s` matches the standard form `^[A-Z]{2}[0-9]{2}[A-Z]{1,3}[0-9]{4}$` with a state code in `AN AP AR AS BR CG CH DD DL DN GA GJ HP HR JH JK KA KL LA LD MH ML MN MP MZ NL OD OR PB PY RJ SK TN TR TS UK UP WB`, **or** the BH-series form `^[0-9]{2}BH[0-9]{4}[A-Z]{1,2}$`; `partial` when `s` (uncoerced) is a structural prefix of either form with length ≥ 4 and not full; otherwise `None` (rejected — e.g. burned-in captions).
+- `is_partial(s)`: a read is **partial** when `plate_like(s) != "full"`. Partial reads are stored with their confidence, may appear on a route as low-confidence candidates clearly labelled, and **never fire an alert and never fuzzy-match**.
+- `plate_match(a, b)` → `(matched, distance, rule)`: `exact` (distance 0) → `ambiguity` (same length, differs only inside ambiguity classes; distance 0) → `fuzzy` (both sides `full`; **confusion-weighted edit distance** where a substitution inside an ambiguity class costs 0.25 and any other substitution or indel costs 1.0; matched when ≤ 1.0) → `none`.
+- **Alert policy (decision F21):** alerts fire on `exact` and `ambiguity`; on `fuzzy` only when `SENTINEL_ALERT_ON_FUZZY=true`. Fuzzy candidates are always shown on a route, flagged.
 
-**Ambiguity map, applied only during matching, never during storage:**
-
-```
-O ↔ 0    I ↔ 1    S ↔ 5    B ↔ 8    Z ↔ 2    G ↔ 6    Q ↔ 0
-```
-
-`plate_match(a, b) -> (bool, distance)`:
-1. Exact match after normalisation → `(True, 0)`.
-2. Equal length, differing only by ambiguity-map substitutions → `(True, 0)`.
-3. Levenshtein distance ≤ 1 with both strings ≥ 8 characters → `(True, 1)`.
-4. Otherwise `(False, n)`.
-
-Reads shorter than 8 characters are **partial**: store them with their confidence, but never fire an alert from them. They may still contribute to route reconstruction as low-confidence candidates, clearly labelled as such in the UI.
+The ambiguity map is applied only during canonicalisation and matching, never during storage of `plate`/`plate_raw`.
 
 ---
 
@@ -194,23 +218,32 @@ Reads shorter than 8 characters are **partial**: store them with their confidenc
 
 | Method | Path | Returns |
 |---|---|---|
-| GET | `/health` | service status, DB status, active worker count |
+| GET | `/health` | service status, DB status, active worker count — **open** |
+| POST | `/session` | validates an API key, sets the `sentinel_key` cookie (F23) |
+| DELETE | `/session` | clears the cookie |
 | GET | `/cameras` | list; filters `department`, `health`, `tier`, `q` |
+| GET | `/cameras/gap-analysis` | uncovered areas + ageing/offline cameras (Model 1 deliverable) — registered **before** `/{camera_id}` |
+| POST | `/cameras/import` | CSV bulk onboarding; per-row `accepted[] / rejected[]{row, reason}`, one transaction, no partial commit — registered **before** `/{camera_id}` |
 | GET | `/cameras/{camera_id}` | one camera, full record |
 | POST | `/cameras` | manual onboarding (Model 1 deliverable) |
-| POST | `/cameras/import` | CSV bulk onboarding (Model 1 deliverable) |
 | PATCH | `/cameras/{camera_id}` | edit metadata, ROI, zones, tier |
-| GET | `/cameras/gap-analysis` | uncovered areas + ageing/offline cameras (Model 1 deliverable) |
-| GET | `/cameras/{camera_id}/stream` | playable HLS URL for this session |
-| GET | `/sightings` | filters `plate`, `camera_id`, `from`, `to`, `min_confidence`; paginated |
+| GET | `/cameras/{camera_id}/stream` | `{"hls": "/api/hls/{camera_id}/live.m3u8"}` — only backend-relayed paths, never an upstream URL |
+| GET | `/sightings` | filters `plate`, `camera_id`, `from`, `to`, `min_confidence`, `provenance`; returns `{"total", "count", "sightings"}` with `limit` (≤ 2000) and `offset`; `total` reuses the row query's WHERE |
 | GET | `/plates/{plate}/route` | **the scored endpoint** — see below |
-| GET | `/watchlist` · POST · DELETE `/{id}` | watchlist CRUD |
-| GET | `/alerts` | recent alerts, filters `severity`, `acknowledged` |
+| GET | `/watchlist` · POST · DELETE `/{id}` | watchlist CRUD (POST takes `plate, category, severity, description?, source_ref?`) |
+| GET | `/alerts` | recent alerts, filters `severity`, `acknowledged`, `limit` |
 | POST | `/alerts/{alert_id}/ack` | acknowledge |
-| GET | `/alerts/stream` | **SSE** — live alert push to the dashboard |
-| GET | `/events` | zone/object events (P5) |
-| GET | `/stats` | counts for the dashboard header |
-| GET | `/reports/detections` | **timestamped detection report — a named deliverable** (CSV + PDF) |
+| GET | `/alerts/stream` | **SSE** — one background tailer over `alerts` (both kinds); frames carry `id: <alert_seq>`, honours `Last-Event-ID` |
+| GET | `/events` | zone/object events; filters `camera_id`, `event_type`, `limit` |
+| GET | `/events/summary` | `?minutes=` — object/zone counts per camera per class over the last N minutes of the recording timeline |
+| GET | `/workers` | the worker supervisor's stats snapshot (sustained fps, skip rate, detections/min per camera) |
+| GET | `/stats` | `cameras_online, cameras_total, departments, sightings_total, plates_unique, events_total, zone_events, alerts_active` |
+| GET | `/reports/detections` | **timestamped detection report — a named deliverable**; `?format=csv\|html` + filters `camera_id`, `from`, `to`, `plate`; every row carries `provenance` |
+| GET | `/reports/gap-analysis` | rendered gap report (HTML) |
+| GET | `/reports/route/{plate}` | route report export |
+| GET | `/hls/{camera_id}/live.m3u8` · `/key` · `/seg/{name}` · `/local/{name}` | the Pipeline 1 relay: rewritten playlist, proxied AES key, proxied segment (only names present in the upstream playlist, only inside the configured CDN origin), worker's local tee |
+
+**Auth transport (B12, F23):** every `/api/*` and `/crops/*` path requires the `X-API-Key` header (roles `viewer`/`admin` from the two configured keys); additionally the `sentinel_key` cookie (`SameSite=Strict`, `HttpOnly`) is accepted for **GET** on `/crops/*`, `/api/hls/*` and `/api/alerts/stream` only — `<img>`, hls.js and `EventSource` cannot send custom headers. Mutations always require the header **and** admin; a cookie alone never authorises a change. Open paths: `/`, `/assets/*`, `/docs`, `/openapi.json`, `/api/health`. The API refuses to start if either key is unset. `TrustedHostMiddleware` on. Every mutation and every plate/route query writes an `audit` row (`audit(audit_id, at, actor, role, action, entity, entity_id, before_json, after_json)` — `before/after` supplied by handlers). Every endpoint declares a `response_model`, so the exported OpenAPI (`deliverables/registry-api.json`) is the real contract; no `snapshot.jpg` endpoint exists. Every timestamp is canonicalised at the API boundary to the stored `+00:00` form; HTML reports escape their inputs; CSV cells beginning `= + - @` are prefixed (B11).
 
 ### `GET /api/plates/{plate}/route` — the response the whole submission turns on
 
@@ -233,9 +266,13 @@ Reads shorter than 8 characters are **partial**: store them with their confidenc
       "location_name": "Naroda Road Junction",
       "lat": 23.0712, "lon": 72.6301,
       "seen_at": "2026-09-15T09:12:04Z",
+      "clock_source": "rtsp-live",
+      "provenance": "live",
       "plate_raw": "GJ01AB1234",
       "confidence": 0.94,
       "match_type": "exact",
+      "match_distance": 0,
+      "suspect": false,
       "crop_url": "/crops/cam04_00123.jpg",
       "elapsed_from_previous_s": null,
       "implied_speed_kmh": null
@@ -243,9 +280,14 @@ Reads shorter than 8 characters are **partial**: store them with their confidenc
   ],
   "gaps": [
     {"after_sequence": 3, "minutes": 14, "note": "no camera coverage on this corridor"}
+  ],
+  "warnings": [
+    "stops 4-5 come from a different clock (hls-vod); elapsed time and speed not computed across the boundary"
   ]
 }
 ```
+
+Per stop, `match_distance` is the confusion-weighted edit distance (§6) and `suspect` is set when the implied speed is implausible (B2). The stop-collapse window is 2 minutes on the same camera; the gap-flag threshold is configurable. Stops are grouped by `clock_source`; `elapsed_from_previous_s` and `implied_speed_kmh` are computed only within a group, with `warnings[]` explaining every boundary (B6).
 
 `gaps` is not an admission of failure — it is the system being honest about coverage, and it ties directly to the Model 1 gap-analysis report. Surface it in the UI.
 
@@ -253,42 +295,34 @@ Reads shorter than 8 characters are **partial**: store them with their confidenc
 
 ---
 
-## 8. Directory layout on disk
+## 8. Directory layout on disk *(superseded — decision F12; the old layout is history, B4)*
+
+Top-level packages, run from the repo root (`python -m backend.app`, `python -m ml`):
 
 ```
-src/
-  config.py            environment config, one place
-  db.py                connection, schema, migrations
-  models.py            dataclasses mirroring the tables above
-  ingest/
-    frame_source.py    THE critical component — see docs/04-feed-rules.md
-    catalogue.py       fetch and parse cameras.json
-    worker.py          per-camera loop, tiering, lifecycle
-  anpr/
-    detect.py          vehicle + plate detection
-    ocr.py             plate reading
-    plates.py          normalisation + matching (§6)
-    motion.py          MOG2 gate
-  analytics/
-    zones.py           intrusion / line-crossing (P5)
-    route.py           route reconstruction (§7)
-  alerting/
-    matcher.py         sighting → watchlist
-    alerts.py          alert creation, SSE broadcast
-  api/
-    main.py            FastAPI app
-    routes_*.py        one module per resource group
-  tools/
-    probe.py           P0 probe
-    seed_watchlist.py
-    report.py          detection report generator
-ui/                    React + Vite
-data/                  sentinel.db, crops/, seed CSVs  (gitignored)
+backend/
+  core/                shared with ml/: config.py, logging_setup.py,
+                       db.py + migrations/, timeline.py, plates.py,
+                       matcher.py, alerts.py, cdn_session.py
+  app/                 __main__.py, main.py, auth.py, audit.py, schemas.py,
+                       routes_cameras.py, routes_meta.py, routes_analytics.py,
+                       routes_reports.py, routes_hls.py
+  services/            gap_analysis.py, route.py, reports.py, health.py
+  tools/               probe.py, seed_registry.py, seed_watchlist.py,
+                       export_openapi.py, demo_seed.py
+ml/                    the worker process (ingest/, anpr modules, tools/)
+frontend/              React + Vite app (dist/ ignored; zipped on the submission tag, F30)
+tests/                 pytest suite; pytest.ini at the root (pythonpath = .)
+scripts/               one-off helpers (doctor.py, replay_publish.py)
+data/                  sentinel.db, crops/, logs/ (runtime, gitignored) +
+                       the three committed evidence files (catalogue, probe, seed)
 ```
 
 ---
 
 # Part B — Corrections and lessons from the previous implementation
+
+> **Resolved in S1.1 on 22 Sep 2026 — historical; Part A above is binding.** Every item below is folded into Part A (and schema v1). The text is kept verbatim because other documents cite its item numbers.
 
 Each item names the code that shipped (`D:\projects\Sentinel_Repo\src\…`) and what the fresh build must decide. Items B1–B5 are divergences between Part A and the code; B6–B14 are design defects the review found that the contract must prevent.
 

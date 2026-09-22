@@ -59,7 +59,7 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S0.3 | [Adi] Confirm the 28 Sep milestone and the entry category | Mon 21 | 10 min | |
 | S0.4 | Environment check (`scripts/doctor.py`); `.env` is created by Adi **before** this session | Mon 21 | 30 min | [~] script written + cloud smoke; laptop run + .env are Adi's |
 | S0.5 | [Adi] Insurance recording of the old build running | Mon 21 | 30 min | |
-| S1.1 | Backend skeleton: venv, config, logging, schema v1 + migrations, contract folded, tests | Mon 21 | 1.5 h | |
+| S1.1 | Backend skeleton: venv, config, logging, schema v1 + migrations, contract folded, tests | Mon 21 | 1.5 h | [~] code+schema+fold proven (cloud, Tue 22); laptop venv acceptance remains |
 | S1.2 | Plates + matcher core (shared), table-driven tests | Mon 21 | 1 h | |
 | S1.3a | Registry API: app, auth + audit, schemas, cameras, health, stats, gap analysis | Mon 21 | 1.5 h | |
 | S1.3b | CDN session, probe, seed tools, OpenAPI export — first live contact | Mon 21 | 1.5 h | |
@@ -160,7 +160,7 @@ git rev-parse --short main origin/main
 
 ## Phase 1 — Backend foundations (Mon 21 Sep)
 
-### S1.1 — Backend skeleton, venv, config, logging, schema v1, migrations, contract folded, tests `[ ]`
+### S1.1 — Backend skeleton, venv, config, logging, schema v1, migrations, contract folded, tests `[~]`
 *Read first:* `docs/api.md` (all of Part A and all of Part B — Part B is folded into Part A in this task); `docs/decisions.md` F12, F13, F21, F22–F30, F37; `backend/CLAUDE.md`. The version pins are **in this task block**, not in the old repo's `requirements.txt` (that file pins only the two Paddle packages; the versions below were read off the old `.venv`'s installed distributions on 21 Sep — the set that actually ran the 15 Sep demo on this laptop, Python 3.13.9).
 *Build:*
 - **Environment:** `python -m venv .venv` (Anaconda python), then `.venv/Scripts/python -m pip install -r requirements.txt -r requirements-dev.txt`. `requirements.txt` is **exactly this** (decision F37):

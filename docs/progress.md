@@ -11,7 +11,7 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 - **Deadline:** 28 Sep 2026 (per Adi; S0.3 confirms the milestone on the portal). Build window Mon 21 – Thu 24 for code, Fri 25 for deliverables (GATE D 09:00, code freeze at end of day), Sat 26 soak + rehearsal, Sun 27 submit, Mon 28 buffer. The Mon 21 column started a day late; this session (Tue 22) is catching it up.
 - **Session environment (new):** this session runs in a Claude Code **cloud container** (Linux, Python 3.11.15, Node 22, no GPU, no ffmpeg preinstalled, no `.env`, no sandbox network access), with the repo cloned at `/home/user/sentinel-gujarat` and push access to `origin`. Code, schema, docs and every test that does not need the laptop's venv pins, GPU, ffmpeg default path or the live sandbox can be built and proven here; laptop-only acceptance items are written off explicitly (`Next:` lines name them) and stay with Adi / a laptop session.
 - **Git:** `main` == `origin/main`, baseline commit `577587b` ("S0.2: documentation baseline, plan v2.2") with annotated tag `docs-v0` — Adi had already committed, tagged and pushed before this session; S0.2's checks were then run and passed here (block below).
-- **Next task:** **S1.1** (backend skeleton). S0.4 is PARTIAL: `scripts/doctor.py` is written; **[Adi]: create `.env`, run `python scripts/doctor.py` on the laptop, paste the output here.** S0.3 and S0.5 remain Adi's, non-blocking.
+- **Next task:** **S1.2** (this cloud session continues into it). S0.4 is PARTIAL: `scripts/doctor.py` is written; **[Adi]: create `.env`, run `python scripts/doctor.py` on the laptop, paste the output here.** S1.1 is PARTIAL: all code/schema/fold proven here; the laptop-venv acceptance lines (S1.1 block `Next:`) run at the next laptop session's start. S0.3 and S0.5 remain Adi's, non-blocking.
 - **Blockers:** none.
 
 ## What exists in this repo
@@ -302,4 +302,53 @@ Next:      [Adi] on the laptop: create .env per the S0.4 block (copy the
            shows ffmpeg+ffprobe resolved, Node >= 20.19, the GTX 1650, and
            .env with SENTINEL_EMAIL, SENTINEL_PASSWORD,
            SENTINEL_API_KEY_ADMIN, SENTINEL_API_KEY_VIEWER set.
+```
+
+```
+## S1.1 — PARTIAL (code, schema and contract fold done and proven here;
+##                 the laptop-venv acceptance items remain)
+When:      2026-09-22T10:00Z
+Observed:  Written and committed: requirements.txt (the F37 pins with the
+           platform markers, verbatim from the task block);
+           requirements-dev.txt pinned from this first install
+           (pytest==9.1.1, pytest-timeout==2.4.0, playwright==1.63.0);
+           backend/__init__.py, backend/core/{__init__,config,
+           logging_setup,db}.py, backend/core/timeline.py (declared stub
+           until S2.1), backend/core/migrations/0001_initial.sql
+           (schema v1 exactly as the folded contract), backend/app/
+           __init__.py (empty until S1.3a), tests/conftest.py (throw-away
+           keys + per-run DB path set BEFORE config import; never reads
+           .env), tests/test_schema.py, pytest.ini, CHECKSUMS.txt header.
+           docs/api.md: Part B folded into Part A in this commit —
+           §1 transport enum + camera_id hygiene, §2 sightings columns +
+           time base + bounded dedupe, §3 watchlist columns, §4 alerts
+           (alert_seq, kind, cooldown rule), §5 canonical zone shape +
+           events columns, §6 = B10 grammar + F21 policy, §7 full endpoint
+           table + auth transport + route response (match_distance,
+           suspect, warnings[]), §8 = F12 layout; banner on Part B.
+           Acceptance observed in this cloud container (.venv on
+           python 3.11.15; the seven pure-python pins resolved at exactly
+           the F37 versions):
+           - .venv/bin/python -m pytest tests/test_schema.py -q
+             -> "6 passed in 0.06s"
+           - .venv/bin/python -m backend.core.db init
+             -> data/sentinel.db created, "schema at version(s) [1]"
+           - masked('rtsp://user%40x.y:secret@1.2.3.4:8554/x')
+             -> rtsp://<email>:***@1.2.3.4:8554/x   (exact expected string)
+           - logging_setup.setup("test") -> data/logs/test.log written,
+             record masked (rtsp://<email>:***@h/x)
+           - git check-ignore .venv data/sentinel.db -> both printed
+Done so far: everything above, committed.
+Surprise:  pip resolved every applicable F37 pin on Linux/py3.11 without
+           conflict; the same versions exist for both platforms.
+Next:      S1.2 runs in this same cloud session (see its block). The
+           remaining S1.1 acceptance items are laptop-only and fold into
+           the next laptop session's start: create the real .venv with
+           Anaconda python per S1.1, install requirements.txt +
+           requirements-dev.txt, then run: pip check ("No broken
+           requirements found."); pip list | grep -i -E "opencv|onnxruntime"
+           prints exactly opencv-contrib-python 4.10.0.84 and
+           onnxruntime-directml 1.24.4; the cv2/onnxruntime import line
+           prints 4.10.0 1.24.4 with DmlExecutionProvider listed;
+           config.ffmpeg() returns an existing path.
 ```
