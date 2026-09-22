@@ -9,7 +9,7 @@ This repo is a **fresh, structured rebuild** started 20 September 2026. The prev
 
 ## 1. Situation
 
-- **Deadline: 28 September 2026** (per Adi, 20 Sep — the original dates were 15 Sep submission and 22–23 Sep finale; confirm on the portal exactly which milestone the 28th is). **Build window: Mon 21 – Thu 24 Sep for the application, Fri 25 for the deliverables (GATE D at 09:00), Sat 26 soak and rehearsal, Sun 27 submit; Mon 28 is buffer** (`docs/tasks.md` calendar, decision F22). Nothing built in the final 48 hours before an evaluation gets demoed.
+- **Submission deadline: 28 September 2026** — confirmed on the portal on 22 Sep: "Last Date to Apply and Upload Your Submission", with shortlisting announced the same day. It is an **upload**, not a live evaluation; the vehicle number is handed over at the on-site hackathon on **12–13 October** at i-Hub (FAQ 27), which is after this plan ends. **Build window: Mon 21 – Thu 24 Sep for the application, Fri 25 for the deliverables (GATE D at 09:00), Sat 26 soak and rehearsal, Sun 27 submit; Mon 28 is buffer** (`docs/tasks.md` calendar, decision F22). Nothing built in the final 48 hours before an evaluation gets demoed.
 - Solo developer (Adi), one machine, work done in Claude Code sessions of one task each (`docs/tasks.md`, "How a session runs"). No team to parallelise across.
 - **Hardware ceiling:** Windows 10/11 · Ryzen 5 3550H (4c/8t) · **8 GB RAM** · **GTX 1650, 4 GB VRAM** · 477 GB SSD. Python 3.13.9 (Anaconda, `D:\Anaconda\python.exe`); a portable ffmpeg already exists at `D:\projects\Sentinel_Repo\tools\ffmpeg\`.
 - The organisers grade a **working system**, not a prototype. Their words: *"Mock-ups, animations, simulated interfaces, or concept videos without an operational backend will not be considered."*
@@ -46,6 +46,11 @@ Two rules added for the fresh build, from the previous build's post-mortem (`doc
 9. **One time base.** Every stored timestamp carries which clock produced it and every row carries its provenance (`live | harvest | demo | test`). Never mix clocks in one route, never let a demo or test row pass as a live read.
 10. **Everything runs under version control with a test for every bug fixed.** Commit after every completed task; a working commit is a fallback demo.
 
+Added 22 Sep, because the platform is now published to the internet for the judges (decisions F41, F42):
+
+11. **Nothing is reachable without signing in** except the login page, `/api/health` and the static assets. Platform passwords exist only as scrypt hashes in the `users` table — never in `.env`, never in the repo, never in a log, never in a screenshot or a video frame. Only the API port is published; mediamtx and Vite stay on `127.0.0.1`.
+12. **A demo row never passes as a live one.** Provenance is stored, displayed and exported, and the evaluator's first screen says which data is demonstration data.
+
 ---
 
 ## 4. Architecture invariants
@@ -74,6 +79,7 @@ The architecture is **locked**: Model 1 (mandatory registry + GIS) + Model 2 (un
 | `docs/decisions.md` | Every choice carried over or still open, and why |
 | `docs/tasks.md` | **The plan and the checklist**: one session per task, with the protocol every session follows (start → work → finish + write-off). Execute in order |
 | `docs/progress.md` | Session handoff: current state, measurements, log |
+| `docs/runbook-hosting.md`, `docs/runbook-new-feeds.md` | Written in S3.5 and S3.7: how the public URL is kept up, and how a fresh camera grid is onboarded |
 | `docs/demo-script.md`, `docs/submission-checklist.md` | Run sheets for the videos and the submission (verbatim) |
 | `docs/reference/` | The design record: hackathon scrape, sandbox spec, 80k review, Model 2/2.1 specs, glossary |
 | `docs/reference/old-build/` | The previous build's own docs, verbatim — its `STATUS.md` is the findings log, its `P7-enhancements.md` the defect register, its `CONSTITUTION.md` the old `CLAUDE.md` (renamed so Claude Code never loads it as instructions: it says "today is 13 September" and forbids real authentication — **this file outranks it everywhere**) |

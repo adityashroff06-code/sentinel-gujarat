@@ -219,7 +219,11 @@ The ambiguity map is applied only during canonicalisation and matching, never du
 | Method | Path | Returns |
 |---|---|---|
 | GET | `/health` | service status, DB status, active worker count — **open** |
-| POST | `/session` | validates an API key, sets the `sentinel_key` cookie (F23) |
+| POST | `/auth/login` | **(schema v2, decision F41)** username + password → sets the `sentinel_session` cookie; rate-limited, audited on success and failure — **open** |
+| POST | `/auth/logout` | clears the session and revokes it server-side; audited |
+| GET | `/auth/me` | the signed-in username, role and session expiry (what the UI renders its menu from) |
+| GET | `/users` · POST · PATCH `/{id}` · DELETE `/{id}` | account administration, **admin only**; passwords are never returned and never logged |
+| POST | `/session` | validates an API key, sets the `sentinel_key` cookie (F23) — kept for scripts |
 | DELETE | `/session` | clears the cookie |
 | GET | `/cameras` | list; filters `department`, `health`, `tier`, `q` |
 | GET | `/cameras/gap-analysis` | uncovered areas + ageing/offline cameras (Model 1 deliverable) — registered **before** `/{camera_id}` |
@@ -243,7 +247,13 @@ The ambiguity map is applied only during canonicalisation and matching, never du
 | GET | `/reports/route/{plate}` | route report export |
 | GET | `/hls/{camera_id}/live.m3u8` · `/key` · `/seg/{name}` · `/local/{name}` | the Pipeline 1 relay: rewritten playlist, proxied AES key, proxied segment (only names present in the upstream playlist, only inside the configured CDN origin), worker's local tee |
 
-**Auth transport (B12, F23):** every `/api/*` and `/crops/*` path requires the `X-API-Key` header (roles `viewer`/`admin` from the two configured keys); additionally the `sentinel_key` cookie (`SameSite=Strict`, `HttpOnly`) is accepted for **GET** on `/crops/*`, `/api/hls/*` and `/api/alerts/stream` only — `<img>`, hls.js and `EventSource` cannot send custom headers. Mutations always require the header **and** admin; a cookie alone never authorises a change. Open paths: `/`, `/assets/*`, `/docs`, `/openapi.json`, `/api/health`. The API refuses to start if either key is unset. `TrustedHostMiddleware` on. Every mutation and every plate/route query writes an `audit` row (`audit(audit_id, at, actor, role, action, entity, entity_id, before_json, after_json)` — `before/after` supplied by handlers). Every endpoint declares a `response_model`, so the exported OpenAPI (`deliverables/registry-api.json`) is the real contract; no `snapshot.jpg` endpoint exists. Every timestamp is canonicalised at the API boundary to the stored `+00:00` form; HTML reports escape their inputs; CSV cells beginning `= + - @` are prefixed (B11).
+**Auth transport (B12, F23, and decision F41 from schema v2 onward):** two credentials reach the same authorisation check.
+
+- **People sign in** (F41): `POST /api/auth/login` with a username and password sets `sentinel_session` — `HttpOnly`, `Secure`, `SameSite=Strict`, 8 hours, revocable server-side. Because the UI and the API share one origin, that cookie carries `<img>` crops, hls.js segments and the alert `EventSource` as well as ordinary calls, and it authorises **whatever the role allows, mutations included** (the `SameSite=Strict` cookie plus an `Origin` check on every mutation is what closes CSRF; a cross-site form cannot send either).
+- **Scripts use a key**: the `X-API-Key` header keeps working exactly as F23 describes, as does `POST /api/session` for the `sentinel_key` cookie on GET media. The API refuses to start if either key is unset.
+- **Roles** are `viewer` (read), `evaluator` (read, acknowledge, watchlist add and remove, reports, the onboarding form) and `admin` (everything, including `/api/users`, zones and tier changes).
+- **Open paths** are `/`, `/assets/*`, `/api/health` and `/api/auth/login` **only**. `/docs` and `/openapi.json` move behind the login once the platform is public (the committed `deliverables/registry-api.json` remains the API-documentation deliverable).
+- `TrustedHostMiddleware` allows `localhost`, `127.0.0.1` **and the published tunnel hostname** from `SENTINEL_PUBLIC_HOST` (decision F42). Every mutation and every plate/route query writes an `audit` row (`audit(audit_id, at, actor, role, action, entity, entity_id, before_json, after_json)` — `before/after` supplied by handlers). Every endpoint declares a `response_model`, so the exported OpenAPI (`deliverables/registry-api.json`) is the real contract; no `snapshot.jpg` endpoint exists. Every timestamp is canonicalised at the API boundary to the stored `+00:00` form; HTML reports escape their inputs; CSV cells beginning `= + - @` are prefixed (B11).
 
 ### `GET /api/plates/{plate}/route` — the response the whole submission turns on
 
@@ -317,6 +327,42 @@ scripts/               one-off helpers (doctor.py, replay_publish.py)
 data/                  sentinel.db, crops/, logs/ (runtime, gitignored) +
                        the three committed evidence files (catalogue, probe, seed)
 ```
+
+---
+
+## 9. Auth tables and public-exposure rules (schema v2 — decisions F41, F42)
+
+Added by migration `0002_auth.sql`. Everything in §1–§8 is unchanged by it.
+
+```sql
+CREATE TABLE users (
+    user_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    username      TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,          -- hashlib.scrypt(n=2**14, r=8, p=1), per-user salt, stored as
+                                          -- scrypt$<n>$<r>$<p>$<salt_b64>$<hash_b64> — never a plain hash
+    role          TEXT NOT NULL,          -- viewer | evaluator | admin
+    active        INTEGER NOT NULL DEFAULT 1,
+    created_at    TEXT NOT NULL,
+    last_login    TEXT
+);
+CREATE TABLE sessions (
+    session_id    TEXT PRIMARY KEY,       -- secrets.token_urlsafe(32); the cookie value, never a JWT
+    user_id       INTEGER NOT NULL REFERENCES users(user_id),
+    issued_at     TEXT NOT NULL,
+    expires_at    TEXT NOT NULL,          -- issued_at + 8 h
+    revoked_at    TEXT,
+    user_agent    TEXT                    -- truncated, for the audit trail only
+);
+CREATE INDEX idx_sessions_user ON sessions(user_id, expires_at);
+```
+
+- **Passwords** are never stored, logged, returned or placed in `.env`. Accounts come from `python -m backend.tools.users add <username> --role <role>`, which prompts for the password. The same tool has `passwd`, `disable` and `list` (names and roles only).
+- **`audit.actor` is the username** once a session exists (the role alone is kept for key-authenticated calls). Login success, login failure and logout each write an audit row; a failure row never contains the password or the attempted value.
+- **Login throttle:** 5 failures for one username, or from one address, lock further attempts for 15 minutes; the lock is in the database, so a restart does not clear it.
+- **Rate limits** on the expensive reads — the route query, the report exports and the HLS relay — per session, returning `429` rather than queueing.
+- **Response headers** on every response: `Content-Security-Policy` (self, plus the OSM tile host and `data:` images), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, and HSTS when `SENTINEL_PUBLIC_HOST` is set.
+- **Body limits:** the CSV import accepts at most 2 MB and 5,000 rows, and rejects anything else with a reason, not a stack trace.
+- **Only the API port is published** (decision F42). mediamtx (8554) and the Vite dev server bind to `127.0.0.1` and are never tunnelled.
 
 ---
 

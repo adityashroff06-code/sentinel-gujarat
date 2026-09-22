@@ -9,7 +9,9 @@
 | | |
 |---|---|
 | Previous submission | 15 September 2026 — documents plus demo material, from `D:\projects\Sentinel_Repo` |
-| **Current deadline** | **28 September 2026** (per Adi, 20 Sep). The portal originally listed 15 Sep for submission and 22–23 Sep for the Grand Finale at i-Hub Gandhinagar; **confirm on the portal which milestone the 28th is** and whether Phase-1 shortlisting was announced |
+| **Submission deadline** | **28 September 2026** — confirmed on the portal 22 Sep (date-extension announcement and Schedule page): "Last Date to Apply and Upload Your Submission", shortlisting announced the same day. An upload, not a live evaluation |
+| On-site hackathon | **12–13 October 2026** at i-Hub Gujarat, results 13 Oct. "A designated vehicle number is provided to participants on the hackathon day" (FAQ 27) — the scored plate test happens there, two weeks after this plan ends |
+| Hosted demo | Required by us, not by the portal (Step 5 lists it as optional): a URL with **test login credentials for the screening committee**, live from Thu 24 (tasks S3.0, S3.5; decisions F41, F42). Evaluation area 07 counts "documents, videos, reports, links, credentials" for completeness |
 | Build window | Mon 21 – Thu 24 Sep: the application · Fri 25: every deliverable in §7 (GATE D 09:00, code freeze at end of day) · Sat 26: soak and rehearsal · Sun 27: submit · Mon 28: buffer · nothing built in the last 48 h is demoed (`docs/tasks.md` calendar) |
 | Entry category | Category 1 (student / small startup) unless registered otherwise — check the registration |
 | Sandbox | `https://cctv.corp8.cloud` — 30 cameras in the catalogue, 5 departments (see `docs/sandbox-findings.md`) |

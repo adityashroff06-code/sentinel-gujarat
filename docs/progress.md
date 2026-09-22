@@ -4,16 +4,17 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 
 ---
 
-## Current state (22 Sep 2026, ~09:30 UTC)
+## Current state (22 Sep 2026, 18:00 UTC / 23:30 IST — plan v2.3)
 
 - **Decision:** fresh, structured rebuild (`docs/decisions.md` F1). This repo holds the documentation, the plan and the carried-over deliverables. The previous build at `D:\projects\Sentinel_Repo` still runs as a demo and is the read-only reference.
-- **Plan:** `docs/tasks.md` v2.2 — 30 one-session tasks S0.2 → S6.3 with the protocol every Claude Code session follows, a calendar re-based to Mon 21 with gates A′/B/C/D, and a cut order. Two independent cold-start reviews (43 + 26 findings, R2) and a third review (7 findings, R3) have been applied. Open decisions O1–O7, O9, O11 are settled (F11–F38); O8 and O10 remain (Adi, in S0.3 and S3.4).
-- **Deadline:** 28 Sep 2026 (per Adi; S0.3 confirms the milestone on the portal). Build window Mon 21 – Thu 24 for code, Fri 25 for deliverables (GATE D 09:00, code freeze at end of day), Sat 26 soak + rehearsal, Sun 27 submit, Mon 28 buffer. The Mon 21 column started a day late; this session (Tue 22) is catching it up.
+- **Plan:** `docs/tasks.md` **v2.3 (22 Sep, 23:30 IST)** — v2.2 plus five new tasks ahead of the current position (**S3.0** login + hardening, **S3.7** catalogue adapter, **S3.5** hosting go-live, **S3.6** own-footage ground truth, **S6.1b** overnight hosted soak + backups) and amendments inside S2.2, S2.5, S3.2, S3.3, S3.4, S5.1, S5.4 and S5.5. Nothing already done was re-opened. Previously: v2.2 — 30 one-session tasks S0.2 → S6.3 with the protocol every Claude Code session follows, a calendar re-based to Mon 21 with gates A′/B/C/D, and a cut order. Two independent cold-start reviews (43 + 26 findings, R2) and a third review (7 findings, R3) have been applied. Open decisions O1–O7, O9, O11 are settled (F11–F38); O8 and O10 remain (Adi, in S0.3 and S3.4).
+- **Deadline:** **28 Sep 2026 — confirmed on the portal 22 Sep**: "Last Date to Apply and Upload Your Submission", shortlisting the same day; it is an upload, not a live evaluation. The plate is handed over at the on-site hackathon on **12–13 Oct** (FAQ 27), after this plan ends. S0.3 now only has to confirm the entry category. Build window Mon 21 – Thu 24 for code, Fri 25 for deliverables (GATE D 09:00, code freeze at end of day), Sat 26 soak + rehearsal, Sun 27 submit, Mon 28 buffer. The Mon 21 column started a day late; this session (Tue 22) is catching it up.
 - **Session environment (new):** this session runs in a Claude Code **cloud container** (Linux, Python 3.11.15, Node 22, no GPU, no ffmpeg preinstalled, no `.env`, no sandbox network access), with the repo cloned at `/home/user/sentinel-gujarat` and push access to `origin`. Code, schema, docs and every test that does not need the laptop's venv pins, GPU, ffmpeg default path or the live sandbox can be built and proven here; laptop-only acceptance items are written off explicitly (`Next:` lines name them) and stay with Adi / a laptop session.
 - **Git:** `main` == `origin/main`, baseline commit `577587b` ("S0.2: documentation baseline, plan v2.2") with annotated tag `docs-v0` — Adi had already committed, tagged and pushed before this session; S0.2's checks were then run and passed here (block below).
 - **Session result (Tue 22, cloud):** the whole Monday column is caught up except the laptop-only items — **S0.2 [x], S0.4 [~], S1.1 [~], S1.2 [x], S1.3a [x], S1.3b [~], S2.1 [x]**; test suite **68 passed**; every task committed and pushed to `main` with its block in the Log.
+- **New scope since v2.2 (does not change what comes next):** the demo is **hosted for the judges with a login** — decisions F41 (users, sessions, roles `viewer`/`evaluator`/`admin`), F42 (tunnel; Tailscale Funnel by default), F43 (a real hit and a real route from our own footage), F44 (`-timeout`, not `-rw_timeout`), F45 (the `/api/ingest` catalogue shape), F46 (an evaluator's first screen and a feed-status strip). Source: `claude/submission-verification-2026-09-22.md` and `claude/demo-gap-review-2026-09-22.md`.
 - **Next task:** **S2.2** (RTSP frame source) — a **laptop** session: it needs the live sandbox, the mediamtx local publisher, the laptop's ffmpeg and Adi's 20 s network pull; a cloud session cannot run its acceptance. The S2.1 harness is ready to parametrise with the RTSP source.
-- **[Adi] queue before/alongside S2.2** (items don't block each other): ① create `.env` per S0.4 and run `python scripts/doctor.py`, paste the output here; ② at the next laptop session's start, create the real `.venv` from requirements.txt + requirements-dev.txt and run the S1.1 laptop acceptance lines (pip check; the two-line opencv/onnxruntime assertion; the DmlExecutionProvider import line; `config.ffmpeg()`); ③ `python -m backend.tools.probe` (S1.3b) and record the RTSP-live count; ④ S0.3 portal confirmation; ⑤ S0.5 insurance recording.
+- **[Adi] queue before/alongside S2.2** (items don't block each other): ⑥ *(new, v2.3)* a 15-minute Tailscale Funnel trial on the laptop (install, MagicDNS + HTTPS certs, `tailscale funnel --bg 8000`, open the URL from mobile data, reboot and check it comes back) — it gates S3.5, so failing early is worth knowing; ⑦ *(new, v2.3)* film the S3.6 clips: one vehicle with a legible plate at two or three real locations, noting the coordinates; ① create `.env` per S0.4 and run `python scripts/doctor.py`, paste the output here; ② at the next laptop session's start, create the real `.venv` from requirements.txt + requirements-dev.txt and run the S1.1 laptop acceptance lines (pip check; the two-line opencv/onnxruntime assertion; the DmlExecutionProvider import line; `config.ffmpeg()`); ③ `python -m backend.tools.probe` (S1.3b) and record the RTSP-live count; ④ S0.3 portal confirmation; ⑤ S0.5 insurance recording.
 - **Blockers:** none.
 
 ## What exists in this repo
@@ -491,4 +492,47 @@ Next:      S2.2 (RTSP source) — needs the laptop: the live sandbox pull,
            the local mediamtx publisher, and Adi's 20 s network pull.
            Before it, the accumulated [Adi]/laptop items: .env, doctor
            run, S1.1 venv acceptance lines, the live probe (S1.3b).
+```
+
+```
+## R4 — DONE (plan v2.3: the hosted demo, the login and ground truth folded in)
+When:      2026-09-22T18:00Z (22 Sep 23:30 IST)
+Observed:  Documentation-only revision, made from two reviews written the
+           same day: claude/submission-verification-2026-09-22.md (the
+           portal re-read against both repos) and
+           claude/demo-gap-review-2026-09-22.md (15 gaps; point 5, the
+           Model 1 metadata fields, was deliberately excluded by Adi).
+           Portal facts now recorded in the docs: submission closes
+           28 Sep (upload, shortlisting the same day); the on-site
+           hackathon where the plate is handed over is 12-13 Oct.
+           Added: decisions F41 (login, roles, sessions - supersedes F4's
+           transport, extends F23), F42 (hosted over a tunnel - reverses
+           F17), F43 (own-footage ground truth), F44 (-timeout not
+           -rw_timeout), F45 (catalogue accepts /api/ingest and
+           cameras.json), F46 (evaluator landing + feed-status strip).
+           New tasks, all ahead of the current position: S3.0 (login,
+           roles, sessions, public-exposure hardening; schema v2 via
+           0002_auth.sql), S3.7 (catalogue adapter + new-feed runbook),
+           S3.5 (hosting go-live: tunnel, evaluator accounts, 24/7
+           runbook), S3.6 (own-footage real hit + real route), S6.1b
+           (overnight hosted soak, backups, restart watchdog).
+           Amended in place: S2.2 (-timeout, watchdog armed at spawn),
+           S2.5 (2-frame zone confirmation), S3.2 (login page replaces
+           the key dialog), S3.3 (Start here panel, feed-status strip,
+           vehicle-class filter, person count), S3.4 (--many publishes
+           local01-local03), S5.1 (HLD: demo deployment, login, costs,
+           [model] labels, ffmpeg GPL), S5.4 (both run sheets rewritten),
+           S5.5 (judge-facing README, hosted URL + credential check).
+           Also updated: CLAUDE.md (dates, rules 11 and 12, doc map),
+           docs/api.md (auth transport rewritten, new section 9 with the
+           users/sessions schema and the exposure rules, /api/auth/* and
+           /api/users in the endpoint table), brief.md section 0,
+           architecture.md Part C (five new claim rows), demo-script.md
+           (v2.3 run sheets, the old one kept as history),
+           submission-checklist.md (hosted demo + demonstration content),
+           feed-rules.md (editor's note on /api/ingest), backend/,
+           frontend/ and ml/ CLAUDE.md, CODEX.md, .env.example
+           (SENTINEL_SESSION_TTL_H, SENTINEL_PUBLIC_HOST), README status.
+Surprise:  none - no code was touched and no completed task re-opened.
+Next:      S2.2, unchanged. The v2.3 additions start at S3.0 on Wed 23.
 ```

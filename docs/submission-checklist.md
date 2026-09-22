@@ -69,4 +69,20 @@ Tick against an observation, never an intention.
 - [ ] Every document exported to PDF and opening cleanly
 - [ ] Numbers labelled: measured vs modelled
 - [ ] The 30-vs-50 camera discrepancy noted rather than quietly assumed
-- [ ] Submitted **before** 15 September, not on it
+- [ ] Submitted **before** 28 September, not on it
+
+## Hosted demo and credentials (added 22 Sep — decisions F41, F42)
+
+- [ ] The hosted URL opens over HTTPS from **another network** (mobile data) in a private window
+- [ ] The evaluator credentials sign in, and the account can do what it is meant to and nothing more
+- [ ] The alert stream, a crop image and a live tile all work through the tunnel
+- [ ] The URL survives a laptop reboot with no manual step
+- [ ] The credentials are in the submission form only — never in the repo, a screenshot or a video frame
+- [ ] `/docs` and every `/api/*` path refuse an unauthenticated request; the five security headers are present
+- [ ] The evaluator's first screen says what to click, which plates to try, and which rows are demonstration data
+
+## Demonstration content (added 22 Sep)
+
+- [ ] Video 1 shows **onboarding our own camera**, then a **real** watchlist hit and a **real** multi-camera route from our own footage (S3.6); anything injected is visibly labelled
+- [ ] Video 2 shows ANPR **plus** vehicle, person and intrusion or line-crossing output on the government feed (FAQ 31), then the exported report
+- [ ] The detection report carries timestamps and a provenance column

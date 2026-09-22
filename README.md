@@ -2,7 +2,7 @@
 
 Entry to the [Gujarat Police Innovation Challenge 2026](https://sentinel.gujarat.gov.in/) (Home Department / SCRB). One platform over the departments' CCTV systems: a camera registry with a GIS view, continuous ANPR and analytics on live feeds, a watchlist with real-time alerts, and — the scored test — a vehicle's complete, timestamped, location-wise route from a single registration number.
 
-**Status (21 Sep 2026): fresh, structured rebuild — documentation and the session plan complete, code not yet started.** The previous build (`D:\projects\Sentinel_Repo`, submitted 15 Sep) works as a demo and is kept as read-only reference; everything it learned is carried over in `docs/`. Deadline: 28 Sep 2026.
+**Status (22 Sep 2026): fresh, structured rebuild in progress — backend core, plate grammar, registry API with auth and audit, seed tools and the replay frame source are in and under test (S0.2–S2.1); the next task is S2.2.** The plan is v2.3, which adds a login with roles, a hosted URL for the judges, and ground truth from our own footage. The previous build (`D:\projects\Sentinel_Repo`, submitted 15 Sep) works as a demo and is kept as read-only reference; everything it learned is carried over in `docs/`. Deadline: 28 Sep 2026.
 
 ## Start here
 

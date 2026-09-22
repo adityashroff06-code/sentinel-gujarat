@@ -1,3 +1,5 @@
+> **Editor's note 2 (22 Sep 2026, decision F45):** the body below records the sandbox as it was found — catalogue at `cameras.json`, HLS on the CDN. The organisers' Integrator's Guide (portal → Resources) states the catalogue is **`GET <host>/api/ingest`**, returning each camera's id, location, codec, live status, stream properties and all three URLs, and adds: *"Camera ids and the set of available cameras can change; the catalogue is the contract, the URL pattern is not."* The reader therefore accepts **both** shapes and uses whatever the catalogue supplies verbatim (task S3.7). Everything else below is unchanged.
+>
 > **Editor's note (fresh build):** copied verbatim from the previous build's `04-feed-rules.md`. `frame_source.py` below is the fresh build's `ml/ingest/` package (`base.py`, `rtsp.py`, `replay.py`, `hls_vod.py`); the nine required behaviours are its acceptance test (`docs/tasks.md` S2.1–S2.2).
 
 # 04 — Feed rules: the sandbox's contract, in executable form

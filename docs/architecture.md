@@ -155,3 +155,13 @@ The fresh build keeps this shape and fixes what the review found (`docs/decision
 | README's architecture image `deliverables/Sentinel-Workflow-Integration-Diagram.png` | Only `.svg` and `.pdf` exist | Export the PNG or link the SVG |
 | Deck slides 4, 6, 9, 10, 11 show "dev UI captures on the synthetic test scenario" | Never replaced with live screenshots | Replace before submission (`deliverables/deck/img/`, rebuild with `build_deck.js`) |
 | Demo videos 1 and 2 | Never recorded | Record per `docs/demo-script.md` |
+
+Added 22 Sep, from the portal re-read and the demo review (`claude/demo-gap-review-2026-09-22.md`):
+
+| Claim in `deliverables/HLD.md`, README or deck | What is actually true | Fresh build / HLD correction |
+|---|---|---|
+| Authentication is an API key with two roles | The platform now has a **login** with `viewer`/`evaluator`/`admin`, server-side sessions and an audit trail naming the user (decision F41) | Describe the login, the roles and the audit; keys remain for scripts |
+| The demo runs on `localhost` only | It is **published over an outbound-only tunnel** with TLS terminated on the laptop (decision F42) | Add the demo's deployment section — it is the same shape as the department-side collector in §2.2 |
+| §8 "Cost and benefit analysis" | Argues savings (bandwidth, GPUs, storage, licensing, egress) but gives **no estimated implementation or operating cost**, which the portal's Step 6 and FAQ 35 ask for | Add a costed bill of materials for a node, a pilot and the statewide figure, labelled `[model]` |
+| "Every capacity figure is labelled" (HLD line 350) | §8's figures — ₹4 crore, 0.69 TB/day, the 1,600-GPU fleet — carry no label | Label them `[model]` |
+| "Apache, MIT and BSD throughout" | The laptop runs BtbN's **`win64-gpl`** ffmpeg build | Disclose ffmpeg as a GPL binary invoked as a separate process — the same distinction the HLD already draws for AGPL services |
