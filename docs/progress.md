@@ -445,3 +445,48 @@ Next:      Laptop-only remainder, at the next laptop session (needs .env
            data/probe_results_<date>.json and never touches the 14 Sep
            evidence file. Then S2.1 (started in this cloud session).
 ```
+
+```
+## S2.1 — DONE (timeline + replay source + harness; all acceptance ran here)
+When:      2026-09-22T12:20Z
+Observed:  backend/core/timeline.py (real implementation replacing the
+           stub: epoch/loop accessors, position<->stream-time, live
+           position honouring the playback offset — 4 tests);
+           ml/ingest/base.py (FrameTick, FrameSource, PtsSampler that
+           drops on PTS, shared backoff_params logging attempt/base/delay,
+           SceneCutDetector on downscaled grey mean-abs-diff);
+           ml/ingest/replay.py (ffmpeg -re -stream_loop -1 pipe,
+           stream_time = wall_time = pull_start + index/fps continuous
+           across loops, wrap ticks from ffprobe duration, respawn with
+           jittered backoff, stderr drained at DEBUG, try/finally kill);
+           tests/fixtures/make_synthetic.py (60 s 640x360 25 fps testsrc2
+           + moving drawbox; generated on this box via apt-installed
+           ffmpeg 6.1.1).
+           Acceptance observed (pytest, real-time paced by -re):
+           - 100 consecutive frames at 3 fps with strictly increasing
+             stream_time (and the 640x360 BGR shape)
+           - 3 fps sampling over a 20 s window: frame count within
+             60 ± 15 % and PTS span within 18-21 s (asserted bounds)
+           - looping the 60 s clip to pts 130 s: >= 2 restart ticks,
+             stream_time monotonic across the whole run
+           - missing file, 3 attempts: logged base = 2, 4, 8 s, each
+             delay within [0.5x, 1.5x] of its base, exactly 2 sleeps
+             (patched), then ReplaySourceError
+           - killing the ffmpeg child mid-read: frames resume after
+             respawn, first resumed tick carries restart=True
+           - scene-cut detector fires on black->white, silent on
+             identical frames; PtsSampler drops on PTS incl. gap catch-up
+           Whole suite: 68 passed in 188.72s.
+Surprise:  (1) Patching global time.sleep in the backoff test turned
+           subprocess's wait-poll into a spin (2,855 no-op sleeps); the
+           source now waits through a module-level _sleep indirection and
+           the test stubs only that. (2) Replay reads the pipe directly
+           instead of the task's "reader thread": a keep-latest thread
+           drops frames, which RTSP wants (S2.2) but the counting
+           harness and the soak must not — reason recorded in the module
+           docstring.
+Next:      S2.2 (RTSP source) — needs the laptop: the live sandbox pull,
+           the local mediamtx publisher, and Adi's 20 s network pull.
+           Before it, the accumulated [Adi]/laptop items: .env, doctor
+           run, S1.1 venv acceptance lines, the live probe (S1.3b).
+```

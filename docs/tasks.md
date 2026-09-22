@@ -63,7 +63,7 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S1.2 | Plates + matcher core (shared), table-driven tests | Mon 21 | 1 h | [x] done Tue 22 (cloud); 35 tests pass; decisions F39, F40 |
 | S1.3a | Registry API: app, auth + audit, schemas, cameras, health, stats, gap analysis | Mon 21 | 1.5 h | [x] done Tue 22 (cloud); 11 TestClient tests pass |
 | S1.3b | CDN session, probe, seed tools, OpenAPI export — first live contact | Mon 21 | 1.5 h | [~] code + seeders + export proven (cloud, Tue 22); live probe run is laptop's |
-| S2.1 | Timeline + replay frame source + frame-source test harness | Mon 21 | 1.5 h | |
+| S2.1 | Timeline + replay frame source + frame-source test harness | Mon 21 | 1.5 h | [x] done Tue 22 (cloud); all acceptance ran; suite 68 green |
 | S2.2 | RTSP frame source: ffmpeg pipe + HLS tee + watchdog + backoff (the 20 s network pull in its acceptance is Adi's step) | Tue 22 | 2 h | |
 | S2.3 | Motion gate, detector, tracker, model fetch with checksum | Tue 22 | 2 h | |
 | S2.4 | OCR cascade, consensus voting, sightings with dedupe + provenance | Tue 22 | 2 h | |
@@ -240,7 +240,7 @@ git rev-parse --short main origin/main
 
 ## Phase 2 — Ingestion and ANPR (Mon 21 – Tue 22 Sep)
 
-### S2.1 — Timeline + replay frame source + frame-source test harness `[ ]`
+### S2.1 — Timeline + replay frame source + frame-source test harness `[x]`
 *Read first:* `docs/feed-rules.md` (all, especially "Required behaviour of frame_source.py" — the fresh build's name for that module is `ml/ingest/`); `docs/sandbox-findings.md` §2, §4; `docs/decisions.md` F13, F20, F29; `ml/CLAUDE.md`.
 *Build:*
 - `backend/core/timeline.py` (decision F13): `RECORDING_EPOCH` from `SENTINEL_RECORDING_EPOCH` (default `2026-06-13T21:00:00+05:30` — a demo constant anchoring the recordings' burned-in clock, not a claim about the footage), `LOOP_SECONDS` (default 43200), `position_to_stream_time(offset_s)`, `stream_time_to_position(ts)`, `live_position(now)` honouring `SENTINEL_PLAYBACK_OFFSET_S` and the loop length; pure functions, unit-tested.
