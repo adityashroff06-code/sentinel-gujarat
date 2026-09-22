@@ -11,7 +11,7 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 - **Deadline:** 28 Sep 2026 (per Adi; S0.3 confirms the milestone on the portal). Build window Mon 21 – Thu 24 for code, Fri 25 for deliverables (GATE D 09:00, code freeze at end of day), Sat 26 soak + rehearsal, Sun 27 submit, Mon 28 buffer. The Mon 21 column started a day late; this session (Tue 22) is catching it up.
 - **Session environment (new):** this session runs in a Claude Code **cloud container** (Linux, Python 3.11.15, Node 22, no GPU, no ffmpeg preinstalled, no `.env`, no sandbox network access), with the repo cloned at `/home/user/sentinel-gujarat` and push access to `origin`. Code, schema, docs and every test that does not need the laptop's venv pins, GPU, ffmpeg default path or the live sandbox can be built and proven here; laptop-only acceptance items are written off explicitly (`Next:` lines name them) and stay with Adi / a laptop session.
 - **Git:** `main` == `origin/main`, baseline commit `577587b` ("S0.2: documentation baseline, plan v2.2") with annotated tag `docs-v0` — Adi had already committed, tagged and pushed before this session; S0.2's checks were then run and passed here (block below).
-- **Next task:** **S1.3a** (this cloud session continues into it; S1.2 is done — 35 tests). S0.4 is PARTIAL: `scripts/doctor.py` is written; **[Adi]: create `.env`, run `python scripts/doctor.py` on the laptop, paste the output here.** S1.1 is PARTIAL: all code/schema/fold proven here; the laptop-venv acceptance lines (S1.1 block `Next:`) run at the next laptop session's start. S0.3 and S0.5 remain Adi's, non-blocking.
+- **Next task:** **S1.3b** (this cloud session continues into it; S1.2 and S1.3a are done). S0.4 is PARTIAL: `scripts/doctor.py` is written; **[Adi]: create `.env`, run `python scripts/doctor.py` on the laptop, paste the output here.** S1.1 is PARTIAL: all code/schema/fold proven here; the laptop-venv acceptance lines (S1.1 block `Next:`) run at the next laptop session's start. S0.3 and S0.5 remain Adi's, non-blocking.
 - **Blockers:** none.
 
 ## What exists in this repo
@@ -382,4 +382,35 @@ Surprise:  §6's coercion clause and the partial clause CONFLICT on
            carries the column; the task never said who enforces it).
 Next:      S1.3a (same session): registry API, auth + audit, schemas,
            cameras/health/stats/gap-analysis, TestClient suite.
+```
+
+```
+## S1.3a — DONE (registry API; 11 TestClient tests pass)
+When:      2026-09-22T10:55Z
+Observed:  backend/app/{main,__main__,auth,audit,schemas,routes_cameras,
+           routes_meta}.py + backend/services/gap_analysis.py.
+           .venv/bin/python -m pytest tests/test_registry_api.py -q ->
+           "11 passed" (whole suite 52 passed). Observed per acceptance:
+           /api/health open (db ok + counts); 401 without key on GET and
+           POST; 403 for the viewer key on POST; POST /api/session sets
+           the sentinel_key cookie, cookie authorises GET /crops/x.jpg
+           (404 for the missing file, not 401), refuses mutations (405 —
+           /crops has no POST route) and ordinary API GETs (401); 201
+           manual create; 409 duplicate; 422 for department 'Navy',
+           lat 123, and a credential-bearing rtsp URL; PATCH updates
+           health/tier; /stream returns only the relayed HLS path;
+           CSV import of tests/fixtures/import_3rows.csv -> accepted
+           [imp01, imp02], rejected [{row: 3, reason lat}], imp03 absent;
+           gap-analysis returns the exact 7-key shape with both isolated
+           cameras at radius_km 5.0; stats returns the exact 8 keys; the
+           POST wrote an audit row (role admin, action "POST /api/cameras
+           -> 201", after_json carrying the row).
+           Route-order trap respected: /gap-analysis and /import are
+           registered before /{camera_id}.
+Surprise:  none. The old build's reference modules on D:\ are unreachable
+           from this cloud box; the folded contract in docs/api.md was
+           sufficient on its own.
+Next:      S1.3b (same session): cdn_session, probe, seed tools, OpenAPI
+           export. The probe's live acceptance is laptop-only; the seeders
+           and the OpenAPI export are provable here.
 ```

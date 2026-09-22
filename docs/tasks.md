@@ -61,7 +61,7 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S0.5 | [Adi] Insurance recording of the old build running | Mon 21 | 30 min | |
 | S1.1 | Backend skeleton: venv, config, logging, schema v1 + migrations, contract folded, tests | Mon 21 | 1.5 h | [~] code+schema+fold proven (cloud, Tue 22); laptop venv acceptance remains |
 | S1.2 | Plates + matcher core (shared), table-driven tests | Mon 21 | 1 h | [x] done Tue 22 (cloud); 35 tests pass; decisions F39, F40 |
-| S1.3a | Registry API: app, auth + audit, schemas, cameras, health, stats, gap analysis | Mon 21 | 1.5 h | |
+| S1.3a | Registry API: app, auth + audit, schemas, cameras, health, stats, gap analysis | Mon 21 | 1.5 h | [x] done Tue 22 (cloud); 11 TestClient tests pass |
 | S1.3b | CDN session, probe, seed tools, OpenAPI export — first live contact | Mon 21 | 1.5 h | |
 | S2.1 | Timeline + replay frame source + frame-source test harness | Mon 21 | 1.5 h | |
 | S2.2 | RTSP frame source: ffmpeg pipe + HLS tee + watchdog + backoff (the 20 s network pull in its acceptance is Adi's step) | Tue 22 | 2 h | |
@@ -212,7 +212,7 @@ git rev-parse --short main origin/main
 *Acceptance:* `.venv/Scripts/python -m pytest tests/test_plates.py -q` passes a **table-driven** test covering: normalise; each ambiguity pair; `GJ01AB1234` vs `GJ01A81234` → `ambiguity`, distance 0; `GJ01AB1234` vs `GJ01AB1235` → `fuzzy`, distance 1.0, not alertable by default; `GJ05JB432` → `partial`, and `plate_match("GJ05JB432", "GJ05JB4321")` → `none`; `22BH1234AA` → `full`; `OADFIX2FR` and `DFIX2F` → None; `GJ32 K 9819` normalises to `GJ32K9819` → `full`; matcher index probe finds an exact canonical hit among 1,000 synthetic rows in < 5 ms.
 *Write-off:* progress block with the test count.
 
-### S1.3a — Registry API: app, auth + audit, schemas, cameras, health, stats, gap analysis `[ ]`
+### S1.3a — Registry API: app, auth + audit, schemas, cameras, health, stats, gap analysis `[x]`
 *Read first:* `docs/api.md` §1, §7 (cameras, health, stats, gap-analysis, stream, import; the auth transport rule); `backend/CLAUDE.md`; old code for reference only: `D:\projects\Sentinel_Repo\src\api\routes_cameras.py`, `src\api\schemas.py`.
 *Build:*
 - `backend/app/main.py` (FastAPI app; CORS to `http://localhost:5173`; `TrustedHostMiddleware` for `localhost`, `127.0.0.1`; routers; `/crops` static behind auth; SPA fallback serving `frontend/dist` when present — `/`, `/assets/*`, `/docs`, `/openapi.json`, `/api/health` are open) and `backend/app/__main__.py` (`uvicorn` on `SENTINEL_API_PORT`).
