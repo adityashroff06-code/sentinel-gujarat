@@ -55,7 +55,7 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | ID | Session | Day | Budget | Status |
 |---|---|---|---|---|
 | S0.1 | Fresh repo with structured docs; plan written and reviewed | Sat 20 – Mon 21 00:45 | — | done |
-| S0.2 | Baseline commit of the plan, ignore-rule checks, tag `docs-v0`, push (the repo and its GitHub remote already exist) | Mon 21 | 10 min | |
+| S0.2 | Baseline commit of the plan, ignore-rule checks, tag `docs-v0`, push (the repo and its GitHub remote already exist) | Mon 21 | 10 min | [x] done Tue 22 (cloud session; commit+tag were already Adi's) |
 | S0.3 | [Adi] Confirm the 28 Sep milestone and the entry category | Mon 21 | 10 min | |
 | S0.4 | Environment check (`scripts/doctor.py`); `.env` is created by Adi **before** this session | Mon 21 | 30 min | |
 | S0.5 | [Adi] Insurance recording of the old build running | Mon 21 | 30 min | |
@@ -120,7 +120,7 @@ If S0.3 shows the 28th is a **live** evaluation rather than an upload, the 48-ho
 ### S0.1 — Fresh repo with structured docs; plan written and reviewed `[x]`
 Done 20–21 Sep; see progress.md R0, R1, R2.
 
-### S0.2 — Baseline commit, ignore-rule checks, tag `docs-v0`, push `[ ]`
+### S0.2 — Baseline commit, ignore-rule checks, tag `docs-v0`, push `[x]`
 *Read first:* nothing beyond the protocol.
 *State on entry:* **the repository already exists — do not run `git init`.** `main` holds the initial commit `883b8fc` ("Initial commit", 20 Sep, the whole tree as it stood then) and is pushed to `origin` = `https://github.com/adityashroff06-code/sentinel-gujarat.git`. Everything written since (plan v2.1 → v2.2, `CLAUDE.md`, the docs, `.claude/settings.json`) may still be uncommitted when this session starts; that dirt is the documentation baseline and this task commits it — protocol step 4's clean-tree rule is waived for S0.2 only. If Adi has already committed and pushed it, the tree is clean on entry and the commit step below has nothing to do; run every check anyway and put the tag on `HEAD`.
 *Build:* from the repo root:

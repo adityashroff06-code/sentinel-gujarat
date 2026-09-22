@@ -4,13 +4,14 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 
 ---
 
-## Current state (22 Sep 2026, 00:45 IST)
+## Current state (22 Sep 2026, ~09:30 UTC)
 
-- **Decision:** fresh, structured rebuild (`docs/decisions.md` F1). This repo holds the documentation, the plan and the carried-over deliverables; **no code has been written yet**. The previous build at `D:\projects\Sentinel_Repo` still runs as a demo and is the read-only reference.
+- **Decision:** fresh, structured rebuild (`docs/decisions.md` F1). This repo holds the documentation, the plan and the carried-over deliverables. The previous build at `D:\projects\Sentinel_Repo` still runs as a demo and is the read-only reference.
 - **Plan:** `docs/tasks.md` v2.2 — 30 one-session tasks S0.2 → S6.3 with the protocol every Claude Code session follows, a calendar re-based to Mon 21 with gates A′/B/C/D, and a cut order. Two independent cold-start reviews (43 + 26 findings, R2) and a third review (7 findings, R3) have been applied. Open decisions O1–O7, O9, O11 are settled (F11–F38); O8 and O10 remain (Adi, in S0.3 and S3.4).
-- **Deadline:** 28 Sep 2026 (per Adi; S0.3 confirms the milestone on the portal). Build window Mon 21 – Thu 24 for code, Fri 25 for deliverables (GATE D 09:00, code freeze at end of day), Sat 26 soak + rehearsal, Sun 27 submit, Mon 28 buffer. **Note:** it is now the small hours of Tue 22 and no S0.x/S1.x session has run yet — the calendar's Mon 21 column is a day behind; Adi decides whether to re-base it or absorb the slip.
-- **Git:** the repo exists — `main`, initial commit `883b8fc` pushed to `https://github.com/adityashroff06-code/sentinel-gujarat`; everything written after it (plan v2.1/v2.2, `CLAUDE.md`, docs, `.claude/settings.json`) is the uncommitted documentation baseline until S0.2 (or Adi) commits it.
-- **Next task:** **S0.2** (baseline commit, tag `docs-v0`, push), then S0.3–S0.5 (Adi creates `.env` before S0.4), then S1.1. Paste into Claude Code: `Run task S0.2 from docs/tasks.md, following its "How a session runs" protocol exactly. Start by reading CLAUDE.md and the "Current state" section of docs/progress.md.`
+- **Deadline:** 28 Sep 2026 (per Adi; S0.3 confirms the milestone on the portal). Build window Mon 21 – Thu 24 for code, Fri 25 for deliverables (GATE D 09:00, code freeze at end of day), Sat 26 soak + rehearsal, Sun 27 submit, Mon 28 buffer. The Mon 21 column started a day late; this session (Tue 22) is catching it up.
+- **Session environment (new):** this session runs in a Claude Code **cloud container** (Linux, Python 3.11.15, Node 22, no GPU, no ffmpeg preinstalled, no `.env`, no sandbox network access), with the repo cloned at `/home/user/sentinel-gujarat` and push access to `origin`. Code, schema, docs and every test that does not need the laptop's venv pins, GPU, ffmpeg default path or the live sandbox can be built and proven here; laptop-only acceptance items are written off explicitly (`Next:` lines name them) and stay with Adi / a laptop session.
+- **Git:** `main` == `origin/main`, baseline commit `577587b` ("S0.2: documentation baseline, plan v2.2") with annotated tag `docs-v0` — Adi had already committed, tagged and pushed before this session; S0.2's checks were then run and passed here (block below).
+- **Next task:** **S0.4** (write + laptop-run `scripts/doctor.py`; **[Adi] first: create `.env`** per the S0.4 block), then S1.1. S0.3 and S0.5 remain Adi's, non-blocking.
 - **Blockers:** none.
 
 ## What exists in this repo
@@ -250,4 +251,31 @@ Surprise:  The laptop's Claude Code shell did not start for the reviewing
            the baseline commit is left to S0.2 (or Adi) — hence finding 1's
            "may still be uncommitted" wording in S0.2.
 Next:      S0.2
+```
+
+```
+## S0.2 — DONE (baseline verified; commit and tag were already Adi's)
+When:      2026-09-22T09:30Z
+Observed:  Tree clean on entry — the baseline commit 577587b ("S0.2:
+           documentation baseline, plan v2.2") and the annotated tag
+           docs-v0 (2302024 -> 577587b) were already on origin, pushed by
+           Adi, exactly the "if Adi has already committed" branch of the
+           task. All checks then run here and passed:
+           - check-ignore -v printed the four expected lines
+             (.env -> *.env; data/logs/api.log -> data/logs/;
+             models/yolox_s.onnx -> /models/; tools/ffmpeg/bin/ffmpeg.exe
+             -> /tools/)
+           - check-ignore backend/tools/x.py ml/tools/x.py: no output,
+             exit=1 (the two source packages are NOT ignored)
+           - git grep --cached for credential URLs: no matches
+           - docs/reference/old-build/ holds CONSTITUTION.md and no
+             CLAUDE.md; .claude/settings.json in place;
+             scripts/claude-settings.json gone
+           - docs-v0 is on HEAD; main == origin/main == 577587b
+Surprise:  This session is a Claude Code cloud container (Linux,
+           Python 3.11.15, no ffmpeg, no .env, repo at
+           /home/user/sentinel-gujarat), not the laptop. Laptop-only
+           acceptance items of later tasks are called out per task.
+Next:      S0.4 — [Adi] creates .env first (task block says how); the
+           doctor.py code is written next regardless.
 ```
