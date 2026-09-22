@@ -57,9 +57,9 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S0.1 | Fresh repo with structured docs; plan written and reviewed | Sat 20 – Mon 21 00:45 | — | done |
 | S0.2 | Baseline commit of the plan, ignore-rule checks, tag `docs-v0`, push (the repo and its GitHub remote already exist) | Mon 21 | 10 min | [x] done Tue 22 (cloud session; commit+tag were already Adi's) |
 | S0.3 | [Adi] Confirm the entry category (the milestone was answered by the portal on 22 Sep) | Mon 21 | 5 min | |
-| S0.4 | Environment check (`scripts/doctor.py`); `.env` is created by Adi **before** this session | Mon 21 | 30 min | [~] script written + cloud smoke; laptop run + .env are Adi's |
+| S0.4 | Environment check (`scripts/doctor.py`); `.env` is created by Adi **before** this session | Mon 21 | 30 min | [x] done Wed 23 (laptop); doctor passes every condition; fixed a false `npm: not found` |
 | S0.5 | [Adi] Insurance recording of the old build running | Mon 21 | 30 min | |
-| S1.1 | Backend skeleton: venv, config, logging, schema v1 + migrations, contract folded, tests | Mon 21 | 1.5 h | [~] code+schema+fold proven (cloud, Tue 22); laptop venv acceptance remains |
+| S1.1 | Backend skeleton: venv, config, logging, schema v1 + migrations, contract folded, tests | Mon 21 | 1.5 h | [x] done Wed 23; venv rebuilt on the laptop and all four laptop acceptance lines pass |
 | S1.2 | Plates + matcher core (shared), table-driven tests | Mon 21 | 1 h | [x] done Tue 22 (cloud); 35 tests pass; decisions F39, F40 |
 | S1.3a | Registry API: app, auth + audit, schemas, cameras, health, stats, gap analysis | Mon 21 | 1.5 h | [x] done Tue 22 (cloud); 11 TestClient tests pass |
 | S1.3b | CDN session, probe, seed tools, OpenAPI export — first live contact | Mon 21 | 1.5 h | [~] code + seeders + export proven (cloud, Tue 22); live probe run is laptop's |
@@ -153,7 +153,7 @@ git rev-parse --short main origin/main
 *Build:* the milestone half is already answered and recorded (`docs/brief.md` §0, from the portal on 22 Sep: 28 Sep is the upload deadline with shortlisting the same day; the plate is handed over on 12–13 Oct on site). What remains: open the registration email and record the **registered category** (1 or 2) in `docs/brief.md` §0, and close O8 in `docs/decisions.md`.
 *Acceptance:* the category is written with its source (the registration email) named, O8 is closed, and the change is committed.
 
-### S0.4 — Environment check (`scripts/doctor.py`); `.env` is Adi's, created before this session `[~]`
+### S0.4 — Environment check (`scripts/doctor.py`); `.env` is Adi's, created before this session `[x]`
 *Read first:* `docs/sandbox-findings.md` §7 (library behaviours); `.env.example`.
 **[Adi] before the session starts — not a Claude step:** in `D:\projects\sentinel-gujarat`, `copy ..\Sentinel_Repo\.env .env`, then append the two new lines `SENTINEL_API_KEY_ADMIN=<long random>` and `SENTINEL_API_KEY_VIEWER=<long random>` (`python -c "import secrets;print(secrets.token_urlsafe(32))"` twice). The old `.env` carries the sandbox login and endpoints; the new `.env.example` documents every other variable's default, so nothing else is required. **The Claude session never reads, creates or edits `.env`** — `.claude/settings.json` denies it — so if the file is missing when the session runs, the doctor says so, the session writes S0.4 off as `PARTIAL` with `Next: Adi creates .env, then re-run python scripts/doctor.py and paste the output`, and S1.1 may start anyway (nothing before S1.3b's first live contact needs the real credentials; the tests set their own throw-away keys and database path in `conftest.py`, never reading `.env`).
 *Build:* `scripts/doctor.py` — prints, **changing nothing**: Python version and path; `node --version` (must be ≥ 20.19) and `npm --version`; `ffmpeg -version` / `ffprobe -version` first lines and which path answered (PATH, or `SENTINEL_FFMPEG_DIR`, or the default `D:\projects\Sentinel_Repo\tools\ffmpeg\ffmpeg-master-latest-win64-gpl\bin`); `nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv`; whether `.env` exists and which variable **names** it sets (never values — the script reads the file itself; the session does not open it); whether `D:\projects\Sentinel_Repo` is reachable. Uses only the standard library so it runs before the venv exists.
@@ -168,7 +168,7 @@ git rev-parse --short main origin/main
 
 ## Phase 1 — Backend foundations (Mon 21 Sep)
 
-### S1.1 — Backend skeleton, venv, config, logging, schema v1, migrations, contract folded, tests `[~]`
+### S1.1 — Backend skeleton, venv, config, logging, schema v1, migrations, contract folded, tests `[x]`
 *Read first:* `docs/api.md` (all of Part A and all of Part B — Part B is folded into Part A in this task); `docs/decisions.md` F12, F13, F21, F22–F30, F37; `backend/CLAUDE.md`. The version pins are **in this task block**, not in the old repo's `requirements.txt` (that file pins only the two Paddle packages; the versions below were read off the old `.venv`'s installed distributions on 21 Sep — the set that actually ran the 15 Sep demo on this laptop, Python 3.13.9).
 *Build:*
 - **Environment:** `python -m venv .venv` (Anaconda python), then `.venv/Scripts/python -m pip install -r requirements.txt -r requirements-dev.txt`. `requirements.txt` is **exactly this** (decision F37):

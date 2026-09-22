@@ -4,18 +4,21 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 
 ---
 
-## Current state (22 Sep 2026, 18:00 UTC / 23:30 IST — plan v2.3)
+## Current state (23 Sep 2026, 07:20 UTC / 12:50 IST — plan v2.3)
 
 - **Decision:** fresh, structured rebuild (`docs/decisions.md` F1). This repo holds the documentation, the plan and the carried-over deliverables. The previous build at `D:\projects\Sentinel_Repo` still runs as a demo and is the read-only reference.
 - **Plan:** `docs/tasks.md` **v2.3 (22 Sep, 23:30 IST)** — v2.2 plus five new tasks ahead of the current position (**S3.0** login + hardening, **S3.7** catalogue adapter, **S3.5** hosting go-live, **S3.6** own-footage ground truth, **S6.1b** overnight hosted soak + backups) and amendments inside S2.2, S2.5, S3.2, S3.3, S3.4, S5.1, S5.4 and S5.5. Nothing already done was re-opened. Previously: v2.2 — 30 one-session tasks S0.2 → S6.3 with the protocol every Claude Code session follows, a calendar re-based to Mon 21 with gates A′/B/C/D, and a cut order. Two independent cold-start reviews (43 + 26 findings, R2) and a third review (7 findings, R3) have been applied. Open decisions O1–O7, O9, O11 are settled (F11–F38); O8 and O10 remain (Adi, in S0.3 and S3.4).
-- **Deadline:** **28 Sep 2026 — confirmed on the portal 22 Sep**: "Last Date to Apply and Upload Your Submission", shortlisting the same day; it is an upload, not a live evaluation. The plate is handed over at the on-site hackathon on **12–13 Oct** (FAQ 27), after this plan ends. S0.3 now only has to confirm the entry category. Build window Mon 21 – Thu 24 for code, Fri 25 for deliverables (GATE D 09:00, code freeze at end of day), Sat 26 soak + rehearsal, Sun 27 submit, Mon 28 buffer. The Mon 21 column started a day late; this session (Tue 22) is catching it up.
-- **Session environment (new):** this session runs in a Claude Code **cloud container** (Linux, Python 3.11.15, Node 22, no GPU, no ffmpeg preinstalled, no `.env`, no sandbox network access), with the repo cloned at `/home/user/sentinel-gujarat` and push access to `origin`. Code, schema, docs and every test that does not need the laptop's venv pins, GPU, ffmpeg default path or the live sandbox can be built and proven here; laptop-only acceptance items are written off explicitly (`Next:` lines name them) and stay with Adi / a laptop session.
-- **Git:** `main` == `origin/main`, baseline commit `577587b` ("S0.2: documentation baseline, plan v2.2") with annotated tag `docs-v0` — Adi had already committed, tagged and pushed before this session; S0.2's checks were then run and passed here (block below).
-- **Session result (Tue 22, cloud):** the whole Monday column is caught up except the laptop-only items — **S0.2 [x], S0.4 [~], S1.1 [~], S1.2 [x], S1.3a [x], S1.3b [~], S2.1 [x]**; test suite **68 passed**; every task committed and pushed to `main` with its block in the Log.
+- **Deadline:** **28 Sep 2026 — confirmed on the portal 22 Sep**: "Last Date to Apply and Upload Your Submission", shortlisting the same day; it is an upload, not a live evaluation. The plate is handed over at the on-site hackathon on **12–13 Oct** (FAQ 27), after this plan ends. S0.3 now only has to confirm the entry category. Build window Mon 21 – Thu 24 for code, Fri 25 for deliverables (GATE D 09:00, code freeze at end of day), Sat 26 soak + rehearsal, Sun 27 submit, Mon 28 buffer. The Mon 21 column started a day late and was caught up on Tue 22; today (Wed 23) closed its last two laptop-only items, so the Wed 23 column (S3.0, S3.7, S3.1a, S3.1b, S3.2, S3.3) is the live one after S2.2.
+- **Session environment:** this session runs **on the laptop** (Windows 10, Git Bash, Anaconda python 3.13.9 on PATH, real `.env`, GTX 1650, ffmpeg in the old build's `tools/`). The repo had been deleted and re-cloned, so `.venv` was gone; it was rebuilt here from `requirements.txt` + `requirements-dev.txt` and **every laptop-only acceptance item carried since 22 Sep has now run** (S1.1's four lines, S0.4's doctor). The previous session ran in a Claude Code cloud container (Linux, python 3.11.15, no GPU, no ffmpeg, no `.env`), which is why those items were outstanding.
+- **Git:** `main` == `origin/main` at `9be2bf3` ("Changed Repo Docs") when this session started, clean; baseline commit `577587b` ("S0.2: documentation baseline, plan v2.2") still carries the annotated tag `docs-v0`.
+- **Session result (Wed 23, laptop):** the venv is rebuilt and the two carried-over `[~]` tasks are **closed**: **S1.1 [x]** (pip check clean; exactly `opencv-contrib-python 4.10.0.84` + `onnxruntime-directml 1.24.4`; `4.10.0 1.24.4 ['DmlExecutionProvider', 'CPUExecutionProvider']`; `config.ffmpeg()` resolves to an existing exe) and **S0.4 [x]** (`.env` present with both API keys; doctor exits 0 with ffmpeg, ffprobe, Node v24.20.0, the GTX 1650 and the variable names). Suite on the laptop: **68 passed** unchanged from the cloud, then **73 passed** after five regression tests for a doctor bug. Monday's column is now **S0.2 [x], S0.4 [x], S1.1 [x], S1.2 [x], S1.3a [x], S1.3b [~], S2.1 [x]** — S1.3b's live probe is the only Monday item still open.
+- **Defect found and fixed this session:** `scripts/doctor.py` reported `npm : not found` although npm 11.19.0 is installed — `subprocess.run(["npm", ...])` cannot launch `npm.cmd` because Windows CreateProcess does no PATHEXT lookup. Resolved through `shutil.which()` now, with regression tests (`tests/test_doctor.py`). It mattered because S3.2 scaffolds the frontend with npm. The cloud smoke run could not have caught it: npm resolves normally on Linux.
 - **New scope since v2.2 (does not change what comes next):** the demo is **hosted for the judges with a login** — decisions F41 (users, sessions, roles `viewer`/`evaluator`/`admin`), F42 (tunnel; Tailscale Funnel by default), F43 (a real hit and a real route from our own footage), F44 (`-timeout`, not `-rw_timeout`), F45 (the `/api/ingest` catalogue shape), F46 (an evaluator's first screen and a feed-status strip). Source: `claude/submission-verification-2026-09-22.md` and `claude/demo-gap-review-2026-09-22.md`.
-- **Next task:** **S2.2** (RTSP frame source) — a **laptop** session: it needs the live sandbox, the mediamtx local publisher, the laptop's ffmpeg and Adi's 20 s network pull; a cloud session cannot run its acceptance. The S2.1 harness is ready to parametrise with the RTSP source.
-- **[Adi] queue before/alongside S2.2** (items don't block each other): ⑥ *(new, v2.3)* a 15-minute Tailscale Funnel trial on the laptop (install, MagicDNS + HTTPS certs, `tailscale funnel --bg 8000`, open the URL from mobile data, reboot and check it comes back) — it gates S3.5, so failing early is worth knowing; ⑦ *(new, v2.3)* film the S3.6 clips: one vehicle with a legible plate at two or three real locations, noting the coordinates; ① create `.env` per S0.4 and run `python scripts/doctor.py`, paste the output here; ② at the next laptop session's start, create the real `.venv` from requirements.txt + requirements-dev.txt and run the S1.1 laptop acceptance lines (pip check; the two-line opencv/onnxruntime assertion; the DmlExecutionProvider import line; `config.ffmpeg()`); ③ `python -m backend.tools.probe` (S1.3b) and record the RTSP-live count; ④ S0.3 portal confirmation; ⑤ S0.5 insurance recording.
+- **Next task:** **S2.2** (RTSP frame source) — still a **laptop** session, and now unblocked on the environment side: the venv, DirectML and ffmpeg are all proven here. It needs the live sandbox, the mediamtx local publisher and Adi's 20 s network pull. The S2.1 harness is ready to parametrise with the RTSP source.
+- **[Adi] queue before/alongside S2.2** (items don't block each other; ① and ② are now **done** — closed by this session): ⑥ a 15-minute Tailscale Funnel trial on the laptop (install, MagicDNS + HTTPS certs, `tailscale funnel --bg 8000`, open the URL from mobile data, reboot and check it comes back) — it gates S3.5, so failing early is worth knowing; ⑦ film the S3.6 clips: one vehicle with a legible plate at two or three real locations, noting the coordinates; ③ `.venv/Scripts/python -m backend.tools.probe` (S1.3b) and record the RTSP-live count; ④ S0.3 portal confirmation; ⑤ S0.5 insurance recording.
+- **Watch item for Wednesday:** Node is **v24.20.0**, not the v20.x the plan assumed. It clears the `>= 20.19` floor, but S3.2 pins Vite 6 / React 18.3.1 — if the scaffold misbehaves, Node 24 is the first suspect.
 - **Blockers:** none.
+- **Timing note:** a full `.venv/Scripts/python -m pytest -q` takes **~3m20s on this laptop** (vs seconds in the cloud container) — the paddle/cv2 import cost. Budget for it; do not run it casually mid-task.
 
 ## What exists in this repo
 
@@ -535,4 +538,124 @@ Observed:  Documentation-only revision, made from two reviews written the
            (SENTINEL_SESSION_TTL_H, SENTINEL_PUBLIC_HOST), README status.
 Surprise:  none - no code was touched and no completed task re-opened.
 Next:      S2.2, unchanged. The v2.3 additions start at S3.0 on Wed 23.
+```
+
+```
+## S1.1 — DONE (laptop venv rebuilt from scratch; all four laptop
+##              acceptance lines pass; supersedes the 22 Sep PARTIAL)
+When:      2026-09-23T07:10Z
+Observed:  The repo had been deleted and re-cloned, so .venv was gone and
+           the S1.1 laptop acceptance had still never run on this machine.
+           Rebuilt: `python -m venv .venv` with Anaconda python 3.13.9
+           (D:\Anaconda\python.exe) -> .venv/Scripts/python 3.13.9,
+           pip 26.2.1; then
+           `.venv/Scripts/python -m pip install -r requirements.txt
+            -r requirements-dev.txt` -> resolved every F37 pin on
+           Windows/py3.13 with no conflict, 93 distributions installed.
+           The four laptop-only acceptance lines, verbatim output:
+           - pip check
+             -> "No broken requirements found."
+           - pip list | grep -i -E "opencv|onnxruntime"
+             -> onnxruntime-directml  1.24.4
+                opencv-contrib-python 4.10.0.84
+             exactly two lines: no opencv-python, no plain onnxruntime.
+             The environment markers in requirements.txt did their job.
+           - python -c "import cv2, onnxruntime as o; print(cv2.__version__,
+             o.__version__, o.get_available_providers())"
+             -> 4.10.0 1.24.4 ['DmlExecutionProvider', 'CPUExecutionProvider']
+             DirectML is present, so the GTX 1650 is reachable for S2.3.
+           - python -c "from backend.core import config;
+             print(config.ffmpeg())"
+             -> D:\projects\Sentinel_Repo\tools\ffmpeg\
+                ffmpeg-master-latest-win64-gpl\bin\ffmpeg.exe
+             os.path.exists -> True; ffprobe likewise resolves and exists.
+           The cloud-proven acceptance items were re-run here on the real
+           venv and still hold:
+           - `python -m backend.core.db init` -> D:\projects\sentinel-
+             gujarat\data\sentinel.db: schema at version(s) [1],
+             applied now: [1]
+           - masked('rtsp://user%40x.y:secret@1.2.3.4:8554/x')
+             -> rtsp://<email>:***@1.2.3.4:8554/x  (exact expected string)
+           - `git check-ignore .venv data/sentinel.db` -> both printed
+           Whole suite on the laptop venv: `.venv/Scripts/python -m pytest
+           -q` -> **68 passed, 2 warnings in 203.09s**. Same 68 as the
+           cloud session; nothing platform-specific fails. (Two starlette/
+           anyio DeprecationWarnings, pre-existing, not from our code.)
+Surprise:  the laptop suite takes 3m23s against a few seconds in the cloud
+           container -- the paddle/cv2 import cost on this machine, not a
+           regression. Worth remembering when budgeting sessions: a full
+           `pytest -q` is a ~3.5-minute step here, so it needs its own
+           timeout allowance and should not be run casually mid-task.
+Next:      S2.2 (RTSP frame source) -- unchanged, and now unblocked on the
+           environment side: the venv, DirectML and ffmpeg are all proven
+           on this laptop.
+```
+
+```
+## S0.4 — DONE (.env in place; doctor passes every acceptance condition;
+##              one real defect found and fixed: a false "npm: not found")
+When:      2026-09-23T07:20Z
+Observed:  Adi's .env is present, so the doctor could finally run for real.
+           First run (Anaconda python, no venv needed) exited 0 with no
+           traceback and every acceptance condition met except one line
+           that read `npm      : not found`.
+           That was a defect in scripts/doctor.py, not a missing npm:
+           `which npm` -> /c/Program Files/nodejs/npm and `npm --version`
+           -> 11.19.0. run_first_line() passed a bare "npm" to
+           subprocess.run without shell=True; Windows CreateProcess does
+           no PATHEXT lookup, and npm ships as npm.cmd beside an
+           extensionless shell script, so the launch failed and the
+           doctor reported an installed npm as absent. S3.2 scaffolds the
+           frontend with npm, so a false negative here would have sent
+           Wednesday's session hunting a non-existent problem.
+           Fix: run_first_line() resolves cmd[0] through shutil.which()
+           first (which honours PATHEXT on Windows) before launching.
+           Second defect, cosmetic but in output this block is required to
+           paste: the header and the .env line used em dashes, which the
+           laptop's cp1252 console rendered as replacement characters
+           (`doctor.py <?> Windows 10 <?> repo ...`). The script's output
+           is now ASCII-only.
+           Regression tests added (protocol rule 8), tests/test_doctor.py:
+           - test_npm_is_not_reported_missing_when_it_is_installed
+           - test_doctor_output_is_ascii_so_the_windows_console_can_print_it
+           plus three guards on run_first_line() and on env_var_names()
+           returning NAMES never values (rule 1). 5 passed in 1.00s.
+           `python scripts/doctor.py` after the fix, verbatim and complete
+           (it contains no secrets -- variable names only):
+             doctor.py - Windows 10 - repo D:\projects\sentinel-gujarat
+             python   : 3.13.9 at D:\Anaconda\python.exe
+             node     : v24.20.0 (>= 20.19 ok)
+             npm      : 11.19.0
+             ffmpeg   : ffmpeg version N-126537-g7523428c26-20260913
+                        Copyright (c) 2000-2026 the FFmpeg developers
+                        [default (old build tools/)]
+             ffprobe  : ffprobe version N-126537-g7523428c26-20260913
+                        Copyright (c) 2007-2026 the FFmpeg developers
+                        [default (old build tools/)]
+             gpu      : NVIDIA GeForce GTX 1650, 512.78, 4096 MiB
+             .env     : present - variable names: SENTINEL_EMAIL,
+                        SENTINEL_PASSWORD, SENTINEL_CDN,
+                        SENTINEL_STREAM_IP, SENTINEL_RTSP_PORT,
+                        SENTINEL_WHEP_PORT, SENTINEL_DB,
+                        SENTINEL_ACTIVE_CAMERAS, SENTINEL_INFER_FPS,
+                        SENTINEL_API_PORT, SENTINEL_LOG_LEVEL,
+                        SENTINEL_API_KEY_ADMIN, SENTINEL_API_KEY_VIEWER
+             old build: reachable at D:\projects\Sentinel_Repo
+             EXIT=0
+           Against the S0.4 acceptance: no traceback [ok]; ffmpeg and
+           ffprobe resolve [ok]; Node >= 20.19 (v24.20.0) [ok]; GPU line
+           shows the GTX 1650 [ok]; .env present with SENTINEL_EMAIL,
+           SENTINEL_PASSWORD, SENTINEL_API_KEY_ADMIN and
+           SENTINEL_API_KEY_VIEWER among its names [ok]. S0.4 closes.
+Surprise:  two things. (a) the doctor's one job is to tell the truth about
+           the environment and it was lying about npm -- the bug survived
+           the cloud smoke run precisely because npm resolves normally on
+           Linux, so a Windows-only launch path went untested. Anything
+           else the doctor reports as "not found" on this laptop is now
+           worth a `which` before it is believed. (b) node is v24.20.0,
+           not the v20.x the plan assumed; it clears the >= 20.19 floor,
+           but S3.2 pins Vite 6 and react 18.3.1 against it, so if the
+           scaffold misbehaves on Wednesday, Node 24 is the first suspect.
+           Whole suite after the fix: 73 passed in 196.05s (68 + 5 new).
+Next:      S2.2, unchanged.
 ```
