@@ -57,7 +57,7 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S0.1 | Fresh repo with structured docs; plan written and reviewed | Sat 20 – Mon 21 00:45 | — | done |
 | S0.2 | Baseline commit of the plan, ignore-rule checks, tag `docs-v0`, push (the repo and its GitHub remote already exist) | Mon 21 | 10 min | [x] done Tue 22 (cloud session; commit+tag were already Adi's) |
 | S0.3 | [Adi] Confirm the 28 Sep milestone and the entry category | Mon 21 | 10 min | |
-| S0.4 | Environment check (`scripts/doctor.py`); `.env` is created by Adi **before** this session | Mon 21 | 30 min | |
+| S0.4 | Environment check (`scripts/doctor.py`); `.env` is created by Adi **before** this session | Mon 21 | 30 min | [~] script written + cloud smoke; laptop run + .env are Adi's |
 | S0.5 | [Adi] Insurance recording of the old build running | Mon 21 | 30 min | |
 | S1.1 | Backend skeleton: venv, config, logging, schema v1 + migrations, contract folded, tests | Mon 21 | 1.5 h | |
 | S1.2 | Plates + matcher core (shared), table-driven tests | Mon 21 | 1 h | |
@@ -145,7 +145,7 @@ git rev-parse --short main origin/main
 *Build:* open the portal / registration email; record in `docs/brief.md` §0 what the 28th is (upload deadline? live evaluation? both?) and the registered category; update `docs/decisions.md` O8 and, if the 28th is a live evaluation, note in the Calendar that Fri 25 is the last build day.
 *Acceptance:* both facts written with the source (page or email) named; committed.
 
-### S0.4 — Environment check (`scripts/doctor.py`); `.env` is Adi's, created before this session `[ ]`
+### S0.4 — Environment check (`scripts/doctor.py`); `.env` is Adi's, created before this session `[~]`
 *Read first:* `docs/sandbox-findings.md` §7 (library behaviours); `.env.example`.
 **[Adi] before the session starts — not a Claude step:** in `D:\projects\sentinel-gujarat`, `copy ..\Sentinel_Repo\.env .env`, then append the two new lines `SENTINEL_API_KEY_ADMIN=<long random>` and `SENTINEL_API_KEY_VIEWER=<long random>` (`python -c "import secrets;print(secrets.token_urlsafe(32))"` twice). The old `.env` carries the sandbox login and endpoints; the new `.env.example` documents every other variable's default, so nothing else is required. **The Claude session never reads, creates or edits `.env`** — `.claude/settings.json` denies it — so if the file is missing when the session runs, the doctor says so, the session writes S0.4 off as `PARTIAL` with `Next: Adi creates .env, then re-run python scripts/doctor.py and paste the output`, and S1.1 may start anyway (nothing before S1.3b's first live contact needs the real credentials; the tests set their own throw-away keys and database path in `conftest.py`, never reading `.env`).
 *Build:* `scripts/doctor.py` — prints, **changing nothing**: Python version and path; `node --version` (must be ≥ 20.19) and `npm --version`; `ffmpeg -version` / `ffprobe -version` first lines and which path answered (PATH, or `SENTINEL_FFMPEG_DIR`, or the default `D:\projects\Sentinel_Repo\tools\ffmpeg\ffmpeg-master-latest-win64-gpl\bin`); `nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv`; whether `.env` exists and which variable **names** it sets (never values — the script reads the file itself; the session does not open it); whether `D:\projects\Sentinel_Repo` is reachable. Uses only the standard library so it runs before the venv exists.

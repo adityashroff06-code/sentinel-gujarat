@@ -11,7 +11,7 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 - **Deadline:** 28 Sep 2026 (per Adi; S0.3 confirms the milestone on the portal). Build window Mon 21 – Thu 24 for code, Fri 25 for deliverables (GATE D 09:00, code freeze at end of day), Sat 26 soak + rehearsal, Sun 27 submit, Mon 28 buffer. The Mon 21 column started a day late; this session (Tue 22) is catching it up.
 - **Session environment (new):** this session runs in a Claude Code **cloud container** (Linux, Python 3.11.15, Node 22, no GPU, no ffmpeg preinstalled, no `.env`, no sandbox network access), with the repo cloned at `/home/user/sentinel-gujarat` and push access to `origin`. Code, schema, docs and every test that does not need the laptop's venv pins, GPU, ffmpeg default path or the live sandbox can be built and proven here; laptop-only acceptance items are written off explicitly (`Next:` lines name them) and stay with Adi / a laptop session.
 - **Git:** `main` == `origin/main`, baseline commit `577587b` ("S0.2: documentation baseline, plan v2.2") with annotated tag `docs-v0` — Adi had already committed, tagged and pushed before this session; S0.2's checks were then run and passed here (block below).
-- **Next task:** **S0.4** (write + laptop-run `scripts/doctor.py`; **[Adi] first: create `.env`** per the S0.4 block), then S1.1. S0.3 and S0.5 remain Adi's, non-blocking.
+- **Next task:** **S1.1** (backend skeleton). S0.4 is PARTIAL: `scripts/doctor.py` is written; **[Adi]: create `.env`, run `python scripts/doctor.py` on the laptop, paste the output here.** S0.3 and S0.5 remain Adi's, non-blocking.
 - **Blockers:** none.
 
 ## What exists in this repo
@@ -278,4 +278,28 @@ Surprise:  This session is a Claude Code cloud container (Linux,
            acceptance items of later tasks are called out per task.
 Next:      S0.4 — [Adi] creates .env first (task block says how); the
            doctor.py code is written next regardless.
+```
+
+```
+## S0.4 — PARTIAL (doctor.py written and smoke-run; laptop run is Adi's)
+When:      2026-09-22T09:40Z
+Observed:  scripts/doctor.py written: stdlib-only, prints Python, Node
+           (with the >= 20.19 check), npm, ffmpeg/ffprobe first lines with
+           which path answered (SENTINEL_FFMPEG_DIR -> PATH -> old-build
+           default), nvidia-smi GPU line, .env presence with variable
+           NAMES only, old-build reachability. Smoke run in this cloud
+           container: exits 0, no traceback; prints python 3.11.15,
+           node v22.22.2 (>= 20.19 ok), npm 10.9.7, ffmpeg/ffprobe not
+           found, nvidia-smi not available, .env MISSING, old build not
+           reachable — all correct for this box.
+Done so far: the script, committed. The cloud run above proves "runs
+           before the venv exists, changes nothing, no traceback"; it
+           cannot prove the laptop facts.
+Next:      [Adi] on the laptop: create .env per the S0.4 block (copy the
+           old one + the two new API keys), then run
+           `python scripts/doctor.py` and paste the output into a progress
+           block here (it contains no secrets). Acceptance passes when it
+           shows ffmpeg+ffprobe resolved, Node >= 20.19, the GTX 1650, and
+           .env with SENTINEL_EMAIL, SENTINEL_PASSWORD,
+           SENTINEL_API_KEY_ADMIN, SENTINEL_API_KEY_VIEWER set.
 ```
