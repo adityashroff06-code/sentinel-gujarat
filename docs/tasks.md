@@ -62,9 +62,9 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S1.1 | Backend skeleton: venv, config, logging, schema v1 + migrations, contract folded, tests | Mon 21 | 1.5 h | [x] done Wed 23; venv rebuilt on the laptop and all four laptop acceptance lines pass |
 | S1.2 | Plates + matcher core (shared), table-driven tests | Mon 21 | 1 h | [x] done Tue 22 (cloud); 35 tests pass; decisions F39, F40 |
 | S1.3a | Registry API: app, auth + audit, schemas, cameras, health, stats, gap analysis | Mon 21 | 1.5 h | [x] done Tue 22 (cloud); 11 TestClient tests pass |
-| S1.3b | CDN session, probe, seed tools, OpenAPI export — first live contact | Mon 21 | 1.5 h | [~] code + seeders + export proven (cloud, Tue 22); live probe run is laptop's |
+| S1.3b | CDN session, probe, seed tools, OpenAPI export — first live contact | Mon 21 | 1.5 h | [x] live probe ran Wed 23 (laptop): RTSP 30/30, HLS 30/30, 0×403; code + seeders + export proven Tue 22 |
 | S2.1 | Timeline + replay frame source + frame-source test harness | Mon 21 | 1.5 h | [x] done Tue 22 (cloud); all acceptance ran; suite 68 green |
-| S2.2 | RTSP frame source: ffmpeg pipe + HLS tee + watchdog + backoff (the 20 s network pull in its acceptance is Adi's step) | Tue 22 | 2 h | |
+| S2.2 | RTSP frame source: ffmpeg pipe + HLS tee + watchdog + backoff (the 20 s network pull in its acceptance is Adi's step) | Tue 22 | 2 h | [x] done Wed 23 (laptop); harness 17 green + live cam06 smoke 134 frames/monotonic/tee 10; only [Adi]'s 20 s network pull deferred |
 | S2.3 | Motion gate, detector, tracker, model fetch with checksum | Tue 22 | 2 h | |
 | S2.4 | OCR cascade, consensus voting, sightings with dedupe + provenance | Tue 22 | 2 h | |
 | S2.5 | Alerts, events + zones, worker + supervisor, 10-min replay soak — **GATE A′** | Tue 22 | 3 h | |
@@ -233,7 +233,7 @@ git rev-parse --short main origin/main
 *Acceptance:* `.venv/Scripts/python -m pytest tests/test_registry_api.py -q` passes tests with `TestClient(app, base_url="http://localhost")` (the default `testserver` Host is rejected by `TrustedHostMiddleware` — put the client in `conftest.py`) for: 401 without key; 403 for viewer on POST; cookie accepted on `GET /crops/x.jpg` (404 for a missing file, not 401) but refused on POST; 201 manual create; 409 duplicate; 422 bad department / lat; CSV import of 3 rows with one bad row → 2 accepted, 1 rejected with a reason, the bad row absent; PATCH; gap-analysis shape; stats keys; an `audit` row written for the POST with `after_json`; `/api/health` open.
 *Write-off:* progress block.
 
-### S1.3b — CDN session, probe, seed tools, OpenAPI export — first live contact `[~]`
+### S1.3b — CDN session, probe, seed tools, OpenAPI export — first live contact `[x]`
 *Read first:* `docs/sandbox-findings.md` §1–§3; `docs/reference/sandbox-access-spec.md` §1; `docs/decisions.md` C6, C8, C9, C11; old code for reference only: `D:\projects\Sentinel_Repo\src\tools\probe.py`, `src\ingest\session.py`, `src\tools\seed_registry.py`, `src\tools\seed_watchlist.py`.
 *Build:*
 - `backend/core/cdn_session.py`: form login to `/auth/login` (fields `email`, `password`), cookie jar, browser-like User-Agent, retry with jittered backoff and one re-login on 403/timeouts, `get(url)` helper — shared by probe, relay (S3.1b) and harvest (S4.2). Every log line masked.
@@ -260,7 +260,7 @@ git rev-parse --short main origin/main
 *Acceptance:* `.venv/Scripts/python -m pytest tests/test_timeline.py tests/test_frame_source.py -q` passes: 100 consecutive frames at 3 fps with strictly increasing `stream_time`; sampling at 3 fps over a 20 s window yields 60 ± 15 % frames with a PTS span of ~20 s; looping the 60 s clip for 130 s emits ≥ 2 `restart` ticks and `stream_time` is monotonic across the whole run; pointing the source at a non-existent file for 3 attempts logs `base` = 2, 4, 8 s with each `delay` within [0.5×, 1.5×] of its base (test with a patched sleep), then killing the ffmpeg child mid-read of the real clip makes frames resume; the scene-cut detector fires on a black→white frame pair and not on two identical frames.
 *Write-off:* progress block with the four observed numbers.
 
-### S2.2 — RTSP frame source: ffmpeg pipe + HLS tee + watchdog + backoff `[ ]`
+### S2.2 — RTSP frame source: ffmpeg pipe + HLS tee + watchdog + backoff `[x]`
 *Read first:* `docs/feed-rules.md`; `docs/sandbox-findings.md` §3, §7; `docs/decisions.md` §3 "Ingestion", F25; `ml/CLAUDE.md`; old reference: `D:\projects\Sentinel_Repo\src\ingest\frame_source.py` class `RtspFrameSource` (the pipe + tee recipe that worked).
 *Build:*
 - `ml/ingest/rtsp.py`: one ffmpeg process per camera — `-nostdin -hide_banner -loglevel warning -rtsp_transport tcp -timeout 15000000 -i <url>` — the flag is **`-timeout`**, never `-rw_timeout` (decision F44: measured, `-rw_timeout` has no effect on an RTSP connection) — with two outputs: `-map 0:v:0 -an -vf fps=<n> -pix_fmt bgr24 -f rawvideo pipe:1` and `-map 0:v:0 -an -c:v copy -f hls -hls_time 2 -hls_list_size 10 -hls_flags delete_segments+omit_endlist+independent_segments -hls_segment_filename data/hls/<cam>/seg%06d.ts data/hls/<cam>/index.m3u8`; reader thread keeps only the latest frame (a slow pipeline never back-pressures the pull); `stream_time = wall_time = pull_start + pts`, `clock_source="rtsp-live"`; **stall watchdog** (no frame for `SENTINEL_STALL_TIMEOUT_S` → kill child → backoff → restart with `restart=True`), **armed when the child is spawned, not at the first frame** (F44: a pull that never delivers a first frame is how cam07 and cam25 behaved); jittered exponential backoff (2 s · 2ⁿ · random(0.5, 1.5), cap 30 s); decoder warnings from stderr logged at DEBUG; the URL built in memory from the template + env and **never logged unmasked** (assert in a test that the masked form appears in logs and the raw never does); `try/finally` kill; tee directory cleaned on close.

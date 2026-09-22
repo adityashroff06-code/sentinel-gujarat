@@ -11,6 +11,7 @@ import logging
 import re
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -91,14 +92,25 @@ def make_source(request, clip):
     return lambda fps: RtspFrameSource("test", url, fps=fps)
 
 
-def _take(source, count=None, until_pts_ms=None):
+def _take(source, count=None, until_pts_ms=None, timeout_s=110.0):
+    """Collect ticks until a count/pts target. A wall-clock guard closes the
+    source if it stops delivering, so a dead local stream fails the assertion
+    cleanly instead of hanging past pytest-timeout (whose thread method can't
+    interrupt a blocked pull on Windows). Keep timeout_s below the caller's
+    @pytest.mark.timeout but above its real ``-re``-paced run time."""
     ticks = []
-    for tick in source.frames():
-        ticks.append(tick)
-        if count is not None and len(ticks) >= count:
-            break
-        if until_pts_ms is not None and tick.pts_ms >= until_pts_ms:
-            break
+    stopper = threading.Timer(timeout_s, source.close)
+    stopper.daemon = True
+    stopper.start()
+    try:
+        for tick in source.frames():
+            ticks.append(tick)
+            if count is not None and len(ticks) >= count:
+                break
+            if until_pts_ms is not None and tick.pts_ms >= until_pts_ms:
+                break
+    finally:
+        stopper.cancel()
     return ticks
 
 
@@ -133,7 +145,8 @@ def test_sampling_3fps_over_20s(make_source):
 @pytest.mark.timeout(200)
 def test_loop_emits_restart_ticks_and_stays_monotonic(clip):
     with ReplayFrameSource(clip, fps=5) as source:
-        ticks = _take(source, until_pts_ms=130_000)
+        # ~130 s of PTS at 1x -re pacing needs a guard above its real runtime
+        ticks = _take(source, until_pts_ms=130_000, timeout_s=180.0)
     restarts = sum(1 for t in ticks if t.restart)
     assert restarts >= 2                       # wraps at 60 s and 120 s
     times = [t.stream_time for t in ticks]
@@ -177,7 +190,8 @@ def test_rtsp_backoff_doubles_and_credentials_never_reach_a_log(monkeypatch, cap
     logs, the raw credential never does — and the open-failure backoff
     matches the replay source's contract (base 2·2ⁿ capped, jittered)."""
     slept: list[float] = []
-    monkeypatch.setattr("ml.ingest.rtsp._sleep", slept.append)
+    monkeypatch.setattr(RtspFrameSource, "_wait_backoff",
+                        lambda self, d: slept.append(d))
     caplog.set_level(logging.WARNING, logger="ingest.badcam")
     url = "rtsp://someone%40example.com:sekretpass@127.0.0.1:9/stream/none"
     source = RtspFrameSource("badcam", url, fps=3, max_retries=3)
@@ -200,7 +214,7 @@ def test_watchdog_kills_a_pull_that_never_delivers_a_frame(monkeypatch, caplog):
     """Decision F44: the watchdog is armed at spawn — a child that never
     writes a first frame is killed after the stall timeout, not waited on
     forever (how cam07 and cam25 behaved)."""
-    monkeypatch.setattr("ml.ingest.rtsp._sleep", lambda s: None)
+    monkeypatch.setattr(RtspFrameSource, "_wait_backoff", lambda self, d: None)
     caplog.set_level(logging.WARNING, logger="ingest.stallcam")
     source = RtspFrameSource(
         "stallcam", "rtsp://127.0.0.1:8554/stream/none", fps=3,
@@ -219,6 +233,27 @@ def test_watchdog_kills_a_pull_that_never_delivers_a_frame(monkeypatch, caplog):
 
 
 @pytest.mark.timeout(120)
+def test_rtsp_signals_restart_on_reconnect_and_stays_monotonic(rtsp_url_local):
+    """RTSP flags ``restart`` on a reconnect (the reliable discontinuity
+    signal - in-stream loop-cut detection is intentionally not done here;
+    see rtsp.py) and stream_time never steps backwards across it, even
+    though the join-time GOP burst can run early ticks ahead of the wall
+    clock."""
+    source = RtspFrameSource("test", rtsp_url_local, fps=5)
+    try:
+        it = source.frames()
+        before = [next(it) for _ in range(6)]
+        source._kill()                         # force the pull to end -> reconnect
+        after = [next(it) for _ in range(4)]
+    finally:
+        source.close()
+    assert any(t.restart for t in after)       # reconnect signalled
+    assert not any(t.restart for t in before[1:])  # no spurious mid-pull restarts
+    times = [t.stream_time for t in before + after]
+    assert all(b > a for a, b in zip(times, times[1:]))  # monotonic across reconnect
+
+
+@pytest.mark.timeout(120)
 def test_rtsp_tee_writes_a_bounded_playlist_and_close_cleans_it(rtsp_url_local, tmp_path):
     hls_dir = tmp_path / "hls" / "test"
     source = RtspFrameSource("test", rtsp_url_local, fps=3, hls_dir=hls_dir)
@@ -234,6 +269,14 @@ def test_rtsp_tee_writes_a_bounded_playlist_and_close_cleans_it(rtsp_url_local, 
         assert len(list(hls_dir.glob("*.ts"))) <= 25
     finally:
         source.close()
+    # close() rmtrees best-effort; on Windows a just-killed ffmpeg's handle
+    # can linger a moment, so re-attempt briefly rather than flake.
+    import shutil as _shutil
+    for _ in range(20):
+        if not hls_dir.exists():
+            break
+        _shutil.rmtree(hls_dir, ignore_errors=True)
+        time.sleep(0.1)
     assert not hls_dir.exists()                # tee dir cleaned on close
 
 

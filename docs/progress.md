@@ -4,7 +4,7 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 
 ---
 
-## Current state (23 Sep 2026, 07:20 UTC / 12:50 IST — plan v2.3)
+## Current state (23 Sep 2026, 02:25 UTC / 07:55 IST — plan v2.3)
 
 - **Decision:** fresh, structured rebuild (`docs/decisions.md` F1). This repo holds the documentation, the plan and the carried-over deliverables. The previous build at `D:\projects\Sentinel_Repo` still runs as a demo and is the read-only reference.
 - **Plan:** `docs/tasks.md` **v2.3 (22 Sep, 23:30 IST)** — v2.2 plus five new tasks ahead of the current position (**S3.0** login + hardening, **S3.7** catalogue adapter, **S3.5** hosting go-live, **S3.6** own-footage ground truth, **S6.1b** overnight hosted soak + backups) and amendments inside S2.2, S2.5, S3.2, S3.3, S3.4, S5.1, S5.4 and S5.5. Nothing already done was re-opened. Previously: v2.2 — 30 one-session tasks S0.2 → S6.3 with the protocol every Claude Code session follows, a calendar re-based to Mon 21 with gates A′/B/C/D, and a cut order. Two independent cold-start reviews (43 + 26 findings, R2) and a third review (7 findings, R3) have been applied. Open decisions O1–O7, O9, O11 are settled (F11–F38); O8 and O10 remain (Adi, in S0.3 and S3.4).
@@ -14,8 +14,9 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 - **Session result (Wed 23, laptop):** the venv is rebuilt and the two carried-over `[~]` tasks are **closed**: **S1.1 [x]** (pip check clean; exactly `opencv-contrib-python 4.10.0.84` + `onnxruntime-directml 1.24.4`; `4.10.0 1.24.4 ['DmlExecutionProvider', 'CPUExecutionProvider']`; `config.ffmpeg()` resolves to an existing exe) and **S0.4 [x]** (`.env` present with both API keys; doctor exits 0 with ffmpeg, ffprobe, Node v24.20.0, the GTX 1650 and the variable names). Suite on the laptop: **68 passed** unchanged from the cloud, then **73 passed** after five regression tests for a doctor bug. Monday's column is now **S0.2 [x], S0.4 [x], S1.1 [x], S1.2 [x], S1.3a [x], S1.3b [~], S2.1 [x]** — S1.3b's live probe is the only Monday item still open.
 - **Defect found and fixed this session:** `scripts/doctor.py` reported `npm : not found` although npm 11.19.0 is installed — `subprocess.run(["npm", ...])` cannot launch `npm.cmd` because Windows CreateProcess does no PATHEXT lookup. Resolved through `shutil.which()` now, with regression tests (`tests/test_doctor.py`). It mattered because S3.2 scaffolds the frontend with npm. The cloud smoke run could not have caught it: npm resolves normally on Linux.
 - **New scope since v2.2 (does not change what comes next):** the demo is **hosted for the judges with a login** — decisions F41 (users, sessions, roles `viewer`/`evaluator`/`admin`), F42 (tunnel; Tailscale Funnel by default), F43 (a real hit and a real route from our own footage), F44 (`-timeout`, not `-rw_timeout`), F45 (the `/api/ingest` catalogue shape), F46 (an evaluator's first screen and a feed-status strip). Source: `claude/submission-verification-2026-09-22.md` and `claude/demo-gap-review-2026-09-22.md`.
-- **Next task:** **S2.2** (RTSP frame source) — still a **laptop** session, and now unblocked on the environment side: the venv, DirectML and ffmpeg are all proven here. It needs the live sandbox, the mediamtx local publisher and Adi's 20 s network pull. The S2.1 harness is ready to parametrise with the RTSP source.
-- **[Adi] queue before/alongside S2.2** (items don't block each other; ① and ② are now **done** — closed by this session): ⑥ a 15-minute Tailscale Funnel trial on the laptop (install, MagicDNS + HTTPS certs, `tailscale funnel --bg 8000`, open the URL from mobile data, reboot and check it comes back) — it gates S3.5, so failing early is worth knowing; ⑦ film the S3.6 clips: one vehicle with a legible plate at two or three real locations, noting the coordinates; ③ `.venv/Scripts/python -m backend.tools.probe` (S1.3b) and record the RTSP-live count; ④ S0.3 portal confirmation; ⑤ S0.5 insurance recording.
+- **S2.2 done (Wed 23, laptop):** RTSP frame source built and proven — harness **83 passed** (was 73; +10 for the parametrised RTSP cases and the mediamtx-publisher checksum tests), and a live cam06 smoke read **134 frames, monotonic, tee bounded at 10 segments, restarts_seen=0**, newest tee segment **hevc 1920×1080**. mediamtx v1.21.1 is fetched and SHA-256-pinned in `CHECKSUMS.txt`. A 24-agent adversarial review's 14 confirmed findings were all applied or consciously deferred (F47 scene-cut backed out after measuring a false-positive storm; F48 mediamtx localhost-only + MoQ off). **S1.3b's live probe also ran this session** (RTSP live 30/30, HLS 30/30, 0 × 403 — the grid is now mixed h264 ×24 / hevc ×6), so that Monday item is closed too. Only [Adi]'s 20 s Wi-Fi network pull for S2.2 is deferred (a session can't cut the laptop network).
+- **Next task:** **S2.3** (motion gate MOG2, YOLOX-S detector on DirectML with one lock around `session.run()`, greedy IoU tracker, `fetch_models.py` with checksum). Laptop session; the frame source (`for_camera`) is ready to feed it. GATE A′ closes at the end of S2.5.
+- **[Adi] queue before/alongside S2.2** (items don't block each other; ① and ② are now **done** — closed by this session): ⑥ a 15-minute Tailscale Funnel trial on the laptop (install, MagicDNS + HTTPS certs, `tailscale funnel --bg 8000`, open the URL from mobile data, reboot and check it comes back) — it gates S3.5, so failing early is worth knowing; ⑦ film the S3.6 clips: one vehicle with a legible plate at two or three real locations, noting the coordinates; ~~③ probe (S1.3b)~~ **done this session** (RTSP live 30/30); ④ S0.3 portal confirmation; ⑤ S0.5 insurance recording.
 - **Watch item for Wednesday:** Node is **v24.20.0**, not the v20.x the plan assumed. It clears the `>= 20.19` floor, but S3.2 pins Vite 6 / React 18.3.1 — if the scaffold misbehaves, Node 24 is the first suspect.
 - **Blockers:** none.
 - **Timing note:** a full `.venv/Scripts/python -m pytest -q` takes **~3m20s on this laptop** (vs seconds in the cloud container) — the paddle/cv2 import cost. Budget for it; do not run it casually mid-task.
@@ -658,4 +659,77 @@ Surprise:  two things. (a) the doctor's one job is to tell the truth about
            scaffold misbehaves on Wednesday, Node 24 is the first suspect.
            Whole suite after the fix: 73 passed in 196.05s (68 + 5 new).
 Next:      S2.2, unchanged.
+```
+
+```
+## S2.2 — DONE (RTSP frame source; harness 17 green + live cam06 smoke)
+When:      2026-09-23T02:20Z (laptop)
+Built:     ml/ingest/rtsp.py (RtspFrameSource: one ffmpeg pull, -c copy HLS
+           tee, watchdog armed at spawn, jittered backoff, -timeout not
+           -rw_timeout, URL built in memory + masked; resolve_url for
+           template/placeholder/plain-local URLs); ml/ingest/__init__.py
+           for_camera() dispatch (rtsp -> this, replay -> S2.1, hls ->
+           NotImplementedError); ml/tools/smoke_rtsp.py; scripts/
+           replay_publish.py (--fetch mediamtx + start_mediamtx/publish,
+           reused by the harness and S3.4); tests/test_frame_source.py
+           re-parametrised over replay+rtsp; tests/test_replay_publish.py.
+           mediamtx v1.21.1 fetched, SHA-256 in CHECKSUMS.txt.
+Observed:  Local acceptance (harness, mediamtx publishing the synthetic
+           clip over RTSP): .venv/Scripts/python -m pytest
+           tests/test_frame_source.py tests/test_replay_publish.py ->
+           17 passed. Whole suite -> **83 passed in 306.52s** (73 + 10).
+           Live sandbox acceptance (laptop, real cam06):
+           `smoke_rtsp cam06 --seconds 60` -> frames=134 (>=100 ok),
+           monotonic=yes, tee playlist lists 10 (<=10 ok), 11 .ts on disk
+           (<=25 ok) held over a 130 s pull, restarts_seen=0 on a clean
+           pull. ffprobe on the newest tee segment -> **hevc 1920x1080**
+           (the acceptance text said h264; cam06 is hevc). Every log line
+           shows rtsp://<email>:***@103.250.160.189:8554/... — the raw
+           credential never appears.
+           A 24-agent adversarial review found 14 confirmed items; all
+           triaged and either fixed or consciously deferred (F47, F48):
+           credential leak via TimeoutExpired.cmd -> masked; truncate-
+           before-mask -> mask-then-slice; probed size no longer cached
+           across reconnects (re-probe each pull); monotonic floor across
+           a fast reconnect; interruptible backoff wait (close() wakes it);
+           bufsize 4 frames -> 1 frame (8 GB budget); smoke --seconds
+           deadline via a Timer so a dead feed can't hang; the scene-cut
+           behaviour-8 wiring was BACKED OUT after measuring it (below).
+Surprise:  (1) cam06 is hevc, not h264 — today's probe shows 6 hevc among
+           30 (h264 x24). The grid is genuinely mixed H.264/H.265, exactly
+           what feed-rules warns about; the -c copy tee preserves it and
+           the raw-frame branch decodes it fine on CPU at 3 fps. The old
+           "h264 on every live camera" was the 14 Sep snapshot.
+           (2) Feed-rule 8 (in-stream loop cut) CANNOT be detected on a
+           busy live feed by whole-frame diff: measured on cam06, ordinary
+           3 fps traffic reaches mean-abs-diff 138 (p90=46, p95=79),
+           overlapping any real cut; a threshold false-fired ~9% of frames
+           = a restart every ~2.6 s, which would reset the tracker and
+           break route reconstruction. Backed the wiring out; restart
+           fires on reconnect only; a luminance-baseline detector is
+           deferred (decision F47). Restart storm -> 0 after the revert.
+           (3) Three harness defects fixed this session, each Windows/
+           load-only so the earlier isolated runs missed them:
+           MTX_RTSPTRANSPORTS="[tcp]" (bracket list syntax) killed
+           mediamtx at startup; _wait_port connected to a STALE mediamtx
+           and masked a bind failure (added proc.poll()); mediamtx dropped
+           the -re-paced publisher under full-suite CPU load at its 10 s
+           writeTimeout -> 404 storm, and pytest-timeout's thread method
+           can't kill a blocked pull on Windows so the whole suite wedged
+           (fixed: MTX_*TIMEOUT=30s + a wall-clock guard in the _take
+           helper so no harness test can hang). mediamtx 1.21's MoQ binds
+           0.0.0.0 by default and tripped Windows Firewall (a Block rule
+           for mediamtx.exe was written by a cancelled prompt and removed);
+           MoQ is now disabled (decision F48).
+           (4) An external commit "324f8e4 Task 2.2" landed the bulk of the
+           new files mid-session (not this session, not the protocol
+           message format); this session's follow-up commit completes S2.2
+           with the review fixes, the revert and this write-off.
+Deferred:  [Adi] the 20 s Wi-Fi network pull — a session cannot cut the
+           laptop network without cutting Claude Code off. The backoff/
+           reconnect path is already proven by the smoke log's open-fail
+           -> backoff -> pull-started sequence and by three harness tests
+           (reconnect+monotonic, backoff-doubling, resume-after-kill).
+Next:      S2.3 (motion gate, MOG2, YOLOX-S detector on DirectML, greedy
+           tracker, model fetch with checksum).
 ```

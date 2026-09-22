@@ -140,9 +140,19 @@ def fetch() -> None:
     print(f"unpacked {tag} into {TOOLS_DIR}")
 
 
-def _wait_port(port: int, timeout_s: float = 10.0) -> None:
+def _wait_port(port: int, timeout_s: float = 10.0,
+               proc: subprocess.Popen | None = None) -> None:
     deadline = time.monotonic() + timeout_s
     while time.monotonic() < deadline:
+        # A dead child means it lost the bind (e.g. the port is already held
+        # by a leaked mediamtx). Without this check the connect below would
+        # succeed against that STALE server and mask the failure - the source
+        # then pulls 0 frames from a publisher-less server until it times out.
+        if proc is not None and proc.poll() is not None:
+            raise SystemExit(
+                f"mediamtx exited rc={proc.returncode} before binding "
+                f"127.0.0.1:{port} (port already in use?) - see data/logs/mediamtx.log"
+            )
         try:
             with socket.create_connection(("127.0.0.1", port), timeout=1):
                 return
@@ -170,17 +180,24 @@ def start_mediamtx(port: int = DEFAULT_PORT) -> subprocess.Popen:
     env = {
         **os.environ,
         "MTX_RTSPADDRESS": f"127.0.0.1:{port}",
-        "MTX_RTSPTRANSPORTS": "[tcp]",
+        "MTX_RTSPTRANSPORTS": "tcp",  # env lists are comma-separated, no brackets
+        # A `-re`-paced publisher can stall past the 10 s default under load
+        # (full test suite), and mediamtx then drops it, 404-ing every reader.
+        # 30 s tolerates the lag so the local stream stays up for the module.
+        "MTX_READTIMEOUT": "30s", "MTX_WRITETIMEOUT": "30s",
         "MTX_RTMP": "no", "MTX_HLS": "no", "MTX_WEBRTC": "no", "MTX_SRT": "no",
         "MTX_API": "no", "MTX_METRICS": "no", "MTX_PPROF": "no",
         "MTX_PLAYBACK": "no",
+        # MoQ (new in 1.21) binds 0.0.0.0:8892/:8893 by default - it is what
+        # made Windows Firewall prompt; nothing leaves loopback (rule 11).
+        "MTX_MOQ": "no",
     }
     proc = subprocess.Popen(
         [str(exe), str(TOOLS_DIR / "mediamtx.yml")],
         cwd=str(TOOLS_DIR), env=env, stdout=log, stderr=log,
     )
     try:
-        _wait_port(port)
+        _wait_port(port, proc=proc)
     except SystemExit:
         proc.kill()
         raise

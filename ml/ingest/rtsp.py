@@ -41,8 +41,6 @@ from ml.ingest.base import HEALTHY_RESET_S, FrameSource, FrameTick, backoff_para
 # -rw_timeout has no effect on an RTSP connection (decision F44).
 RTSP_SOCKET_TIMEOUT_US = "15000000"
 
-# Indirection so tests can stub the backoff wait (as in ml.ingest.replay).
-_sleep = time.sleep
 
 
 class RtspSourceError(RuntimeError):
@@ -94,16 +92,25 @@ class RtspFrameSource(FrameSource):
     def _probe_size(self) -> tuple[int, int]:
         """``(width, height)`` probed at pull start - never trusted from the
         registry (a camera may be re-provisioned at another resolution)."""
-        out = subprocess.run(
-            [
-                config.ffprobe(), "-v", "error", "-rtsp_transport", "tcp",
-                "-timeout", RTSP_SOCKET_TIMEOUT_US, "-select_streams", "v:0",
-                "-show_entries", "stream=width,height", "-of", "json", self._url,
-            ],
-            capture_output=True, text=True, timeout=30,
-        )
+        try:
+            out = subprocess.run(
+                [
+                    config.ffprobe(), "-v", "error", "-rtsp_transport", "tcp",
+                    "-timeout", RTSP_SOCKET_TIMEOUT_US, "-select_streams", "v:0",
+                    "-show_entries", "stream=width,height", "-of", "json", self._url,
+                ],
+                capture_output=True, text=True, timeout=30,
+            )
+        except subprocess.TimeoutExpired as exc:
+            # TimeoutExpired.cmd carries the raw credentialed argv; re-raise a
+            # clean message so no chained exception can surface it (rule 1).
+            raise RuntimeError(f"{self.camera_id}: ffprobe timed out") from None
+        except (subprocess.SubprocessError, OSError) as exc:
+            raise RuntimeError(config.masked(str(exc))) from None
         if out.returncode != 0:
-            raise RuntimeError(config.masked((out.stderr or "").strip()[-200:] or "ffprobe failed"))
+            # Mask BEFORE truncating: slicing first could split a credential
+            # so the exact-match scrub misses it (rule 1).
+            raise RuntimeError(config.masked((out.stderr or "").strip())[-200:] or "ffprobe failed")
         stream = json.loads(out.stdout)["streams"][0]
         return int(stream["width"]), int(stream["height"])
 
@@ -159,6 +166,12 @@ class RtspFrameSource(FrameSource):
         if self.hls_dir is not None:  # tee directory cleaned on close (S2.2)
             shutil.rmtree(self.hls_dir, ignore_errors=True)
 
+    def _wait_backoff(self, delay: float) -> None:
+        """Interruptible backoff wait: ``close()`` sets ``_stop`` and wakes
+        this immediately, so a graceful stop never waits out a 30 s sleep.
+        Tests stub this to record delays without sleeping."""
+        self._stop.wait(delay)
+
     # -- the generator ------------------------------------------------------
 
     def frames(self) -> Iterator[FrameTick]:
@@ -166,13 +179,29 @@ class RtspFrameSource(FrameSource):
 
         attempt = 0
         pending_restart = False
+        # Feed rule 8 (in-stream loop cut) is NOT detected on RTSP here, by
+        # design. The sandbox's 12 h recording loops without a disconnect and
+        # with continuous PTS, so the only content signal is a frame diff -
+        # but on a busy live feed at 3 fps that is unreliable: measured on
+        # cam06, ordinary traffic reaches a whole-frame mean-abs-diff of 138
+        # (p90=46, p95=79), overlapping any real cut, so a diff threshold
+        # false-fires ~9 % of frames. A restart storm resets the tracker and
+        # breaks route reconstruction (the scored test) - far worse than
+        # missing a self-healing cut that occurs ~twice per 12 h loop. A
+        # robust detector (sustained luminance-shift baseline) is deferred;
+        # reconnects still emit restart. See docs/progress.md S2.2.
+        last_instant: Optional[datetime] = None  # monotonic floor across pulls
         try:
             while not self._stop.is_set():
                 try:
                     width, height = self._size or self._probe_size()
+                    # One frame of pipe buffer is enough — the reader pulls
+                    # fixed-size chunks and keeps only the latest. A 4-frame
+                    # buffer on a 2560x1440 pull is ~44 MB, and it is applied
+                    # to stderr too; on the 8 GB ceiling that is pure waste.
                     self._proc = subprocess.Popen(
                         self._command(), stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE, bufsize=width * height * 3 * 4,
+                        stderr=subprocess.PIPE, bufsize=width * height * 3,
                     )
                 except (subprocess.SubprocessError, OSError, RuntimeError,
                         KeyError, json.JSONDecodeError, ValueError) as exc:
@@ -188,9 +217,13 @@ class RtspFrameSource(FrameSource):
                         raise RtspSourceError(
                             f"{self.camera_id}: could not open after {attempt} attempts"
                         ) from exc
-                    _sleep(delay)
+                    self._wait_backoff(delay)
                     continue
-                self._size = (width, height)
+                # Do NOT cache a probed size: a reconnect is exactly when a
+                # camera may return re-provisioned at another resolution, so
+                # re-probe each pull. A constructor-passed self._size stays
+                # authoritative because `self._size or _probe_size()` above
+                # short-circuits to it every time.
                 proc = self._proc
                 threading.Thread(target=self._drain_stderr, args=(proc,),
                                  daemon=True).start()
@@ -203,6 +236,14 @@ class RtspFrameSource(FrameSource):
                 frame_bytes = width * height * 3
                 step_ms = 1000.0 / self.fps
                 pull_start = datetime.now(timezone.utc)
+                # On connect the gateway replays a buffered GOP faster than
+                # real time (root rule 3), so early ticks can run ahead of the
+                # wall clock; if a short-jitter reconnect then anchors earlier
+                # than the last yielded tick, stream_time would step backwards
+                # and break the monotonicity the harness and route rely on.
+                # Clamp the anchor to keep the first new tick strictly later.
+                if last_instant is not None and pull_start <= last_instant:
+                    pull_start = last_instant + timedelta(milliseconds=1)
 
                 # Reader thread drains stdout at the stream's pace so ffmpeg
                 # (and its HLS tee) never blocks on a slow consumer. Keeps
@@ -254,6 +295,7 @@ class RtspFrameSource(FrameSource):
                             attempt = 0
                         pts_ms = idx * step_ms  # CFR output: index * period
                         instant = pull_start + timedelta(milliseconds=pts_ms)
+                        last_instant = instant
                         yield FrameTick(
                             frame=frame, pts_ms=pts_ms, stream_time=instant,
                             wall_time=instant, clock_source=self.clock_source,
@@ -287,6 +329,6 @@ class RtspFrameSource(FrameSource):
                 if self.max_retries is not None and attempt >= self.max_retries:
                     raise RtspSourceError(f"{self.camera_id}: pull kept dying")
                 pending_restart = True  # reconnect: a discontinuity (rule 8)
-                _sleep(delay)
+                self._wait_backoff(delay)
         finally:
             self._kill()  # feed-rules behaviour 9: always release

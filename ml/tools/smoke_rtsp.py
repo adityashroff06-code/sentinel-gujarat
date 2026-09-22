@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import threading
 import time
 from datetime import datetime
 
@@ -65,13 +66,24 @@ def main(argv: list[str] | None = None) -> int:
 
     count = 0
     non_monotonic = 0
+    restarts_seen = 0
     first_time: datetime | None = None
     last_time: datetime | None = None
-    deadline = time.monotonic() + args.seconds
     next_report = time.monotonic() + PROGRESS_EVERY_S
+
+    # A wall-clock stop that fires even when NO frames arrive: on a dead or
+    # stalled feed frames() yields nothing and loops in backoff forever, so a
+    # deadline checked only inside the loop body would never trip and the
+    # detached network-pull run would hang. close() sets _stop and kills the
+    # child, which ends the generator cleanly.
+    stopper = threading.Timer(args.seconds, source.close)
+    stopper.daemon = True
+    stopper.start()
     try:
         for tick in source.frames():
             count += 1
+            if tick.restart:
+                restarts_seen += 1
             if first_time is None:
                 first_time = tick.stream_time
             elif last_time is not None and tick.stream_time <= last_time:
@@ -82,19 +94,18 @@ def main(argv: list[str] | None = None) -> int:
                 next_report = now + PROGRESS_EVERY_S
                 print(
                     f"  frames={count} last_stream_time={last_time.isoformat()}"
-                    f" restarts_seen={'yes' if tick.restart else 'no'}"
-                    f" | {tee_state(args.camera_id)}", flush=True,
+                    f" restarts_seen={restarts_seen} | {tee_state(args.camera_id)}",
+                    flush=True,
                 )
-            if now >= deadline:
-                break
     except KeyboardInterrupt:
         print("interrupted", flush=True)
     finally:
+        stopper.cancel()
         summary_tee = tee_state(args.camera_id)  # before close() cleans it
         source.close()
 
     print(
-        f"SUMMARY {args.camera_id}: frames={count}"
+        f"SUMMARY {args.camera_id}: frames={count} restarts_seen={restarts_seen}"
         f" first_stream_time={first_time.isoformat() if first_time else 'none'}"
         f" last_stream_time={last_time.isoformat() if last_time else 'none'}"
         f" monotonic={'yes' if non_monotonic == 0 else f'NO ({non_monotonic} violations)'}"
