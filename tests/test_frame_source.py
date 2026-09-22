@@ -1,23 +1,94 @@
-"""S2.1 acceptance: the frame-source harness (reused by S2.2 with the RTSP
-source parametrised in). Runs against the synthetic 60 s clip; ffmpeg's
-``-re`` paces delivery, so these tests take real seconds by design."""
+"""S2.1/S2.2 acceptance: the frame-source harness, parametrised over the
+replay and RTSP sources (S2.2). The RTSP cases read a local mediamtx
+(fetched by ``scripts/replay_publish.py --fetch``; skipped cleanly when it
+is not) publishing the synthetic 60 s clip. ffmpeg's ``-re`` paces
+delivery, so these tests take real seconds by design."""
 
 from __future__ import annotations
 
+import importlib.util
 import logging
 import re
+import subprocess
+import sys
+import time
+from pathlib import Path
 
 import numpy as np
 import pytest
 
+from backend.core import config
+from ml.ingest import for_camera
 from ml.ingest.base import PtsSampler, SceneCutDetector
 from ml.ingest.replay import ReplayFrameSource, ReplaySourceError
+from ml.ingest.rtsp import RtspFrameSource, RtspSourceError, resolve_url
 from tests.fixtures.make_synthetic import ensure
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+LOCAL_RTSP_URL = "rtsp://127.0.0.1:8554/stream/test"
 
 
 @pytest.fixture(scope="module")
 def clip():
     return str(ensure())
+
+
+def _load_replay_publish():
+    spec = importlib.util.spec_from_file_location(
+        "replay_publish", REPO_ROOT / "scripts" / "replay_publish.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _wait_stream_readable(url: str, timeout_s: float = 25.0) -> None:
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        out = subprocess.run(
+            [
+                config.ffprobe(), "-v", "error", "-rtsp_transport", "tcp",
+                "-timeout", "5000000", "-select_streams", "v:0",
+                "-show_entries", "stream=codec_name", "-of", "json", url,
+            ],
+            capture_output=True, timeout=15,
+        )
+        if out.returncode == 0:
+            return
+        time.sleep(0.5)
+    pytest.fail(f"published stream never became readable at {url}")
+
+
+@pytest.fixture(scope="module")
+def rtsp_url_local(clip):
+    """mediamtx on 127.0.0.1:8554 with the synthetic clip loop-published
+    at /stream/test — the S2.2 acceptance topology."""
+    rp = _load_replay_publish()
+    if not rp.mediamtx_exe().exists():
+        pytest.skip("mediamtx not fetched: python scripts/replay_publish.py --fetch")
+    server = rp.start_mediamtx()
+    publisher = None
+    try:
+        publisher = rp.publish(clip, "test")
+        _wait_stream_readable(LOCAL_RTSP_URL)
+        yield LOCAL_RTSP_URL
+    finally:
+        for proc in (publisher, server):
+            if proc is not None:
+                try:
+                    proc.kill()
+                    proc.wait(timeout=5)
+                except Exception:
+                    pass
+
+
+@pytest.fixture(params=["replay", "rtsp"])
+def make_source(request, clip):
+    """Factory returning a fps-parametrised source of the requested kind."""
+    if request.param == "replay":
+        return lambda fps: ReplayFrameSource(clip, fps=fps)
+    url = request.getfixturevalue("rtsp_url_local")
+    return lambda fps: RtspFrameSource("test", url, fps=fps)
 
 
 def _take(source, count=None, until_pts_ms=None):
@@ -31,26 +102,33 @@ def _take(source, count=None, until_pts_ms=None):
     return ticks
 
 
-@pytest.mark.timeout(90)
-def test_100_frames_strictly_monotonic(clip):
-    with ReplayFrameSource(clip, fps=3) as source:
+# --- the shared harness (S2.1, parametrised by S2.2) -----------------------
+
+@pytest.mark.timeout(120)
+def test_100_frames_strictly_monotonic(make_source):
+    source = make_source(5)
+    with source:
         ticks = _take(source, count=100)
     assert len(ticks) == 100
     times = [t.stream_time for t in ticks]
     assert all(b > a for a, b in zip(times, times[1:]))
-    assert all(t.clock_source == "replay" for t in ticks)
+    assert all(t.clock_source == source.clock_source for t in ticks)
     assert ticks[0].frame.shape == (360, 640, 3)
 
 
-@pytest.mark.timeout(60)
-def test_sampling_3fps_over_20s(clip):
-    with ReplayFrameSource(clip, fps=3) as source:
+@pytest.mark.timeout(120)
+def test_sampling_3fps_over_20s(make_source):
+    source = make_source(3)
+    with source:
         ticks = _take(source, until_pts_ms=20_000)
     in_window = [t for t in ticks if t.pts_ms < 20_000]
     assert 51 <= len(in_window) <= 69          # 60 ± 15 %
     span_s = (in_window[-1].pts_ms - in_window[0].pts_ms) / 1000
     assert 18 <= span_s <= 21                  # PTS span of ~20 s
 
+
+# --- replay-only cases (the wrap tick is replay-only: a re-encoded RTSP
+# --- loop has continuous PTS) ----------------------------------------------
 
 @pytest.mark.timeout(200)
 def test_loop_emits_restart_ticks_and_stays_monotonic(clip):
@@ -91,6 +169,109 @@ def test_frames_resume_after_child_killed_mid_read(clip):
     assert after[0].restart is True            # discontinuity signalled
     assert after[-1].stream_time > before[-1].stream_time
 
+
+# --- RTSP-only cases (task S2.2) --------------------------------------------
+
+def test_rtsp_backoff_doubles_and_credentials_never_reach_a_log(monkeypatch, caplog):
+    """Root rule 1 / feed-rules behaviour 2: the masked URL appears in the
+    logs, the raw credential never does — and the open-failure backoff
+    matches the replay source's contract (base 2·2ⁿ capped, jittered)."""
+    slept: list[float] = []
+    monkeypatch.setattr("ml.ingest.rtsp._sleep", slept.append)
+    caplog.set_level(logging.WARNING, logger="ingest.badcam")
+    url = "rtsp://someone%40example.com:sekretpass@127.0.0.1:9/stream/none"
+    source = RtspFrameSource("badcam", url, fps=3, max_retries=3)
+    with pytest.raises(RtspSourceError):
+        next(iter(source.frames()))
+    lines = [r.getMessage() for r in caplog.records if "open failed" in r.getMessage()]
+    bases = [int(re.search(r"base=(\d+)s", l).group(1)) for l in lines]
+    delays = [float(re.search(r"delay=([\d.]+)s", l).group(1)) for l in lines]
+    assert bases == [2, 4, 8]
+    for base, delay in zip(bases, delays):
+        assert 0.5 * base <= delay <= 1.5 * base
+    assert len(slept) == 2
+    joined = "\n".join(r.getMessage() for r in caplog.records)
+    assert "sekretpass" not in joined                      # raw: never
+    assert "rtsp://<email>:***@127.0.0.1:9" in joined      # masked: always
+
+
+@pytest.mark.timeout(60)
+def test_watchdog_kills_a_pull_that_never_delivers_a_frame(monkeypatch, caplog):
+    """Decision F44: the watchdog is armed at spawn — a child that never
+    writes a first frame is killed after the stall timeout, not waited on
+    forever (how cam07 and cam25 behaved)."""
+    monkeypatch.setattr("ml.ingest.rtsp._sleep", lambda s: None)
+    caplog.set_level(logging.WARNING, logger="ingest.stallcam")
+    source = RtspFrameSource(
+        "stallcam", "rtsp://127.0.0.1:8554/stream/none", fps=3,
+        size=(64, 48), max_retries=2, stall_timeout_s=1.0,
+    )
+    monkeypatch.setattr(
+        source, "_command",
+        lambda: [sys.executable, "-c", "import time; time.sleep(60)"],
+    )
+    with pytest.raises(RtspSourceError):
+        next(iter(source.frames()))
+    source.close()
+    text = "\n".join(r.getMessage() for r in caplog.records)
+    assert "watchdog: no frame" in text
+    assert "killed by watchdog after 0 frames" in text
+
+
+@pytest.mark.timeout(120)
+def test_rtsp_tee_writes_a_bounded_playlist_and_close_cleans_it(rtsp_url_local, tmp_path):
+    hls_dir = tmp_path / "hls" / "test"
+    source = RtspFrameSource("test", rtsp_url_local, fps=3, hls_dir=hls_dir)
+    try:
+        _take(source, until_pts_ms=9_000)      # ~9 s: several 2 s segments
+        playlist = hls_dir / "index.m3u8"
+        assert playlist.exists()
+        listed = sum(
+            1 for line in playlist.read_text(encoding="utf-8").splitlines()
+            if line.strip().endswith(".ts")
+        )
+        assert 1 <= listed <= 10               # -hls_list_size 10
+        assert len(list(hls_dir.glob("*.ts"))) <= 25
+    finally:
+        source.close()
+    assert not hls_dir.exists()                # tee dir cleaned on close
+
+
+# --- URL resolution and dispatch (task S2.2) --------------------------------
+
+def test_resolve_url_encodes_credentials_and_honours_templates(monkeypatch):
+    monkeypatch.setenv("SENTINEL_EMAIL", "a@b.c")
+    monkeypatch.setenv("SENTINEL_PASSWORD", "p w+x")
+    expected_default = (
+        f"rtsp://a%40b.c:p%20w%2Bx@{config.stream_ip()}:{config.rtsp_port()}"
+        "/stream/cam01"
+    )
+    assert resolve_url("cam01", None) == expected_default
+    assert resolve_url(
+        "cam01", "rtsp://<email>:<password>@10.0.0.5:8554/stream/cam01"
+    ) == "rtsp://a%40b.c:p%20w%2Bx@10.0.0.5:8554/stream/cam01"
+    plain = "rtsp://127.0.0.1:8554/stream/local01"     # local URL: as-is
+    assert resolve_url("local01", plain) == plain
+
+
+def test_for_camera_dispatches_on_transport(clip):
+    rtsp_source = for_camera({"camera_id": "camX", "transport": "rtsp",
+                              "rtsp_url_template": None})
+    assert isinstance(rtsp_source, RtspFrameSource)
+    assert rtsp_source.hls_dir == config.REPO_ROOT / "data" / "hls" / "camX"
+
+    replay_source = for_camera({"camera_id": "rep01", "transport": "replay",
+                                "rtsp_url_template": clip})
+    assert isinstance(replay_source, ReplayFrameSource)
+    assert replay_source.path == clip
+
+    with pytest.raises(NotImplementedError):
+        for_camera({"camera_id": "camY", "transport": "hls"})
+    with pytest.raises(ValueError):
+        for_camera({"camera_id": "camZ", "transport": "none"})
+
+
+# --- primitives (S2.1, unchanged) -------------------------------------------
 
 def test_scene_cut_detector_fires_on_hard_cut_only():
     detector = SceneCutDetector()

@@ -3,3 +3,4 @@
 # Written by the tool that downloads the file; verified on every later run.
 # Entries land here from: scripts/replay_publish.py --fetch (mediamtx),
 # ml/tools/fetch_models.py (yolox_s.onnx), the launcher (ffmpeg zip, if fetched).
+faa97974861eb75a68b5aa326c78e7e7a6f670b5ef191bace78e715130381f23  https://github.com/bluenviron/mediamtx/releases/download/v1.21.1/mediamtx_v1.21.1_windows_amd64.zip  tools/mediamtx/mediamtx_v1.21.1_windows_amd64.zip

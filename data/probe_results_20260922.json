@@ -1,0 +1,482 @@
+[
+ {
+  "camera_id": "cam01",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 30.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:52:40.185942+00:00"
+ },
+ {
+  "camera_id": "cam02",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 30.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:52:41.723061+00:00"
+ },
+ {
+  "camera_id": "cam03",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 720,
+   "declared_fps": 30.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:52:42.286947+00:00"
+ },
+ {
+  "camera_id": "cam04",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "Main",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:52:43.462176+00:00"
+ },
+ {
+  "camera_id": "cam05",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 30.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:52:44.028531+00:00"
+ },
+ {
+  "camera_id": "cam06",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "hevc",
+   "profile": "Main",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": null,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-22T19:52:46.131424+00:00"
+ },
+ {
+  "camera_id": "cam07",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-22T19:52:46.606669+00:00"
+ },
+ {
+  "camera_id": "cam08",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-22T19:52:48.919848+00:00"
+ },
+ {
+  "camera_id": "cam09",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:52:49.517086+00:00"
+ },
+ {
+  "camera_id": "cam10",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:52:51.240250+00:00"
+ },
+ {
+  "camera_id": "cam11",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-22T19:52:52.002660+00:00"
+ },
+ {
+  "camera_id": "cam12",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "hevc",
+   "profile": "Main",
+   "width": 1280,
+   "height": 720,
+   "declared_fps": 20.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:52:52.560281+00:00"
+ },
+ {
+  "camera_id": "cam13",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 10.0,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-22T19:52:53.218657+00:00"
+ },
+ {
+  "camera_id": "cam14",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 10.0,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-22T19:52:54.039769+00:00"
+ },
+ {
+  "camera_id": "cam15",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 10.0,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-22T19:52:54.610278+00:00"
+ },
+ {
+  "camera_id": "cam16",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "Baseline",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 10.0,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-22T19:52:55.162203+00:00"
+ },
+ {
+  "camera_id": "cam17",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "hevc",
+   "profile": "Main",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-22T19:52:55.631909+00:00"
+ },
+ {
+  "camera_id": "cam18",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "hevc",
+   "profile": "Main",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-22T19:52:56.091078+00:00"
+ },
+ {
+  "camera_id": "cam19",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 720,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:52:56.745392+00:00"
+ },
+ {
+  "camera_id": "cam20",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 720,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:52:57.474621+00:00"
+ },
+ {
+  "camera_id": "cam21",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-22T19:52:58.228692+00:00"
+ },
+ {
+  "camera_id": "cam22",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "hevc",
+   "profile": "Main",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:52:58.867233+00:00"
+ },
+ {
+  "camera_id": "cam23",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 720,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:52:59.522825+00:00"
+ },
+ {
+  "camera_id": "cam24",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 960,
+   "height": 576,
+   "declared_fps": 12.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:52:59.805243+00:00"
+ },
+ {
+  "camera_id": "cam25",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 960,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-22T19:53:00.554224+00:00"
+ },
+ {
+  "camera_id": "cam26",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "hevc",
+   "profile": "Main",
+   "width": 2560,
+   "height": 1440,
+   "declared_fps": 15.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:53:00.744309+00:00"
+ },
+ {
+  "camera_id": "cam27",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 960,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:53:01.032141+00:00"
+ },
+ {
+  "camera_id": "cam28",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 960,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:53:01.313795+00:00"
+ },
+ {
+  "camera_id": "cam29",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1280,
+   "height": 960,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuv420p"
+  },
+  "checked_at": "2026-09-22T19:53:01.692365+00:00"
+ },
+ {
+  "camera_id": "cam30",
+  "hls": {
+   "ok": true
+  },
+  "rtsp": {
+   "ok": true,
+   "codec": "h264",
+   "profile": "High",
+   "width": 1920,
+   "height": 1080,
+   "declared_fps": 25.0,
+   "pix_fmt": "yuvj420p"
+  },
+  "checked_at": "2026-09-22T19:53:01.979412+00:00"
+ }
+]
