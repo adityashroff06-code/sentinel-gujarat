@@ -11,7 +11,7 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 - **Deadline:** 28 Sep 2026 (per Adi; S0.3 confirms the milestone on the portal). Build window Mon 21 – Thu 24 for code, Fri 25 for deliverables (GATE D 09:00, code freeze at end of day), Sat 26 soak + rehearsal, Sun 27 submit, Mon 28 buffer. The Mon 21 column started a day late; this session (Tue 22) is catching it up.
 - **Session environment (new):** this session runs in a Claude Code **cloud container** (Linux, Python 3.11.15, Node 22, no GPU, no ffmpeg preinstalled, no `.env`, no sandbox network access), with the repo cloned at `/home/user/sentinel-gujarat` and push access to `origin`. Code, schema, docs and every test that does not need the laptop's venv pins, GPU, ffmpeg default path or the live sandbox can be built and proven here; laptop-only acceptance items are written off explicitly (`Next:` lines name them) and stay with Adi / a laptop session.
 - **Git:** `main` == `origin/main`, baseline commit `577587b` ("S0.2: documentation baseline, plan v2.2") with annotated tag `docs-v0` — Adi had already committed, tagged and pushed before this session; S0.2's checks were then run and passed here (block below).
-- **Next task:** **S1.2** (this cloud session continues into it). S0.4 is PARTIAL: `scripts/doctor.py` is written; **[Adi]: create `.env`, run `python scripts/doctor.py` on the laptop, paste the output here.** S1.1 is PARTIAL: all code/schema/fold proven here; the laptop-venv acceptance lines (S1.1 block `Next:`) run at the next laptop session's start. S0.3 and S0.5 remain Adi's, non-blocking.
+- **Next task:** **S1.3a** (this cloud session continues into it; S1.2 is done — 35 tests). S0.4 is PARTIAL: `scripts/doctor.py` is written; **[Adi]: create `.env`, run `python scripts/doctor.py` on the laptop, paste the output here.** S1.1 is PARTIAL: all code/schema/fold proven here; the laptop-venv acceptance lines (S1.1 block `Next:`) run at the next laptop session's start. S0.3 and S0.5 remain Adi's, non-blocking.
 - **Blockers:** none.
 
 ## What exists in this repo
@@ -351,4 +351,35 @@ Next:      S1.2 runs in this same cloud session (see its block). The
            onnxruntime-directml 1.24.4; the cv2/onnxruntime import line
            prints 4.10.0 1.24.4 with DmlExecutionProvider listed;
            config.ffmpeg() returns an existing path.
+```
+
+```
+## S1.2 — DONE (plates + matcher core; 35 table-driven tests pass)
+When:      2026-09-22T10:25Z
+Observed:  backend/core/plates.py (normalise, canonical, plate_like,
+           is_partial, weighted plate_match, alertable) and
+           backend/core/matcher.py (WatchlistCache with canonical +
+           4-char-prefix indexes, exact-first find_match, F21 alertable).
+           .venv/bin/python -m pytest tests/test_plates.py -q ->
+           "35 passed" (whole suite: 41 passed in 0.13s). Covered, with
+           observed values: normalise incl. "GJ32 K 9819"->GJ32K9819->full;
+           all seven ambiguity pairs fold; GJ01AB1234 vs GJ01A81234 ->
+           (ambiguity, 0.0); vs GJ01AB1235 -> (fuzzy, 1.0), not alertable
+           by default and alertable with SENTINEL_ALERT_ON_FUZZY=true;
+           GJ05JB432 -> partial and plate_match vs GJ05JB4321 -> none;
+           22BH1234AA -> full; OADFIX2FR and DFIX2F -> None; weighted
+           distance composes (B->8 0.25 + 4->5 1.0 = 1.25 -> none);
+           matcher canonical-index probe over 1,001 seeded rows returned
+           the ambiguity hit in < 5 ms (observed ~0.02 ms); fuzzy via the
+           prefix bucket works; partial reads take no fuzzy path; expired
+           watchlist rows are excluded.
+Surprise:  §6's coercion clause and the partial clause CONFLICT on
+           GJ05JB432 (B->8 coercion makes it a full 9-char plate, but the
+           acceptance pins it as partial). Resolved conservatively as
+           decision F40: uncoerced full -> uncoerced structural prefix
+           (partial) -> coercion-dependent full -> None. Also recorded
+           F39: the cache excludes rows past expires_at (the schema
+           carries the column; the task never said who enforces it).
+Next:      S1.3a (same session): registry API, auth + audit, schemas,
+           cameras/health/stats/gap-analysis, TestClient suite.
 ```

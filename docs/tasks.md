@@ -60,7 +60,7 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S0.4 | Environment check (`scripts/doctor.py`); `.env` is created by Adi **before** this session | Mon 21 | 30 min | [~] script written + cloud smoke; laptop run + .env are Adi's |
 | S0.5 | [Adi] Insurance recording of the old build running | Mon 21 | 30 min | |
 | S1.1 | Backend skeleton: venv, config, logging, schema v1 + migrations, contract folded, tests | Mon 21 | 1.5 h | [~] code+schema+fold proven (cloud, Tue 22); laptop venv acceptance remains |
-| S1.2 | Plates + matcher core (shared), table-driven tests | Mon 21 | 1 h | |
+| S1.2 | Plates + matcher core (shared), table-driven tests | Mon 21 | 1 h | [x] done Tue 22 (cloud); 35 tests pass; decisions F39, F40 |
 | S1.3a | Registry API: app, auth + audit, schemas, cameras, health, stats, gap analysis | Mon 21 | 1.5 h | |
 | S1.3b | CDN session, probe, seed tools, OpenAPI export — first live contact | Mon 21 | 1.5 h | |
 | S2.1 | Timeline + replay frame source + frame-source test harness | Mon 21 | 1.5 h | |
@@ -200,7 +200,7 @@ git rev-parse --short main origin/main
 *Acceptance:* `.venv/Scripts/python -m pip check` prints `No broken requirements found.`; `.venv/Scripts/python -m pip list | grep -i -E "opencv|onnxruntime"` prints exactly two lines — `opencv-contrib-python 4.10.0.84` and `onnxruntime-directml 1.24.4` (no `opencv-python`, no plain `onnxruntime`); `.venv/Scripts/python -c "import cv2, onnxruntime as o; print(cv2.__version__, o.__version__, o.get_available_providers())"` prints `4.10.0 1.24.4 [...]` with `DmlExecutionProvider` in the list (a Paddle import is not required here; S2.4 proves OCR); `.venv/Scripts/python -m backend.core.db init` creates `data/sentinel.db`; `.venv/Scripts/python -m pytest tests/test_schema.py -q` passes a test that asserts every table, column, enum default and index above (write it); `.venv/Scripts/python -c "from backend.core import config; print(config.masked('rtsp://user%40x.y:secret' + '@1.2.3.4:8554/x'))"` prints `rtsp://<email>:***@1.2.3.4:8554/x`; `config.ffmpeg()` returns an existing path on the laptop; a log file appears under `data/logs/` when `setup("test")` is called; `git check-ignore .venv data/sentinel.db` prints both paths.
 *Write-off:* progress block; note the schema version and the api.md sections rewritten.
 
-### S1.2 — Plates + matcher core (shared) `[ ]`
+### S1.2 — Plates + matcher core (shared) `[x]`
 *Read first:* `docs/api.md` §6 (as rewritten in S1.1); `docs/decisions.md` F21; `docs/sandbox-findings.md` §5 (what real reads look like).
 *Build:* `backend/core/plates.py` — one module, no duplicates anywhere else:
 - `normalise(raw)`: uppercase, strip non-`A-Z0-9`.
