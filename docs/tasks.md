@@ -62,7 +62,7 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S1.1 | Backend skeleton: venv, config, logging, schema v1 + migrations, contract folded, tests | Mon 21 | 1.5 h | [~] code+schema+fold proven (cloud, Tue 22); laptop venv acceptance remains |
 | S1.2 | Plates + matcher core (shared), table-driven tests | Mon 21 | 1 h | [x] done Tue 22 (cloud); 35 tests pass; decisions F39, F40 |
 | S1.3a | Registry API: app, auth + audit, schemas, cameras, health, stats, gap analysis | Mon 21 | 1.5 h | [x] done Tue 22 (cloud); 11 TestClient tests pass |
-| S1.3b | CDN session, probe, seed tools, OpenAPI export — first live contact | Mon 21 | 1.5 h | |
+| S1.3b | CDN session, probe, seed tools, OpenAPI export — first live contact | Mon 21 | 1.5 h | [~] code + seeders + export proven (cloud, Tue 22); live probe run is laptop's |
 | S2.1 | Timeline + replay frame source + frame-source test harness | Mon 21 | 1.5 h | |
 | S2.2 | RTSP frame source: ffmpeg pipe + HLS tee + watchdog + backoff (the 20 s network pull in its acceptance is Adi's step) | Tue 22 | 2 h | |
 | S2.3 | Motion gate, detector, tracker, model fetch with checksum | Tue 22 | 2 h | |
@@ -225,7 +225,7 @@ git rev-parse --short main origin/main
 *Acceptance:* `.venv/Scripts/python -m pytest tests/test_registry_api.py -q` passes tests with `TestClient(app, base_url="http://localhost")` (the default `testserver` Host is rejected by `TrustedHostMiddleware` — put the client in `conftest.py`) for: 401 without key; 403 for viewer on POST; cookie accepted on `GET /crops/x.jpg` (404 for a missing file, not 401) but refused on POST; 201 manual create; 409 duplicate; 422 bad department / lat; CSV import of 3 rows with one bad row → 2 accepted, 1 rejected with a reason, the bad row absent; PATCH; gap-analysis shape; stats keys; an `audit` row written for the POST with `after_json`; `/api/health` open.
 *Write-off:* progress block.
 
-### S1.3b — CDN session, probe, seed tools, OpenAPI export — first live contact `[ ]`
+### S1.3b — CDN session, probe, seed tools, OpenAPI export — first live contact `[~]`
 *Read first:* `docs/sandbox-findings.md` §1–§3; `docs/reference/sandbox-access-spec.md` §1; `docs/decisions.md` C6, C8, C9, C11; old code for reference only: `D:\projects\Sentinel_Repo\src\tools\probe.py`, `src\ingest\session.py`, `src\tools\seed_registry.py`, `src\tools\seed_watchlist.py`.
 *Build:*
 - `backend/core/cdn_session.py`: form login to `/auth/login` (fields `email`, `password`), cookie jar, browser-like User-Agent, retry with jittered backoff and one re-login on 403/timeouts, `get(url)` helper — shared by probe, relay (S3.1b) and harvest (S4.2). Every log line masked.

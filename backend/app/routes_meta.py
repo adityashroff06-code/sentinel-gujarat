@@ -52,6 +52,7 @@ def health(con: sqlite3.Connection = Depends(get_db)):
 
 @router.get("/stats", response_model=schemas.StatsOut)
 def stats(con: sqlite3.Connection = Depends(get_db), _: str = Depends(require_auth)):
+    """Dashboard header counts."""
     return {
         "cameras_online": _count(con, "SELECT COUNT(*) FROM cameras WHERE health = 'online'"),
         "cameras_total": _count(con, "SELECT COUNT(*) FROM cameras"),

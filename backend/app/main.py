@@ -49,6 +49,7 @@ def create_app() -> FastAPI:
 
     @app.post("/api/session", response_model=schemas.SessionOut, tags=["auth"])
     def open_session(body: schemas.SessionIn, response: Response):
+        """Validate an API key and set the sentinel_key cookie (GET-only transport for crops, HLS and the alert stream)."""
         role = auth.role_for_key(body.api_key)
         if role is None:
             raise HTTPException(status_code=401, detail="invalid API key")
@@ -60,11 +61,17 @@ def create_app() -> FastAPI:
 
     @app.delete("/api/session", response_model=schemas.MessageOut, tags=["auth"])
     def close_session(response: Response):
+        """Clear the sentinel_key cookie."""
         response.delete_cookie(auth.COOKIE_NAME, path="/")
         return {"detail": "session cleared"}
 
-    @app.get("/crops/{crop_path:path}", tags=["crops"])
+    @app.get(
+        "/crops/{crop_path:path}",
+        tags=["crops"],
+        responses={200: {"description": "The crop image", "content": {"image/jpeg": {"schema": {"type": "string", "format": "binary"}}}}},
+    )
     def crop(crop_path: str, _: str = Depends(auth.require_auth)):
+        """Serve a plate/vehicle crop (auth: header, or the session cookie on GET)."""
         # camera_id-derived names only; refuse traversal outside the folder.
         target = (CROPS_DIR / crop_path).resolve()
         if not str(target).startswith(str(CROPS_DIR.resolve())):

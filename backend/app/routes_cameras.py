@@ -56,6 +56,7 @@ def list_cameras(
     tier: str | None = None,
     q: str | None = None,
 ):
+    """List cameras with optional department/health/tier/text filters."""
     where, params = ["1=1"], []
     if department:
         where.append("department = ?"); params.append(department)
@@ -79,6 +80,7 @@ def gap_analysis(
     con: sqlite3.Connection = Depends(get_db),
     _: str = Depends(require_auth),
 ):
+    """Coverage gap analysis: offline/degraded cameras, isolated coverage, department summary (Model 1 deliverable)."""
     from backend.services import gap_analysis as service
 
     return service.generate(con)
@@ -91,6 +93,7 @@ def import_csv(
     con: sqlite3.Connection = Depends(get_db),
     _: str = Depends(require_admin),
 ):
+    """Bulk CSV onboarding: per-row accepted/rejected with reasons; one transaction, no partial commit (Model 1 deliverable)."""
     text = file.file.read().decode("utf-8-sig", errors="replace")
     reader = csv.DictReader(io.StringIO(text))
     accepted_rows: list[tuple[int, schemas.CameraIn]] = []
@@ -134,6 +137,7 @@ def get_camera(
     con: sqlite3.Connection = Depends(get_db),
     _: str = Depends(require_auth),
 ):
+    """One camera, full record."""
     row = con.execute("SELECT * FROM cameras WHERE camera_id = ?", (camera_id,)).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="camera not found")
@@ -146,10 +150,10 @@ def stream_url(
     con: sqlite3.Connection = Depends(get_db),
     _: str = Depends(require_auth),
 ):
+    """The playable HLS URL for this session — always the backend relay path, never an upstream URL."""
     row = con.execute("SELECT camera_id FROM cameras WHERE camera_id = ?", (camera_id,)).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="camera not found")
-    # Only a backend-relayed path — never an upstream URL (docs/api.md §7).
     return {"hls": f"/api/hls/{camera_id}/live.m3u8"}
 
 
@@ -160,6 +164,7 @@ def create_camera(
     con: sqlite3.Connection = Depends(get_db),
     _: str = Depends(require_admin),
 ):
+    """Manual camera onboarding (Model 1 deliverable); 409 on a duplicate id."""
     try:
         _insert_camera(con, cam)
         con.commit()
@@ -178,6 +183,7 @@ def patch_camera(
     con: sqlite3.Connection = Depends(get_db),
     _: str = Depends(require_admin),
 ):
+    """Edit camera metadata, ROI, zones, health or tier."""
     before = con.execute("SELECT * FROM cameras WHERE camera_id = ?", (camera_id,)).fetchone()
     if before is None:
         raise HTTPException(status_code=404, detail="camera not found")

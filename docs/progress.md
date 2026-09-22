@@ -11,7 +11,7 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 - **Deadline:** 28 Sep 2026 (per Adi; S0.3 confirms the milestone on the portal). Build window Mon 21 – Thu 24 for code, Fri 25 for deliverables (GATE D 09:00, code freeze at end of day), Sat 26 soak + rehearsal, Sun 27 submit, Mon 28 buffer. The Mon 21 column started a day late; this session (Tue 22) is catching it up.
 - **Session environment (new):** this session runs in a Claude Code **cloud container** (Linux, Python 3.11.15, Node 22, no GPU, no ffmpeg preinstalled, no `.env`, no sandbox network access), with the repo cloned at `/home/user/sentinel-gujarat` and push access to `origin`. Code, schema, docs and every test that does not need the laptop's venv pins, GPU, ffmpeg default path or the live sandbox can be built and proven here; laptop-only acceptance items are written off explicitly (`Next:` lines name them) and stay with Adi / a laptop session.
 - **Git:** `main` == `origin/main`, baseline commit `577587b` ("S0.2: documentation baseline, plan v2.2") with annotated tag `docs-v0` — Adi had already committed, tagged and pushed before this session; S0.2's checks were then run and passed here (block below).
-- **Next task:** **S1.3b** (this cloud session continues into it; S1.2 and S1.3a are done). S0.4 is PARTIAL: `scripts/doctor.py` is written; **[Adi]: create `.env`, run `python scripts/doctor.py` on the laptop, paste the output here.** S1.1 is PARTIAL: all code/schema/fold proven here; the laptop-venv acceptance lines (S1.1 block `Next:`) run at the next laptop session's start. S0.3 and S0.5 remain Adi's, non-blocking.
+- **Next task:** **S2.1** (this cloud session continues into it; S1.2, S1.3a done; S1.3b code done, live probe pending on the laptop). S0.4 is PARTIAL: `scripts/doctor.py` is written; **[Adi]: create `.env`, run `python scripts/doctor.py` on the laptop, paste the output here.** S1.1 is PARTIAL: all code/schema/fold proven here; the laptop-venv acceptance lines (S1.1 block `Next:`) run at the next laptop session's start. S0.3 and S0.5 remain Adi's, non-blocking.
 - **Blockers:** none.
 
 ## What exists in this repo
@@ -413,4 +413,35 @@ Surprise:  none. The old build's reference modules on D:\ are unreachable
 Next:      S1.3b (same session): cdn_session, probe, seed tools, OpenAPI
            export. The probe's live acceptance is laptop-only; the seeders
            and the OpenAPI export are provable here.
+```
+
+```
+## S1.3b — PARTIAL (all code done; seeders + OpenAPI export proven here;
+##                  the live probe run is laptop-only)
+When:      2026-09-22T11:30Z
+Observed:  backend/core/cdn_session.py (form login, cookie jar, browser
+           UA, jittered backoff with one re-login on 403, CDN-origin-only
+           fetch guard, masked logs); backend/tools/{probe,seed_registry,
+           seed_watchlist,export_openapi}.py.
+           Observed on this box:
+           - seed_registry on a fresh DB: "cameras: 30 rows, 5 active
+             across 5 departments — ACCEPTANCE: PASS"; --add and --replay
+             covered by tests/test_seed_tools.py
+           - seed_watchlist twice: "25 seeded ... 25 rows total" both
+             runs; hero GJ01AB1234 stolen_vehicle/high; all 5 categories
+           - export_openapi: "12 operations across 9 paths ->
+             deliverables/registry-api.json" (regenerated per B3);
+             tests/test_openapi.py asserts every operation has a
+             description and a 2xx schema and no snapshot.jpg survives
+           - whole suite: 57 passed
+Done so far: everything above, committed. The regenerated
+           deliverables/registry-api.json replaces the stale 15 Sep
+           export (B3) and will grow as S3.1a/S3.1b add endpoints.
+Surprise:  none.
+Next:      Laptop-only remainder, at the next laptop session (needs .env
+           + ffprobe + the sandbox): `python -m backend.tools.probe` —
+           expect >= 20 RTSP-live cameras, record the observed count and
+           any 403s in a progress block; the probe writes
+           data/probe_results_<date>.json and never touches the 14 Sep
+           evidence file. Then S2.1 (started in this cloud session).
 ```
