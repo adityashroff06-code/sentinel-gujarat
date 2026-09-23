@@ -6,6 +6,8 @@
 
 Sources: portal Step 5 ("Onboarding and processing of live or recorded CCTV feeds… AI-powered detection and analytics… correlation… automatic generation of real-time alerts"); FAQ 31 (the government-feed video shows "onboarding, viewing, and analytics output (ANPR, vehicle/person/intrusion/object detection)"); decision F43 (the hit and the route are real).
 
+**v2.5 (24 Sep, decisions F54–F56) — what each video proves, in the brief's names.** Video 1: Model 1 (onboarding a camera, the map), Model 2 across **two systems** (the organisers' gateway and our mediamtx), Pipeline 1 (live view, nothing stored) and Model 2's metadata analytics (the real hit and the route). Video 2: Model 1 (the catalogue onboarded) and Model 2 on the government feed — cam06 and the demo tier **pulled live**, never a recorded copy. Pipeline 3 is not shown: it is described in the HLD, not built — so beat 4's "nothing is recorded" is literally true. The own cameras replay footage filmed on a named date, published once with the real gaps between the shots, so the route's times are real; say so in beat 3.
+
 ## Video 1 — our own feed (≤ 3 min)
 
 | # | Beat | Says | Shows |

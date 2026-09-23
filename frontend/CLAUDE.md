@@ -20,10 +20,22 @@ React **18.3.1** + Vite 6 (`npm create vite@6`, Node **20.19+**), `react-router-
 - **Nothing on screen may show a credential** — check every address bar, tooltip and error toast before a screen is recorded.
 - Plates in URLs are `encodeURIComponent`-ed; navigation uses router `<Link>`s.
 
+## Port and polish (v2.5 — decisions F52, F53)
+
+- **Port first.** Start from the previous build's `ui/src` — the same stack (React 18.3.1, react-leaflet 4.2.1, hls.js 1, Leaflet 1.9.4; only Vite moves 5 → 6). Rewire every call to `docs/api.md` and the session cookie, and fix D13 on the way (IST, `r.ok`, the `critical` severity, the zone-save result). Name every ported file in the progress block.
+- **One token sheet**, `src/styles/tokens.css`: surface layers, text, the six department colours, severity colours, provenance colours, a spacing scale, radii, a type scale, shadows, motion durations. No colour or size literal outside it. **One theme: dark, control room.**
+- **Type:** the system UI font stack (no web-font download — the venue may be offline); tabular numerals for times and counts; plates in a monospace face, always upper case.
+- **Every screen has four designed states:** loading (a skeleton, not a lone spinner), empty (says why and what to do next), error (the status strip plus an in-place message) and data. Never a blank screen.
+- **Five hero screens get the design pass (S3.3b): Login, Command, Live Wall, Route, Search/Reports.** Command reads in five seconds at 1920×1080 — the video frame. Route is the scored moment: its header (plate, first and last seen, duration, distance, cameras, departments crossed) carries the largest type on the page. A new alert animates in once (≤ 200 ms) and never loops. Provenance badges stay legible at video resolution.
+- **Layout:** no horizontal scroll at 1366×768 (the laptop, and likely a judge's screen) or 1920×1080 (the videos, a wall); the Live Wall fills the viewport.
+- **Accessibility basics:** text contrast ≥ 4.5:1, a visible keyboard focus, a label on every input, nothing said by colour alone (severity carries a word, a pin's popup names its department).
+- **No new runtime dependency** without a row in `docs/decisions.md` saying what it costs (bundle size, licence). No UI kit, no CSS framework, no chart library for a handful of counters — CSS and SVG do it.
+- **Review gate before every commit (F53):** `npm --prefix frontend run build` and `run lint` clean, the Playwright smoke green, the pytest suite green, a code review at high effort and `/security-review`, every finding fixed or answered in the progress block. The progress block names the skills that actually ran.
+
 ## Package layout (decision F12)
 
-Vite + React in `frontend/` — `src/lib/{api,time,poll}.js`, `src/components/{Shell,Header,StatusStrip,LoginForm,DeptLegend,Tile,FitBounds}.jsx`, `src/pages/{Login,Command,Map,LiveWall,Search,Route,Alerts,Watchlist,Cameras,Zones,Reports}.jsx`. `npm --prefix frontend run dev` (port 5173, proxies `/api` to 8000) and `npm --prefix frontend run build` → `frontend/dist`, served by the API.
+Vite + React in `frontend/` — `src/lib/{api,time,poll}.js`, `src/styles/tokens.css`, `src/components/{Shell,Header,StatusStrip,LoginForm,DeptLegend,Tile,FitBounds}.jsx`, `src/pages/{Login,Command,Map,LiveWall,Search,Route,Alerts,Watchlist,Cameras,Zones,Reports}.jsx`. `npm --prefix frontend run dev` (port 5173, proxies `/api` to 8000) and `npm --prefix frontend run build` → `frontend/dist`, served by the API.
 
-## What the previous build did here (read-only reference)
+## What the previous build did here (the port source, F52 — read-only)
 
-`D:\projects\Sentinel_Repo\ui\src\` — `api.js` (thin client + `DEPT_COLORS`), `main.jsx` (nav + routes), `components/{Header,Tile,FitBounds}.jsx`, `pages/{Dashboard,MapView,LiveWall,Search,RouteView,Alerts,Zones,Reports}.jsx`, `styles.css`. Defect D13 in `docs/reference/old-build/P7-enhancements.md` lists its UI faults; §7 E5 has the operator-experience wish list for after the deadline.
+`D:\projects\Sentinel_Repo\ui\src\` (in a cloud session, a read-only clone of `github.com/adityashroff06-code/Sentinel_Repo`) — `api.js` (thin client + `DEPT_COLORS`), `main.jsx` (nav + routes), `components/{Header,Tile,FitBounds}.jsx`, `pages/{Dashboard,MapView,LiveWall,Search,RouteView,Alerts,Zones,Reports}.jsx`, `styles.css`. Defect D13 in `docs/reference/old-build/P7-enhancements.md` lists its UI faults; §7 E5 has the operator-experience wish list for after the deadline.
