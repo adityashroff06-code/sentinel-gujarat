@@ -4,16 +4,15 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 
 ---
 
-## Current state (24 Sep 2026 — Phase 2 complete, GATE A' passed; plan v2.5 on `main`)
+## Current state (23 Sep 2026, 21:05 UTC — Phase 2 complete, GATE A' passed)
 
 - **Phase 2 is closed.** This session (a Claude Code cloud container: Linux, python 3.11.15, no GPU, no `.env`, no sandbox reach) completed **S2.3, S2.4 and S2.5** and passed **GATE A'** (the 10-minute replay soak: 614.9 s, 0 worker restarts, 1843 frames on each of 3 replay cameras, RSS +0.6 MB, stats every 10 s, 10 wrap ticks per camera). Whole suite here: **141 passed, 5 skipped** (the 5 are the mediamtx harness cases, Windows-zip only; the laptop unskips them). The full pipeline now exists end to end: frame source -> motion gate -> YOLOX-S -> tracker -> PaddleOCR consensus -> sightings with dedupe -> watchlist match -> alerts with table-derived cooldowns -> object/zone events -> single-writer supervisor with stats.
 - **The demo vehicle runs through the whole architecture** (Adi's ask, 23 Sep): `backend/tools/demo_seed.py` (S3.1a's seeder, pulled forward) injects hero `GJ01AB1234` through the real `record_sighting -> find_match -> create_alert` path — 3 stops cam06/cam10/cam09 + ambiguity near-miss, 4 alerts, 20 background plates, every row `provenance='demo'`. The Phase-3 windows (route, alerts, search, dashboard) will read these same rows; nothing on the data side blocks them.
-- **Git:** Phase 2 (PR #1, `ea2ebc9`) and plan v2.5 (PR #2, R6, `f9f9667`) are both merged into `main` on GitHub; **pull `main` on the laptop before the next laptop session** so S3.4 starts from both. Phase 2 commits: S2.3 `71fefeb`, S2.4 `2e2b277`, S2.5 code `112051a`, demo seeder `3970c8a`, write-off `0f690fc`.
-- **Plan v2.5 (F52–F57, R6 in the log):** working modules are ported from the previous build, not retyped (F52); the UI is ported, then a design pass on five hero screens and a review gate (F53, new task S3.3b); the demo is Model 1 + Model 2 + Pipeline 1 — **Pipeline 3 is described, not built; S4.2 and S4.3 are cut, GATE C moves to S3.6** (F54); the demo tier is cam06 pulled live plus own footage, `--pick-active` cut (F55); own clips are published once with the real gaps (F56); two lanes (F57). `docs/architecture.md` Part D fixes the names: live view = Pipeline 1, live streams = Model 2.
+- **Git:** this cloud session works on branch **`claude/relaxed-dijkstra-qx8j24`** (pushed; draft PR #1 on GitHub). `main` on the laptop was at `92fa02a`+R5 when the session started; **merge the PR (or fast-forward) before the next laptop session** so S3.0 starts from Phase-2 code. Commits: S2.3 `71fefeb`, S2.4 `2e2b277`, S2.5 code `112051a`, demo seeder `3970c8a`, then the write-off commit.
 - **On first laptop run after merge:** `models/yolox_s.onnx` (36 MB) and the PP-OCRv5 mobile weights download once and verify against the committed `CHECKSUMS.txt` pin; Paddle models land in repo-controlled `models/paddle/` (`PADDLE_PDX_CACHE_HOME`, set in `ml/anpr/ocr.py`). Two new env defaults: `SENTINEL_MOTION_MIN_RATIO=0.002`, `SENTINEL_DETECT_CONF=0.4` (`.env.example`).
-- **Deferred to the laptop** (ride the next laptop session): DirectML detector latency (~50 ms expected; CPU here measured 95-135 ms), laptop OCR latency (~0.45 s expected; here 176-198 ms), and the S2.2 20 s Wi-Fi pull ([Adi], Thu 24: probe every camera for map health, then pull cam06 — F55).
-- **Next tasks (two lanes, F57):** **cloud** — S3.0 (login, roles, sessions, hardening — schema v2), S3.7 (adapter + runbook only; the pick is cut), S3.2, then S3.1a (its demo seeder is already built), S3.1b, S3.3, S3.3b; **laptop** — S3.4 → S4.1 (GATE B) → S3.6 (GATE C, Thu 20:00).
-- **[Adi] queue:** ⑥ Tailscale Funnel trial (gates S3.5); ⑦ Thu 24: film the S3.6 clips — **v2.5: 10–15 minute recordings of one vehicle at three or four real locations visited in order**, plate ~100 px wide or more, daylight, 1080p30 H.264 (iPhone: Most Compatible), steady, plate ≥ 3 s in frame per pass; note each location's coordinates, each clip's start time and a plausible department; copy by cable or Drive originals, **never WhatsApp** (full list: `docs/tasks.md` S3.6). They become `local01…` rows, published once with the real gaps (F56); ⑧ Thu 24: the S2.2 Wi-Fi pull.
+- **Deferred to the laptop** (ride the next laptop session): DirectML detector latency (~50 ms expected; CPU here measured 95-135 ms), laptop OCR latency (~0.45 s expected; here 176-198 ms), and the S2.2 20 s Wi-Fi pull ([Adi], Thu 24, on the best-working camera after a fresh all-camera probe — F49).
+- **Next task: S3.0** (login, roles, sessions, hardening — schema v2), then S3.7, S3.1a (analytics API + route; its demo seeder is already built — see the editor's note in the task block), S3.1b, S3.2, S3.3 per the Wed 23 column. GATE B/C are Thu 24.
+- **[Adi] queue:** ⑥ Tailscale Funnel trial (gates S3.5); ⑦ Thu 24: film the S3.6 clips — **10 recordings of 60-90 s** with coordinates (Adi confirmed 23 Sep they arrive tomorrow; they become local01..local10 replay rows through this pipeline); ⑧ Thu 24: the S2.2 Wi-Fi pull.
 - **Blockers:** none.
 - **Timing notes:** full suite ~3 min in this container and ~3.5 min on the laptop (paddle/cv2 imports). The soak supervisor is `python -m ml`; stop it with Ctrl-C or `data/stop`.
 
@@ -1020,23 +1019,43 @@ Next:      S3.0, as Current state says. With S2.5 on main, every
 ```
 
 ```
-## R6a — DONE (Current state folded into v2.5 after PR #2 merged)
-When:      2026-09-23 (24 Sep IST), cloud session, branch
-           claude/eloquent-hypatia-kdhdnq — docs only.
-Observed:  Reviewed and merged PR #2 (R6, plan v2.5) into main as
-           f9f9667: no conflict markers, main already merged into the
-           branch, and tasks.md S3.1a's pinned cameras (cam06/cam10/cam09)
-           match backend/tools/demo_seed.py. R6 left Current state alone
-           on purpose; it still said "10 recordings of 60-90 s" for
-           Thursday's filming, but S3.6 now says 10-15 min at three or
-           four locations. Rewrote Current state to match v2.5: git line,
-           a v2.5 summary, the next tasks by lane, cam06 for the S2.2
-           pull, and the filming spec in Adi's queue item 7.
-Surprise:  demo_seed.py's docstring and a code comment (lines 15-17, 36)
-           still say the pick from S3.7 will replace the pinned cameras
-           (F49); under F55 the pinned cameras are the final choice.
-           Behaviour is right; only the comment is stale. Left for the
-           next session that touches the file (the cloud lane never
-           edits Phase 2 code on its own).
-Next:      unchanged — S3.0 (cloud), S3.4 (laptop).
+## R6a — DONE (review of PR #2 after merge; Current state is stale for Thu 24)
+When:      2026-09-23T21:15Z (24 Sep 02:45 IST), cloud session, branch
+           claude/eloquent-hypatia-kdhdnq — docs only, this block only.
+Observed:  PR #2 (R6, plan v2.5) reviewed and merged into main as f9f9667:
+           no conflict markers, main already merged into the branch;
+           tasks.md S3.1a's pinned cameras (cam06/cam10/cam09) match
+           backend/tools/demo_seed.py. Full suite on this branch in a
+           Linux cloud container (python 3.11.15, requirements.txt +
+           requirements-dev.txt, apt ffmpeg 6.1.1): 141 passed, 5 skipped
+           (1 Windows-only PATHEXT, 4 mediamtx harness - the fetch is
+           blocked here), the same count Phase 2 recorded.
+           Current state was NOT edited: F57 reserves it for the laptop
+           lane. It is stale in three places, for the first laptop
+           session to fold in:
+           1. [Adi] queue item 7 still says "10 recordings of 60-90 s".
+              v2.5 (tasks.md S3.6) says: 10-15 minute recordings of one
+              vehicle at three or four real locations visited in order,
+              plate ~100 px wide or more, daylight, 1080p30 H.264 (iPhone:
+              Most Compatible), steady, plate >= 3 s in frame per pass;
+              note coordinates, clip start times and a department; copy
+              by cable or Drive originals, never WhatsApp. FILM TO S3.6,
+              NOT TO CURRENT STATE.
+           2. The Git line still names draft PR #1 as unmerged; PR #1
+              (ea2ebc9) and PR #2 (f9f9667) are both on main - pull main
+              on the laptop before S3.4.
+           3. The Next-task line predates the lanes (F57): cloud S3.0,
+              S3.7, S3.2, then S3.1a, S3.1b, S3.3, S3.3b; laptop S3.4 ->
+              S4.1 (GATE B) -> S3.6 (GATE C, Thu 20:00); S4.2/S4.3 cut.
+Surprise:  (1) demo_seed.py's docstring and comment (lines 15-17, 36) still
+           say S3.7's pick will replace the pinned cameras (F49); F55 cut
+           the pick, so the pinned cameras are final. Behaviour is right,
+           only the comment is stale - fix it in the next session that
+           edits that file.
+           (2) tasks.md S2.2 (line 279, v2.4) still runs the Thu 24 Wi-Fi
+           pull on "the best-working camera" the probe reports (F49); F55
+           fixes the demo tier to cam06 + up to four live sandbox cameras
+           but does not say which camera the S2.2 pull uses. Not a
+           conflict - flagged so the laptop session picks deliberately.
+Next:      unchanged - S3.0 (cloud), S3.4 (laptop).
 ```
