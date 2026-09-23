@@ -19,6 +19,7 @@ import numpy as np
 
 from backend.core import plates
 from backend.core.config import REPO_ROOT
+from backend.core.db import iso as _iso
 from backend.core.db import utcnow
 from backend.core.logging_setup import setup
 
@@ -28,11 +29,6 @@ DEDUPE_SEEN_S = 60.0
 DEDUPE_WALL_S = 600.0
 _CROP_MAX_WIDTH = 160
 _CROP_JPEG_QUALITY = 70
-
-
-def _iso(ts: datetime) -> str:
-    """The stored form: timezone-aware UTC, +00:00, seconds precision."""
-    return ts.astimezone(timezone.utc).isoformat(timespec="seconds")
 
 
 def _save_crop(camera_id: str, sighting_id: int, crop: np.ndarray) -> str | None:

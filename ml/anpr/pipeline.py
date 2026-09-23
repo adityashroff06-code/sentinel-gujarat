@@ -46,6 +46,7 @@ class CommittedRead:
     vehicle_class: str
     kind: str             # full | partial
     pts_ms: float
+    crop: object = None   # the backing read's plate pixels (np.ndarray | None)
 
 
 @dataclass
@@ -120,7 +121,8 @@ class AnprPipeline:
             track.committed_full = True
         out.append(CommittedRead(
             track_id=track.id, plate=text, plate_raw=backing.raw, confidence=conf,
-            bbox=backing.bbox, vehicle_class=track.cls, kind=kind, pts_ms=pts_ms))
+            bbox=backing.bbox, vehicle_class=track.cls, kind=kind, pts_ms=pts_ms,
+            crop=backing.crop))
 
     def process(self, tick: FrameTick) -> FrameResult:
         committed: list[CommittedRead] = []

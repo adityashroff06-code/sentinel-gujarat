@@ -72,11 +72,15 @@ def add_manual(con: sqlite3.Connection, camera_id: str, department: str,
 def add_replay(con: sqlite3.Connection, path: str, camera_ids: list[str]) -> None:
     now = dbmod.utcnow()
     for camera_id in camera_ids:
+        # fps_tier='active': a replay row exists to be pulled (the soak's
+        # supervisor selects transport IN ('rtsp','replay') AND active — S2.5).
         con.execute(
             "INSERT INTO cameras (camera_id, rtsp_url_template, transport, source,"
-            " created_at, updated_at) VALUES (?, ?, 'replay', 'manual', ?, ?)"
+            " fps_tier, created_at, updated_at)"
+            " VALUES (?, ?, 'replay', 'manual', 'active', ?, ?)"
             " ON CONFLICT(camera_id) DO UPDATE SET rtsp_url_template = excluded"
-            ".rtsp_url_template, transport = 'replay', updated_at = excluded.updated_at",
+            ".rtsp_url_template, transport = 'replay', fps_tier = 'active',"
+            " updated_at = excluded.updated_at",
             (camera_id, path, now, now),
         )
 

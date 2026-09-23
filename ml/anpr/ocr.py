@@ -44,6 +44,7 @@ class PlateRead:
     conf: float
     bbox: tuple[int, int, int, int]  # [x, y, w, h] in SOURCE-frame pixels
     kind: str          # full | partial
+    crop: np.ndarray | None = None   # the plate region, cut when it was read
 
 
 def _enhance(crop: np.ndarray) -> tuple[np.ndarray, float]:
@@ -113,6 +114,15 @@ class PlateOcr:
                 if band_px is not None and (y + h / 2) < band_px:
                     log.debug("caption-band read rejected: %s", norm)
                     continue
+                # The plate region from the ORIGINAL crop, 25 % margin —
+                # kept with the read so a consensus committed frames later
+                # still stores the pixels that produced it.
+                cx1 = int(max(0, pts[:, 0].min() - w * 0.25))
+                cy1 = int(max(0, pts[:, 1].min() - h * 0.25))
+                cx2 = int(min(crop.shape[1], pts[:, 0].max() + w * 0.25))
+                cy2 = int(min(crop.shape[0], pts[:, 1].max() + h * 0.25))
+                plate_px = crop[cy1:cy2, cx1:cx2].copy() if cy2 > cy1 and cx2 > cx1 else None
                 reads.append(PlateRead(text=norm, raw=raw, conf=float(conf),
-                                       bbox=(int(x), int(y), int(w), int(h)), kind=kind))
+                                       bbox=(int(x), int(y), int(w), int(h)), kind=kind,
+                                       crop=plate_px))
         return reads
