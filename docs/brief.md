@@ -13,7 +13,7 @@
 | On-site hackathon | **12–13 October 2026** at i-Hub Gujarat, results 13 Oct. "A designated vehicle number is provided to participants on the hackathon day" (FAQ 27) — the scored plate test happens there, two weeks after this plan ends |
 | Hosted demo | Required by us, not by the portal (Step 5 lists it as optional): a URL with **test login credentials for the screening committee**, live from Thu 24 (tasks S3.0, S3.5; decisions F41, F42). Evaluation area 07 counts "documents, videos, reports, links, credentials" for completeness |
 | Build window | Mon 21 – Thu 24 Sep: the application · Fri 25: every deliverable in §7 (GATE D 09:00, code freeze at end of day) · Sat 26: soak and rehearsal · Sun 27: submit · Mon 28: buffer · nothing built in the last 48 h is demoed (`docs/tasks.md` calendar) |
-| Entry category | Category 1 (student / small startup) unless registered otherwise — check the registration |
+| Entry category | **Category 1** — registered as students (Adi, 23 Sep; task S0.3, closes O8) |
 | Sandbox | `https://cctv.corp8.cloud` — 30 cameras in the catalogue, 5 departments (see `docs/sandbox-findings.md`) |
 
 ---
@@ -99,7 +99,7 @@ Priorities: **P0 = submission fails without it · P1 = scored, expected · P2 = 
 
 ### FR-3 ANPR & sightings — P0
 - FR-3.1 One stream pull per camera; frame acquisition per the nine required behaviours of `frame_source.py` (`04-feed-rules.md`): PTS-driven timing, TCP-only RTSP, HLS fallback, jittered backoff, loop-discontinuity recovery, credential masking.
-- FR-3.2 Tiered processing: ~6–8 active cameras under continuous inference at configured fps; all others registered/viewable/health-monitored. Tier is registry metadata.
+- FR-3.2 Tiered processing: ~6–8 active cameras under continuous inference at configured fps; all others registered/viewable/health-monitored. Tier is registry metadata. Every camera gets a connection check; the best-working ones it picks go active — never a fixed list (decision F49).
 - FR-3.3 Motion gate (MOG2) skips inference on static frames; skip rate measured and recorded.
 - FR-3.4 Vehicle detection (YOLOX or RT-DETR, Apache-2.0) → plate region → OCR (PaddleOCR) on the plate crop only, never a full frame.
 - FR-3.5 Sightings stored per contract §2: normalised + raw plate, confidence, camera, PTS-derived UTC timestamp, bbox, vehicle class, ~2 KB plate crop. 60-second per-plate-per-camera dedupe.

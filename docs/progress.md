@@ -4,19 +4,20 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 
 ---
 
-## Current state (23 Sep 2026, 02:25 UTC / 07:55 IST — plan v2.3)
+## Current state (23 Sep 2026, 18:00 UTC / 23:30 IST — plan v2.4)
 
 - **Decision:** fresh, structured rebuild (`docs/decisions.md` F1). This repo holds the documentation, the plan and the carried-over deliverables. The previous build at `D:\projects\Sentinel_Repo` still runs as a demo and is the read-only reference.
-- **Plan:** `docs/tasks.md` **v2.3 (22 Sep, 23:30 IST)** — v2.2 plus five new tasks ahead of the current position (**S3.0** login + hardening, **S3.7** catalogue adapter, **S3.5** hosting go-live, **S3.6** own-footage ground truth, **S6.1b** overnight hosted soak + backups) and amendments inside S2.2, S2.5, S3.2, S3.3, S3.4, S5.1, S5.4 and S5.5. Nothing already done was re-opened. Previously: v2.2 — 30 one-session tasks S0.2 → S6.3 with the protocol every Claude Code session follows, a calendar re-based to Mon 21 with gates A′/B/C/D, and a cut order. Two independent cold-start reviews (43 + 26 findings, R2) and a third review (7 findings, R3) have been applied. Open decisions O1–O7, O9, O11 are settled (F11–F38); O8 and O10 remain (Adi, in S0.3 and S3.4).
-- **Deadline:** **28 Sep 2026 — confirmed on the portal 22 Sep**: "Last Date to Apply and Upload Your Submission", shortlisting the same day; it is an upload, not a live evaluation. The plate is handed over at the on-site hackathon on **12–13 Oct** (FAQ 27), after this plan ends. S0.3 now only has to confirm the entry category. Build window Mon 21 – Thu 24 for code, Fri 25 for deliverables (GATE D 09:00, code freeze at end of day), Sat 26 soak + rehearsal, Sun 27 submit, Mon 28 buffer. The Mon 21 column started a day late and was caught up on Tue 22; today (Wed 23) closed its last two laptop-only items, so the Wed 23 column (S3.0, S3.7, S3.1a, S3.1b, S3.2, S3.3) is the live one after S2.2.
+- **Plan:** `docs/tasks.md` **v2.4 (23 Sep, 23:30 IST)** — v2.3 plus Adi's answers of 23 Sep and decision **F49** (every camera gets a connection check; live tests, the active tier and the demo run on the best-working cameras it picks, never on fixed ids) — see the R5 block. v2.3 (22 Sep, 23:30 IST) was v2.2 plus five new tasks ahead of the current position (**S3.0** login + hardening, **S3.7** catalogue adapter, **S3.5** hosting go-live, **S3.6** own-footage ground truth, **S6.1b** overnight hosted soak + backups) and amendments inside S2.2, S2.5, S3.2, S3.3, S3.4, S5.1, S5.4 and S5.5. Nothing already done was re-opened. Previously: v2.2 — 30 one-session tasks S0.2 → S6.3 with the protocol every Claude Code session follows, a calendar re-based to Mon 21 with gates A′/B/C/D, and a cut order. Two independent cold-start reviews (43 + 26 findings, R2) and a third review (7 findings, R3) have been applied. Open decisions O1–O7, O9, O11 are settled (F11–F38) and O8 on 23 Sep (Category 1, students); O10 remains (Adi, in S3.4).
+- **Deadline:** **28 Sep 2026 — confirmed on the portal 22 Sep**: "Last Date to Apply and Upload Your Submission", shortlisting the same day; it is an upload, not a live evaluation. The plate is handed over at the on-site hackathon on **12–13 Oct** (FAQ 27), after this plan ends. S0.3 is closed: **Category 1** (Adi registered as students, 23 Sep). Build window Mon 21 – Thu 24 for code, Fri 25 for deliverables (GATE D 09:00, code freeze at end of day), Sat 26 soak + rehearsal, Sun 27 submit, Mon 28 buffer. The Mon 21 column started a day late and was caught up on Tue 22; today (Wed 23) closed its last two laptop-only items, so the Wed 23 column (S3.0, S3.7, S3.1a, S3.1b, S3.2, S3.3) is the live one after S2.2.
 - **Session environment:** this session runs **on the laptop** (Windows 10, Git Bash, Anaconda python 3.13.9 on PATH, real `.env`, GTX 1650, ffmpeg in the old build's `tools/`). The repo had been deleted and re-cloned, so `.venv` was gone; it was rebuilt here from `requirements.txt` + `requirements-dev.txt` and **every laptop-only acceptance item carried since 22 Sep has now run** (S1.1's four lines, S0.4's doctor). The previous session ran in a Claude Code cloud container (Linux, python 3.11.15, no GPU, no ffmpeg, no `.env`), which is why those items were outstanding.
-- **Git:** `main` == `origin/main` at `9be2bf3` ("Changed Repo Docs") when this session started, clean; baseline commit `577587b` ("S0.2: documentation baseline, plan v2.2") still carries the annotated tag `docs-v0`.
+- **Git:** `main` == `origin/main` at `92fa02a` (S2.2) on the laptop and on GitHub before R5 (checked 23 Sep 23:12 IST), clean; R5 is one docs-only commit on top. Baseline commit `577587b` ("S0.2: documentation baseline, plan v2.2") still carries the annotated tag `docs-v0`.
 - **Session result (Wed 23, laptop):** the venv is rebuilt and the two carried-over `[~]` tasks are **closed**: **S1.1 [x]** (pip check clean; exactly `opencv-contrib-python 4.10.0.84` + `onnxruntime-directml 1.24.4`; `4.10.0 1.24.4 ['DmlExecutionProvider', 'CPUExecutionProvider']`; `config.ffmpeg()` resolves to an existing exe) and **S0.4 [x]** (`.env` present with both API keys; doctor exits 0 with ffmpeg, ffprobe, Node v24.20.0, the GTX 1650 and the variable names). Suite on the laptop: **68 passed** unchanged from the cloud, then **73 passed** after five regression tests for a doctor bug. Monday's column is now **S0.2 [x], S0.4 [x], S1.1 [x], S1.2 [x], S1.3a [x], S1.3b [~], S2.1 [x]** — S1.3b's live probe is the only Monday item still open.
 - **Defect found and fixed this session:** `scripts/doctor.py` reported `npm : not found` although npm 11.19.0 is installed — `subprocess.run(["npm", ...])` cannot launch `npm.cmd` because Windows CreateProcess does no PATHEXT lookup. Resolved through `shutil.which()` now, with regression tests (`tests/test_doctor.py`). It mattered because S3.2 scaffolds the frontend with npm. The cloud smoke run could not have caught it: npm resolves normally on Linux.
 - **New scope since v2.2 (does not change what comes next):** the demo is **hosted for the judges with a login** — decisions F41 (users, sessions, roles `viewer`/`evaluator`/`admin`), F42 (tunnel; Tailscale Funnel by default), F43 (a real hit and a real route from our own footage), F44 (`-timeout`, not `-rw_timeout`), F45 (the `/api/ingest` catalogue shape), F46 (an evaluator's first screen and a feed-status strip). Source: `claude/submission-verification-2026-09-22.md` and `claude/demo-gap-review-2026-09-22.md`.
-- **S2.2 done (Wed 23, laptop):** RTSP frame source built and proven — harness **83 passed** (was 73; +10 for the parametrised RTSP cases and the mediamtx-publisher checksum tests), and a live cam06 smoke read **134 frames, monotonic, tee bounded at 10 segments, restarts_seen=0**, newest tee segment **hevc 1920×1080**. mediamtx v1.21.1 is fetched and SHA-256-pinned in `CHECKSUMS.txt`. A 24-agent adversarial review's 14 confirmed findings were all applied or consciously deferred (F47 scene-cut backed out after measuring a false-positive storm; F48 mediamtx localhost-only + MoQ off). **S1.3b's live probe also ran this session** (RTSP live 30/30, HLS 30/30, 0 × 403 — the grid is now mixed h264 ×24 / hevc ×6), so that Monday item is closed too. Only [Adi]'s 20 s Wi-Fi network pull for S2.2 is deferred (a session can't cut the laptop network).
+- **Scope change v2.4 (decision F49, Adi, 23 Sep):** every camera gets a connection check (the probe, all 30); the live tests, the active tier and the demo run on the best-working cameras that check picks, never on fixed ids. `data/camera_seed.csv`'s fixed 5-camera tier (cam06, cam09, cam26, cam27, cam28) is now only the fallback; S3.7 builds the pick (`seed_registry --pick-active`), and S2.2's pull, S3.1a's demo route, S4.1's run and S4.2's harvest use it.
+- **S2.2 done (Wed 23, laptop):** RTSP frame source built and proven — harness **83 passed** (was 73; +10 for the parametrised RTSP cases and the mediamtx-publisher checksum tests), and a live cam06 smoke read **134 frames, monotonic, tee bounded at 10 segments, restarts_seen=0**, newest tee segment **hevc 1920×1080**. mediamtx v1.21.1 is fetched and SHA-256-pinned in `CHECKSUMS.txt`. A 24-agent adversarial review's 14 confirmed findings were all applied or consciously deferred (F47 scene-cut backed out after measuring a false-positive storm; F48 mediamtx localhost-only + MoQ off). **S1.3b's live probe also ran this session** (RTSP live 30/30, HLS 30/30, 0 × 403 — the grid is now mixed h264 ×24 / hevc ×6), so that Monday item is closed too. Only [Adi]'s 20 s Wi-Fi network pull for S2.2 is deferred (a session can't cut the laptop network) — **set for Thu 24**, run on the best-working camera from a fresh all-camera check (F49).
 - **Next task:** **S2.3** (motion gate MOG2, YOLOX-S detector on DirectML with one lock around `session.run()`, greedy IoU tracker, `fetch_models.py` with checksum). Laptop session; the frame source (`for_camera`) is ready to feed it. GATE A′ closes at the end of S2.5.
-- **[Adi] queue before/alongside S2.2** (items don't block each other; ① and ② are now **done** — closed by this session): ⑥ a 15-minute Tailscale Funnel trial on the laptop (install, MagicDNS + HTTPS certs, `tailscale funnel --bg 8000`, open the URL from mobile data, reboot and check it comes back) — it gates S3.5, so failing early is worth knowing; ⑦ film the S3.6 clips: one vehicle with a legible plate at two or three real locations, noting the coordinates; ~~③ probe (S1.3b)~~ **done this session** (RTSP live 30/30); ④ S0.3 portal confirmation; ⑤ S0.5 insurance recording.
+- **[Adi] queue** (items don't block each other): ①–③ done 23 Sep; ④ **S0.3 done** — Category 1, students; ⑤ **S0.5 recorded** — the check that nothing on screen shows a credential is done at the end, in S5.5 (Adi's call); ⑥ a 15-minute Tailscale Funnel trial on the laptop (install, MagicDNS + HTTPS certs, `tailscale funnel --bg 8000`, open the URL from mobile data, reboot and check it comes back) — it gates S3.5, so failing early is worth knowing; ⑦ **Thu 24:** film the S3.6 clips — **10 recordings of 60–90 s**, one vehicle with a legible plate at real locations a few minutes apart, noting the coordinates; ⑧ **Thu 24:** S2.2's 20 s Wi-Fi pull, on the best-working camera from a fresh all-camera check (F49).
 - **Watch item for Wednesday:** Node is **v24.20.0**, not the v20.x the plan assumed. It clears the `>= 20.19` floor, but S3.2 pins Vite 6 / React 18.3.1 — if the scaffold misbehaves, Node 24 is the first suspect.
 - **Blockers:** none.
 - **Timing note:** a full `.venv/Scripts/python -m pytest -q` takes **~3m20s on this laptop** (vs seconds in the cloud container) — the paddle/cv2 import cost. Budget for it; do not run it casually mid-task.
@@ -732,4 +733,45 @@ Deferred:  [Adi] the 20 s Wi-Fi network pull — a session cannot cut the
            (reconnect+monotonic, backoff-doubling, resume-after-kill).
 Next:      S2.3 (motion gate, MOG2, YOLOX-S detector on DirectML, greedy
            tracker, model fetch with checksum).
+```
+
+```
+## R5 — DONE (plan v2.4: Adi's answers + every camera checked, the best-working ones tested)
+When:      2026-09-23T18:00Z (23 Sep 23:30 IST)
+Observed:  Documentation-only revision from Adi's answers in chat, 23 Sep.
+           Before it, laptop main == GitHub main == 92fa02a, clean.
+           S0.3 DONE: Category 1 - Adi registered as students; brief.md
+           section 0 updated, O8 closed in decisions.md section 5.
+           S0.5: the insurance recording exists (Adi); its second
+           acceptance line (no credential on screen) moves to S5.5's
+           credential sweep - Adi's call. Marked [~].
+           S2.2: the 20 s Wi-Fi pull is set for Thu 24 (Adi). It is not
+           a connection test: the smoke runs 180 s, Adi cuts Wi-Fi for
+           20 s, and the log must show the drop, doubling backoff and
+           frames resuming.
+           S3.6: Adi films 10 recordings of 60-90 s on Thu 24 (was two
+           or three clips of 30-60 s); mediamtx publishes one path per
+           clip used (local01, local02, ...).
+           New decision F49 (Adi): every camera gets a connection check;
+           the live tests, the active tier and the demo run on the
+           best-working cameras that check picks - never on fixed ids.
+           Amended in place: tasks.md S2.2 (the pull runs on a picked
+           camera after a fresh probe of every camera), S3.7 (builds
+           seed_registry --pick-active from the latest probe result;
+           budget 45 min -> 1 h), S3.1a (demo route on three picked
+           cameras in one geographic cluster; cam06/cam10/cam09 is the
+           pinned fallback for the tests), S3.4 (one path per clip; the
+           5 active cameras come from the pick), S3.6 (10 recordings),
+           S4.1 (probe + pick before the run), S4.2 (harvest clusters
+           from the check), S5.5 (carries S0.5's check). Also: brief.md
+           (entry category; FR-3.2), decisions.md (F49 added, F43
+           note, O8 settled), ml/CLAUDE.md (tier picked, not fixed;
+           local01... one per clip).
+           Left as they are: historical evidence naming cameras
+           (sandbox-findings.md, earlier log blocks, F44/F47), the unit
+           tests' fixed ids, and camera_seed.csv's fps_tier column (now
+           the fallback only).
+Surprise:  none - no code was touched and no completed task re-opened.
+Next:      S2.3, unchanged. Thu 24 adds two [Adi] items: the S2.2 Wi-Fi
+           pull and the S3.6 filming.
 ```

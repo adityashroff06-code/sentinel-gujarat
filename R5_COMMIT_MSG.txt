@@ -1,0 +1,22 @@
+R5: plan v2.4 - Adi's answers + every camera checked, the best-working ones tested (F49)
+
+Documentation only; no code touched, no completed task re-opened.
+
+- S0.3 done: Category 1 - Adi registered as students; O8 closed.
+- S0.5 [~]: insurance recording exists; the no-credential-on-screen
+  check moves to S5.5's credential sweep (Adi's call).
+- S2.2: the 20 s Wi-Fi network pull is set for Thu 24, on the
+  best-working camera from a fresh all-camera probe.
+- S3.6: Adi films 10 recordings of 60-90 s on Thu 24; one mediamtx
+  path per clip used (local01, local02, ...).
+- F49: every camera gets a connection check; live tests, the active
+  tier and the demo run on the best-working cameras it picks, never on
+  fixed ids. S3.7 builds seed_registry --pick-active; S3.1a, S3.4,
+  S4.1, S4.2 and S5.5 amended to use it. camera_seed.csv's fixed tier
+  is now the fallback only.
+
+Files: docs/tasks.md, docs/progress.md (current state + R5 block),
+docs/brief.md, docs/decisions.md, ml/CLAUDE.md.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UM27zVnxZecmfAyuU3zBTT
