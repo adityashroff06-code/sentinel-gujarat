@@ -1019,6 +1019,7 @@ Next:      S3.0, as Current state says. With S2.5 on main, every
            S3.1b, S3.3, S3.3b).
 ```
 
+```
 ## R6a — DONE (Current state folded into v2.5 after PR #2 merged)
 When:      2026-09-23 (24 Sep IST), cloud session, branch
            claude/eloquent-hypatia-kdhdnq — docs only.
@@ -1038,3 +1039,4 @@ Surprise:  demo_seed.py's docstring and a code comment (lines 15-17, 36)
            next session that touches the file (the cloud lane never
            edits Phase 2 code on its own).
 Next:      unchanged — S3.0 (cloud), S3.4 (laptop).
+```
