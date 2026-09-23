@@ -283,7 +283,7 @@ git rev-parse --short main origin/main
 *Acceptance:* `.venv/Scripts/python -m pytest tests/test_detect.py tests/test_track.py -q`: detector on `deliverables/deck/img/feed_cam01.jpg` returns ≥ 3 vehicles (record the count and the provider used); on a black frame returns 0; motion gate skips ≥ 90 % of identical frames and passes the synthetic moving box; tracker keeps one id for the synthetic box across 30 frames and across a car→truck class flip; ROI mask zeroes detections outside the polygon; `fetch_models` refuses a tampered file. On the laptop record detector latency on DirectML (expect ~50 ms).
 *Write-off:* progress block with counts, provider and latency.
 
-### S2.4 — OCR cascade, consensus voting, sightings with dedupe + provenance `[ ]`
+### S2.4 — OCR cascade, consensus voting, sightings with dedupe + provenance `[x]`
 *Read first:* `docs/sandbox-findings.md` §5, §7; `docs/api.md` §2 (as rewritten); `docs/decisions.md` §3; `ml/CLAUDE.md`; old reference: `D:\projects\Sentinel_Repo\src\anpr\{ocr,pipeline,sightings}.py`.
 *Build:*
 - `ml/anpr/ocr.py`: PaddleOCR with `PP-OCRv5_mobile_det` / `en_PP-OCRv5_mobile_rec`, `enable_mkldnn=False`, models under `models/paddle/` where the library allows (else document the `~/.paddlex` path in the progress block); one lock around init + predict; input = vehicle crop → upscale to ~400 px wide (≤ 4×) + CLAHE → OCR → for each text region: `plate_like()` gate, confidence, quad → bbox **mapped back to source-frame pixels as `[x, y, w, h]`**.

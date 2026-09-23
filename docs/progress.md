@@ -821,3 +821,51 @@ Surprise:  none; the sliver-ROI test doubles as the caption-band guard
            dropped in detect()).
 Next:      S2.4 (OCR cascade, consensus, sightings) in this session.
 ```
+
+```
+## S2.4 — DONE (OCR cascade, consensus voting, sightings dedupe; 20 tests)
+When:      2026-09-23T20:25Z (cloud container)
+Observed:  Built: ml/anpr/ocr.py (PaddleOCR PP-OCRv5_mobile det /
+           en_PP-OCRv5_mobile_rec, enable_mkldnn=False, one lock around
+           init + predict, crop -> cubic upscale to ~400 px (<= 4x) +
+           CLAHE on LAB-L, plate_like gate, quads mapped back to
+           source-frame [x, y, w, h], caption-band rejection);
+           ml/anpr/pipeline.py (gate -> detector -> tracker -> OCR
+           budget -> per-track confidence-weighted per-character
+           consensus; commit on >= 2 agreeing reads, or on track death /
+           restart with >= 1 structurally full read; never a first-read
+           latch); ml/anpr/sightings.py (record_sighting with the B13
+           bounded dedupe — same plate_canonical + camera + clock_source
+           within 60 s of seen_at AND wall_time within 10 min -> update
+           confidence if better, never insert; ~2 KB crops under
+           data/crops/<cam>/ with forward slashes; provenance is the
+           caller's, stored verbatim).
+           MODEL PATH: PADDLE_PDX_CACHE_HOME is set (setdefault) to
+           models/paddle/ before paddleocr imports, so the PP-OCRv5
+           weights land in the repo-controlled path, NOT ~/.paddlex —
+           verified: "models under /home/user/sentinel-gujarat/models/
+           paddle". models/ is gitignored; the laptop will download
+           there on first OCR use (~30 MB, needs network once).
+           Acceptance observed: pytest tests/test_ocr.py
+           tests/test_sightings.py -> 20 passed in 3.20s.
+           - 22 px GJ01AB1234 inside a 90 px crop reads as 'GJ01AB1234'
+             conf=1.00; caption-band placement (top of a 1080 px frame)
+             rejected, lower placement reads; bbox maps to source pixels
+           - consensus [GJ01AB1234, GJ01A81234, GJ01AB1234] ->
+             GJ01AB1234; one 0.95 read outvotes two 0.3 reads; length
+             groups vote separately; [] -> None
+           - budget: <= 2 crops/frame largest-first, 1.5 s per-track gap,
+             full-consensus tracks skipped (stub-driven pipeline tests)
+           - dedupe matrix: 30 s later -> 1 row conf raised to 0.95 (and
+             never lowered); 61 s -> 2 rows; wall_time 20 min apart ->
+             2 rows; different clock_source -> 2 rows; ambiguity
+             GJ01A81234 dedupes into GJ01AB1234 via canonical
+           - partial GJ05JB432 stored, find_match -> None (F21)
+           - crop file data/crops/testcam/1.jpg, 1.2 KB, forward slashes
+           Measured here (CPU): OCR warm 176-198 ms/crop (first call
+           2.3 s includes model load) — this box is faster than the
+           laptop's measured 0.45 s/crop; budget maths unchanged.
+Deferred:  laptop OCR latency re-measure rides the next laptop suite run.
+Surprise:  none.
+Next:      S2.5 (alerts, events + zones, worker + supervisor, soak).
+```

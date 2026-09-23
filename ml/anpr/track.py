@@ -32,7 +32,8 @@ class Track:
     velocity: tuple[float, float] = (0.0, 0.0)          # px/s from PTS deltas
     hits: int = 1
     last_ocr_pts: float = float("-inf")                  # OCR budget (S2.4)
-    committed_full: bool = False                         # full consensus stored (S2.4)
+    committed_plates: set[str] = field(default_factory=set)  # consensus already stored (S2.4)
+    committed_full: bool = False                         # a FULL consensus stored (S2.4)
 
     @property
     def centre(self) -> tuple[float, float]:
@@ -59,10 +60,12 @@ class Tracker:
         self.iou_min = iou_min
         self.max_age_s = max_age_s
         self.tracks: dict[int, Track] = {}
+        self.last_removed: list[Track] = []  # tracks that died on the latest update
         self._next_id = 1  # never reset — ids are unique for the lifetime
 
     def reset(self) -> None:
         """Drop every track on a restart tick; ids keep counting."""
+        self.last_removed = list(self.tracks.values())
         self.tracks.clear()
 
     def _new_track(self, det: Detection, pts_ms: float) -> Track:
@@ -74,9 +77,10 @@ class Tracker:
 
     def update(self, detections: list[Detection], pts_ms: float) -> list[tuple[Track, Detection]]:
         # Age out stale tracks first (PTS domain, never wall clock).
-        for tid in [t.id for t in self.tracks.values()
-                    if pts_ms - t.last_seen_pts > self.max_age_s * 1000.0]:
-            del self.tracks[tid]
+        self.last_removed = [t for t in self.tracks.values()
+                             if pts_ms - t.last_seen_pts > self.max_age_s * 1000.0]
+        for track in self.last_removed:
+            del self.tracks[track.id]
 
         # Greedy: best IoU pairs first, then centre-distance leftovers.
         candidates: list[tuple[float, int, int]] = []  # (-score, track_id, det_idx)
