@@ -957,4 +957,63 @@ Next:      S3.0. The 10 sample clips Adi films Thu 24 (60-90 s, with
            this same pipeline, and the S3.6 real hit replaces the demo
            route as the headline route (demo stays the labelled
            fallback, rule 12).
+## R6 — DONE (plan v2.5: port, don't retype; the UI bar; demo held against the HLD)
+When:      2026-09-23T20:57Z (24 Sep 02:27 IST), cloud session, branch
+           claude/hopeful-franklin-661gt9 — docs only, no code touched.
+Observed:  Adi's direction of 24 Sep, recorded as F52-F57 (F50-F51 left
+           free for the Phase 2 session running on the laptop):
+           F52 working modules are ported from the previous build, not
+           retyped (adapted to api.md, defect fixes + regression tests,
+           named "ported from <old path>"); F53 the UI bar - port, then a
+           design pass on five hero screens (Login, Command, Live Wall,
+           Route, Search/Reports), then a review gate (build, lint, smoke,
+           pytest, code review at high effort, /security-review); F54 demo
+           = Model 1 + Model 2 + Pipeline 1, Pipeline 3 described not
+           built, S4.2 and S4.3 cut, GATE C moves to S3.6; F55 demo tier =
+           cam06 pulled live + own footage, pick-active cut; F56 own clips
+           published once with the real gaps; F57 two lanes.
+           tasks.md v2.5: lanes paragraph; ledger; new S3.3b; S3.2/S3.3
+           port + review gate; S3.1a/S3.4/S3.6/S3.7/S4.1/S5.1/S5.4
+           amended; S4.2/S4.3 [-]; cut order #11. architecture.md Part D
+           (the demo against the HLD, model by model, plus the names
+           table). CLAUDE.md, frontend/CLAUDE.md ("Port and polish"),
+           CODEX.md (its map still described the old src/ui layout and
+           told reviewers NOT to use backend/frontend/ml - rewritten),
+           README status, demo-script, submission-checklist.
+           Phase 2 (S2.3-S2.5 blocks) and this file's Current state were
+           deliberately NOT edited, so the laptop session is undisturbed;
+           the first session after the merge folds v2.5 into Current state.
+           Login and hosted URL - checked across every doc: consistent in
+           CLAUDE.md rule 11, F41/F42, api.md section 9, backend/ and
+           frontend/CLAUDE.md, .env.example, S3.0, S3.5, S6.1b, the
+           checklist's "Hosted demo and credentials" and demo-script beat
+           1. Gaps: none of it is built yet (S3.0, S3.5 open); Adi's
+           Funnel trial (queue item 6) is not recorded as done and gates
+           S3.5; HLD section 6 still says "ships a single role" and has
+           no deployment section (Part C rows, fixed in S5.1). The portal
+           lists the hosted URL as optional (brief.md line 14).
+           Demo against the HLD: matches Model 1 + Model 2 as built; the
+           HLD's Pipeline 3 must be worded "designed and validated
+           separately, not built" (HLD line 6, section 1, Appendix B).
+Surprise:  (1) "Live views on a central command, nothing saved" was
+           called Pipeline 3 and live streams Model 3 in chat; in this
+           design and the brief they are Pipeline 1 and Model 2 - the
+           names table in Part D fixes the vocabulary for every document.
+           (2) Seven commits landed in the read-only previous repo on
+           24 Sep 00:18-01:05 IST, after R5 (10-minute measured run:
+           RAM peak 1,397 MB, 6.0% plate-read success, every real read on
+           cam06; ingest_file.py; the D4 alert-id fix). They are not in
+           this repo; F52 brings them here by porting (S4.1 names
+           measure_run.py). The "Key measurements" table here stays blank
+           until S4.1 measures this build.
+Merge:     merge after the running Phase 2 session has committed; expect
+           conflicts only at the end of this file and in decisions.md
+           section 2 (if that session added F50/F51) - keep both sides.
+Merged:    while R6 was being written, Phase 2 closed on main (PR #1:
+           S2.3, S2.4, S2.5 with GATE A' passed, and the demo seeder
+           pulled forward from S3.1a). This branch was merged with that
+           main; the only conflict was the end of this file.
+Next:      S3.0, as Current state says. With S2.5 on main, every
+           cloud-lane task is unblocked (S3.0, S3.7, S3.2, then S3.1a,
+           S3.1b, S3.3, S3.3b).
 ```

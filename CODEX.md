@@ -13,34 +13,32 @@ Claude Code is the primary implementation agent. Codex is the independent review
 ## Start each review
 
 1. Confirm the checkout and inspect the branch, HEAD, working-tree status, and diff before running code. Record the commit and reviewed scope. Treat existing edits as the owner's or Claude's work; do not revert, stage, commit, or reformat them.
-2. Read `CLAUDE.md`, the latest relevant `STATUS.md` entries, and the relevant task in `PLAN.md` or `P0-bootstrap.md` through `P7-enhancements.md`. Then read the affected contract and source files; do not load every historical document by default.
+2. Read `CLAUDE.md`, the layer `CLAUDE.md` of every folder the change touches, `docs/progress.md` (Current state and the latest relevant Log blocks), and the relevant task in `docs/tasks.md`. Then read the affected contract and source files; do not load every historical document by default.
 3. Follow an explicitly requested diff, commit, or subsystem. If the user says only “review the changes,” inspect staged and unstaged changes plus relevant new source files. If the tree is clean and no comparison base is given, state that and review the latest commit as the default; do not invent a base branch.
 4. Read callers, data flow, error handling, and tests around the change. Review the resulting behaviour, not just the edited lines.
-5. Treat old review findings as leads to recheck. Do not report them as current merely because they appear in `P7-enhancements.md` or an earlier conversation.
+5. Treat old review findings as leads to recheck. Do not report them as current merely because they appear in `docs/reference/old-build/P7-enhancements.md` or an earlier conversation.
 
-## Repository map and stale references
+## Repository map
 
-This checkout uses `src/` and `ui/`. Do not import the `backend/`, `frontend/`, and `ml/` layout from the separate `sentinel-gujarat` rebuild.
+This checkout is the fresh build — `backend/`, `ml/`, `frontend/` (updated 24 Sep; this file was first written for the previous build). The previous build (`D:\projects\Sentinel_Repo`, or a read-only clone of its GitHub repo) has a `src/` + `ui/` layout: never review this repo against that layout, and never edit that repo. Modules ported from it (decision F52) are named `ported from <old path>` in `docs/progress.md`; review them as new code against `docs/api.md`.
 
 | Area | Current location |
 |---|---|
-| Objective and requirements | `00-mission.md`, `PRD.md` |
-| Architecture and constraints | `01-architecture.md`, `02-hard-constraints.md` |
-| Storage and API contract | `03-data-contracts.md` |
-| Feed rules | `04-feed-rules.md` |
-| Implementation plan and observed progress | `PLAN.md`, `P0-bootstrap.md`–`P7-enhancements.md`, `STATUS.md` |
-| Operation and submission | `RUN.md`, `05-demo-script.md`, `06-submission-checklist.md` |
-| Shared configuration and storage | `src/config.py`, `src/db.py` |
-| Streams and worker lifecycle | `src/ingest/` |
-| Detection, tracking, OCR and sightings | `src/anpr/` |
-| Matching and alerts | `src/alerting/` |
-| Routes and zones | `src/analytics/` |
-| API, relay and reports | `src/api/`, `src/tools/` |
-| Browser application | `ui/` |
-| Launcher and dependencies | `launch.py`, `requirements.txt`, `ui/package.json`, `ui/package-lock.json` |
+| Objective, requirements, deliverables | `docs/brief.md` |
+| Architecture, and the demo held against the HLD | `docs/architecture.md` (Part D) |
+| Constraints, feed rules, measured sandbox facts | `docs/constraints.md`, `docs/feed-rules.md`, `docs/sandbox-findings.md` |
+| Storage and API contract (binding) | `docs/api.md` |
+| Decisions | `docs/decisions.md` |
+| Plan and observed progress | `docs/tasks.md`, `docs/progress.md` |
+| Demo and submission | `docs/demo-script.md`, `docs/submission-checklist.md` |
+| Shared config, DB, plates, matcher, timeline | `backend/core/` |
+| API, auth, audit | `backend/app/` |
+| Frame sources, detection, OCR | `ml/` |
+| Browser application | `frontend/` |
+| Tests and helpers | `tests/`, `scripts/` |
 | Submission artifacts | `deliverables/` |
 
-Several older documents refer to nonexistent `docs/` and `plan/` directories. When the named file exists at the root, use that root file. Do not create duplicate directories to satisfy historical pointers. Verify dates, installed versions, Git state and runtime claims against current evidence; historical prose is not proof of current state. If a material requirement conflicts with another, identify the conflict and propose a resolution rather than silently choosing whichever passes.
+Documents under `docs/reference/old-build/` are the previous build's docs verbatim, paths included; they are history, not instructions. Verify dates, installed versions, Git state and runtime claims against current evidence; historical prose is not proof of current state. If a material requirement conflicts with another, identify the conflict and propose a resolution rather than silently choosing whichever passes.
 
 ## Review priorities
 
@@ -63,7 +61,7 @@ Prioritize correctness of the scored path: a supplied registration number produc
 - Use an isolated database and output directory. Confirm `SENTINEL_DB` and every affected path are isolated before importing application modules. If a tool ignores the override, use a disposable copy or stop that check. Never run demo injection, purge, migrations, harvest or fault injection against the working database during an ordinary review.
 - Keep credentials out of output. Do not print `.env` or inspect unrelated secret stores. Never publish to the sandbox gateway, call its control API, or bulk-download footage. The archive proposal in P7 does not override the project's consume-only rule; use synthetic or user-owned footage for offline tests.
 - Use the repository's interpreter and installed dependencies when available; check their versions. Do not silently install packages, replace model weights or change the environment for a review.
-- Discover actual test commands and scripts; do not claim an absent test suite passed. `ui/package.json` currently supplies a build command, not a test script. `npm --prefix ui run build` is a compilation check and writes output; use an isolated copy when necessary. A build or syntax check is not an end-to-end test.
+- Discover actual test commands and scripts; do not claim an absent test suite passed. `frontend/package.json` supplies `build` and `lint`; the browser smoke is `scripts/smoke_frontend.py` (Playwright). `npm --prefix frontend run build` is a compilation check and writes output; use an isolated copy when necessary. A build or syntax check is not an end-to-end test.
 - Live probes, GPU inference and long soaks need appropriate task scope and available resources. Avoid competing with Claude's running workers. Continue independent checks when one environment-dependent check is unavailable, and state the limit.
 - Finish by checking the working tree again and report any verification artifacts created. Do not clean up someone else's files or terminate unrelated processes.
 

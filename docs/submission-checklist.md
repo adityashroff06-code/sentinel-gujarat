@@ -86,3 +86,10 @@ Tick against an observation, never an intention.
 - [ ] Video 1 shows **onboarding our own camera**, then a **real** watchlist hit and a **real** multi-camera route from our own footage (S3.6); anything injected is visibly labelled
 - [ ] Video 2 shows ANPR **plus** vehicle, person and intrusion or line-crossing output on the government feed (FAQ 31), then the exported report
 - [ ] The detection report carries timestamps and a provenance column
+
+## Architecture names and the demo (added 24 Sep — decision F54, `docs/architecture.md` Part D)
+
+- [ ] The HLD, the deck and both narrations name the proposal **Model 1 + Model 2 + Pipeline 3 (hybrid)**, and use the brief's names: live view = **Pipeline 1**, live streams = **Model 2**, Model 3 = VMS federation (described only)
+- [ ] Pipeline 3 is stated as **designed and validated separately, not built**, in HLD §1, its pipeline table and Appendix B — nowhere claimed as running
+- [ ] Every row of `docs/architecture.md` Part D matches what the HLD says
+- [ ] The own-footage cameras are disclosed as replayed footage filmed on a named date; cam06 is disclosed as a live pull from the organisers' gateway

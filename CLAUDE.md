@@ -3,14 +3,14 @@
 You are building **Sentinel**, Adi's entry to the Gujarat Police Innovation Challenge 2026 — an Integrated Video Management & Analytics Platform over the organisers' sandbox camera grid.
 Read this file completely before any action. It outranks your instincts.
 
-This repo is a **fresh, structured rebuild** started 20 September 2026. The previous build (`D:\projects\Sentinel_Repo`, submitted 15 Sep) works as a demo and is kept **read-only as a reference**; this repo reuses its knowledge, not its code. Everything that build learned is in `docs/` — read it before designing anything, because most of the surprises in this project have already been paid for once.
+This repo is a **fresh, structured rebuild** started 20 September 2026. The previous build (`D:\projects\Sentinel_Repo`, submitted 15 Sep) works as a demo and is kept **read-only as a reference**; this repo reuses its knowledge — and, since 24 Sep, its working code, ported module by module through the new contract with a test for every defect fixed (decision F52); the old repo itself is never edited. Everything that build learned is in `docs/` — read it before designing anything, because most of the surprises in this project have already been paid for once.
 
 ---
 
 ## 1. Situation
 
 - **Submission deadline: 28 September 2026** — confirmed on the portal on 22 Sep: "Last Date to Apply and Upload Your Submission", with shortlisting announced the same day. It is an **upload**, not a live evaluation; the vehicle number is handed over at the on-site hackathon on **12–13 October** at i-Hub (FAQ 27), which is after this plan ends. **Build window: Mon 21 – Thu 24 Sep for the application, Fri 25 for the deliverables (GATE D at 09:00), Sat 26 soak and rehearsal, Sun 27 submit; Mon 28 is buffer** (`docs/tasks.md` calendar, decision F22). Nothing built in the final 48 hours before an evaluation gets demoed.
-- Solo developer (Adi), one machine, work done in Claude Code sessions of one task each (`docs/tasks.md`, "How a session runs"). No team to parallelise across.
+- Solo developer (Adi), one machine, work done in Claude Code sessions of one task each (`docs/tasks.md`, "How a session runs"). No team to parallelise across — only Claude Code sessions, run in two lanes (laptop and cloud) so Phase 2 on the laptop is never disturbed (decision F57).
 - **Hardware ceiling:** Windows 10/11 · Ryzen 5 3550H (4c/8t) · **8 GB RAM** · **GTX 1650, 4 GB VRAM** · 477 GB SSD. Python 3.13.9 (Anaconda, `D:\Anaconda\python.exe`); a portable ffmpeg already exists at `D:\projects\Sentinel_Repo\tools\ffmpeg\`.
 - The organisers grade a **working system**, not a prototype. Their words: *"Mock-ups, animations, simulated interfaces, or concept videos without an operational backend will not be considered."*
 
@@ -59,6 +59,8 @@ Added 22 Sep, because the platform is now published to the internet for the judg
 
 The architecture is **locked**: Model 1 (mandatory registry + GIS) + Model 2 (unified viewing & metadata analytics) + Pipeline 3 (event-triggered evidence capture), submitted as a Hybrid. Do not redesign it.
 
+**What the demo builds (decision F54):** Model 1, Model 2 and Pipelines 1–2; **Pipeline 3 is described and validated separately, not built**. Pipeline 1 is the live view that stores nothing; Pipeline 3 is the evidence clip that does. Live streams are Model 2 — never call them Model 3 (VMS federation, described only). `docs/architecture.md` Part D is the claim-by-claim checklist.
+
 - The **registry is the single source of truth** for which cameras exist and how to reach them. Nothing hard-codes a camera id or a URL. Everything reads the registry, which is populated from the catalogue.
 - **Watchlist matching happens locally**, against a cached list. Never a per-detection round trip to an external system.
 - **Detections are written to durable storage before any alerting logic runs.** A detection must never exist only in the memory of the process about to crash.
@@ -74,7 +76,7 @@ The architecture is **locked**: Model 1 (mandatory registry + GIS) + Model 2 (un
 | `docs/constraints.md` | Hardware budget, licensing traps, sandbox rules (MUST, verbatim) |
 | `docs/feed-rules.md` | The organisers' feed contract in executable form (MUST, verbatim) |
 | `docs/sandbox-findings.md` | What the sandbox and this laptop actually do — measured, not assumed |
-| `docs/architecture.md` | The locked target design, and what the sandbox forces on it |
+| `docs/architecture.md` | The locked target design, what the sandbox forces on it, and (Part D) the demo held against the HLD model by model |
 | `docs/api.md` | The data contracts and API surface (binding), with the corrections learned |
 | `docs/decisions.md` | Every choice carried over or still open, and why |
 | `docs/tasks.md` | **The plan and the checklist**: one session per task, with the protocol every session follows (start → work → finish + write-off). Execute in order |

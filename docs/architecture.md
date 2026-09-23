@@ -1,6 +1,6 @@
 # Architecture — the locked target design, and what the sandbox forces on it
 
-**Editor's note (20 Sep 2026).** Part A is the previous build's `01-architecture.md`, **copied verbatim** — the design is locked (CLAUDE.md §4) and the fresh build implements the same three pipelines over the same registry. Its one stale pointer, `reference/claude_model-2-1-architecture-spec.md`, is now `docs/reference/model-2-1-architecture-spec.md`. Parts B and C are new: what the sandbox turned out to be and how that reshaped the design in practice, and where the previous implementation diverged from the description (the fresh build must not repeat the divergence, and the HLD must be corrected either way).
+**Editor's note (20 Sep 2026).** Part A is the previous build's `01-architecture.md`, **copied verbatim** — the design is locked (CLAUDE.md §4) and the fresh build implements the same three pipelines over the same registry. Its one stale pointer, `reference/claude_model-2-1-architecture-spec.md`, is now `docs/reference/model-2-1-architecture-spec.md`. Parts B and C are new: what the sandbox turned out to be and how that reshaped the design in practice, and where the previous implementation diverged from the description (the fresh build must not repeat the divergence, and the HLD must be corrected either way). Part D (24 Sep, decision F54) holds the demo against the HLD model by model; where it and Part A's "What we build vs what we describe" table differ, Part D is current.
 
 ---
 
@@ -165,3 +165,38 @@ Added 22 Sep, from the portal re-read and the demo review (`claude/demo-gap-revi
 | §8 "Cost and benefit analysis" | Argues savings (bandwidth, GPUs, storage, licensing, egress) but gives **no estimated implementation or operating cost**, which the portal's Step 6 and FAQ 35 ask for | Add a costed bill of materials for a node, a pilot and the statewide figure, labelled `[model]` |
 | "Every capacity figure is labelled" (HLD line 350) | §8's figures — ₹4 crore, 0.69 TB/day, the 1,600-GPU fleet — carry no label | Label them `[model]` |
 | "Apache, MIT and BSD throughout" | The laptop runs BtbN's **`win64-gpl`** ffmpeg build | Disclose ffmpeg as a GPL binary invoked as a separate process — the same distinction the HLD already draws for AGPL services |
+
+---
+
+# Part D — The demo against the HLD, model by model *(v2.5, 24 Sep; decision F54)*
+
+The HLD proposes **Model 1 + Model 2 + Pipeline 3** as a hybrid (C1). This is what the demo builds for each claim, which task builds it, and the wording the HLD, the deck and the videos must use. S5.1 checks the HLD against every row.
+
+**The names, as the brief and this design define them** — used identically in every document, slide and narration:
+
+| Name | What it is | Stores |
+|---|---|---|
+| **Model 1** | Registry + GIS: the camera inventory, map, onboarding, health, gap analysis (mandatory) | camera metadata |
+| **Model 2** | Unified viewing **and** metadata analytics, connecting directly to each system — live viewing belongs here | text metadata + ~2 KB crops |
+| **Model 3** | VMS federation middleware between the platform and departmental VMSs — **not** live streams | — (described only) |
+| **Pipeline 1** | Live view relayed to the control room (Command, Live Wall) | nothing — a self-overwriting 20 s relay window |
+| **Pipeline 2** | AI analytics at the node: detect → track → OCR → sighting → watchlist match → alert | sighting rows + crops |
+| **Pipeline 3** | Event-triggered evidence capture: a ±30 s clip promoted on a watchlist hit | the promoted clip + audit row — **the only pipeline that stores video** |
+
+"Live views on a central command, nothing saved" is **Pipeline 1**. Live streams are part of **Model 2**.
+
+| HLD claim | What the demo builds | Task | Wording in HLD, deck and videos |
+|---|---|---|---|
+| **Model 1** registry + GIS, onboarding by form, CSV and API, health, gap analysis, API documentation | Registry of the 30 sandbox cameras plus the own-footage cameras; map with pins by department and health; add-camera form, CSV import, `/api/ingest` adapter; gap-analysis report; exported OpenAPI | S1.3a ✓, S1.3b ✓, S3.7, S3.1b, S3.2 | Built. Departments and coordinates of the sandbox cameras are **seeded and disclosed** (`data/camera_seed.csv`) |
+| **Model 2** — a unified viewer over **at least two different systems** | System A: the organisers' gateway — cam06 and up to four more **pulled live over RTSP**, one pull each (F55). System B: a local mediamtx publishing Adi's own footage as `local01…` (F9, F19, F56) | S2.2 ✓, S3.4, S3.6 | Built. The own cameras **replay footage filmed on a named date**; cam06 is live from the gateway and never recorded |
+| **Model 2** — metadata analytics at the node | One worker per camera (the *node*) turns frames into sighting rows and ~2 KB crops **written before any alerting**, matches the cached watchlist locally and writes alert rows; the API streams alerts over SSE by tailing the table | S2.3, S2.4, S2.5, S3.1a | Built. In the demo a node is a worker process on one laptop; at statewide scale it is an edge box (HLD §3's tiers) — say which is which |
+| **Model 2** — searchable movement records and the route | Search with provenance and vehicle-class filters; the route across cameras with real timestamps from own footage, the demo vehicle labelled `demo` | S3.1a, S3.3, S3.6 | Built. A seeded route is labelled as such everywhere (rule 12) |
+| **Pipeline 1** — live view, nothing stored | The worker's own pull tees a 10 × 2 s self-deleting HLS window; the API relays it to Command and the Live Wall; only visible tiles hold a stream | S2.2 ✓, S3.1b, S3.3 | Built. "Relayed, not recorded — a self-overwriting 20-second relay window" (Part C) |
+| **Pipeline 2** — analytics | As Model 2's metadata row above; plus object, person and zone/line-crossing events | S2.3–S2.5, S3.3 | Built |
+| **Pipeline 3** — evidence clips on a watchlist hit | **Not built** — S4.3 cut. `alerts.clip_path` stays empty | — | "Designed and validated separately (`docs/reference/model-02-1-event-triggered-evidence.md`), not built in the demo" — in HLD §1, the pipeline table and Appendix B. Video 1's "nothing is recorded" beat is then literally true |
+| **Model 3** federation | Not built | — | Described in HLD §2.2 as the path for departments that cannot be pulled directly (Appendix B already says so). Never label live streams "Model 3" |
+| Login, roles, audit (RBAC bonus) | `viewer` / `evaluator` / `admin`, sessions, audit naming the user | S3.0, S3.2 | Built. HLD §6's RBAC row still says "the demonstrated system ships a single role" — replace it (Part C) |
+| Hosted URL with test credentials (portal: optional) | The laptop published over a Tailscale Funnel tunnel, API port only | S3.5 | Built **only if** Adi's Funnel trial passes; otherwise the HLD and the form claim no hosted URL |
+| Analytics beyond ANPR (evaluation area 5) | Vehicle and person detection, intrusion zones, line crossing | S2.3, S2.5, S3.3 | Built; shown in video 2 on the live government feed |
+| Cross-camera route on the sandbox feeds | **Not built** — S4.2 (harvest) cut; no real vehicle crosses two sandbox cameras | — | Say so: the real route comes from own footage; the HLS fallback exists for viewing only |
+| FRS | Not built | — | Described with its privacy controls (HLD §5.4) |

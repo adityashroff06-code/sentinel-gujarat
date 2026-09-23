@@ -2,14 +2,14 @@
 
 Entry to the [Gujarat Police Innovation Challenge 2026](https://sentinel.gujarat.gov.in/) (Home Department / SCRB). One platform over the departments' CCTV systems: a camera registry with a GIS view, continuous ANPR and analytics on live feeds, a watchlist with real-time alerts, and — the scored test — a vehicle's complete, timestamped, location-wise route from a single registration number.
 
-**Status (22 Sep 2026): fresh, structured rebuild in progress — backend core, plate grammar, registry API with auth and audit, seed tools and the replay frame source are in and under test (S0.2–S2.1); the next task is S2.2.** The plan is v2.3, which adds a login with roles, a hosted URL for the judges, and ground truth from our own footage. The previous build (`D:\projects\Sentinel_Repo`, submitted 15 Sep) works as a demo and is kept as read-only reference; everything it learned is carried over in `docs/`. Deadline: 28 Sep 2026.
+**Status: fresh, structured rebuild in progress — the live state and the next task are always in `docs/progress.md` → Current state.** The plan is v2.5 (24 Sep): a login with roles, a hosted URL for the judges if the tunnel trial passes, ground truth from our own footage, working modules ported from the previous build rather than retyped, and a demo of Model 1 + Model 2 + Pipeline 1 with Pipeline 3 described, not built (`docs/architecture.md` Part D). The previous build (`D:\projects\Sentinel_Repo`, submitted 15 Sep) works as a demo and is kept as read-only reference; everything it learned is carried over in `docs/`. Deadline: 28 Sep 2026.
 
 ## Start here
 
 1. `CLAUDE.md` — the rules, the layout, how to work.
 2. `docs/brief.md` — what must be delivered and how it is scored.
 3. `docs/sandbox-findings.md` — what the sandbox and this laptop actually do (measured).
-4. `docs/tasks.md` — the plan: 30 one-session tasks with the protocol every Claude Code session follows.
+4. `docs/tasks.md` — the plan: one-session tasks in two lanes (laptop and cloud), with the protocol every Claude Code session follows.
 
 ## Layout
 
