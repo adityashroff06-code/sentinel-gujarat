@@ -279,7 +279,7 @@ git rev-parse --short main origin/main
 *v2.4 (F49), for the pull still to run (Thu 24):* first re-run the connection check on **every** camera (`.venv/Scripts/python -m backend.tools.probe`), then run the pull on the best-working camera it reports — not a fixed id. cam06 above is the camera the 23 Sep smoke happened to use (the known daytime road camera); `smoke_rtsp` takes any camera id.
 *Write-off:* progress block with the observed frame count, tee state and backoff delays.
 
-### S2.3 — Motion gate, detector, tracker, model fetch with checksum `[ ]`
+### S2.3 — Motion gate, detector, tracker, model fetch with checksum `[x]`
 *Read first:* `docs/sandbox-findings.md` §5, §7; `docs/decisions.md` §3 "Ingestion", F14; `ml/CLAUDE.md`; old reference: `D:\projects\Sentinel_Repo\src\anpr\{detect,motion,track}.py`, `src\tools\fetch_models.py` (the YOLOX-S release URL).
 *Build:*
 - `ml/tools/fetch_models.py`: download YOLOX-S ONNX to `models/yolox_s.onnx`; on first download compute SHA-256 and append it to `CHECKSUMS.txt` (committed); later runs verify and refuse a mismatch.
@@ -289,7 +289,7 @@ git rev-parse --short main origin/main
 *Acceptance:* `.venv/Scripts/python -m pytest tests/test_detect.py tests/test_track.py -q`: detector on `deliverables/deck/img/feed_cam01.jpg` returns ≥ 3 vehicles (record the count and the provider used); on a black frame returns 0; motion gate skips ≥ 90 % of identical frames and passes the synthetic moving box; tracker keeps one id for the synthetic box across 30 frames and across a car→truck class flip; ROI mask zeroes detections outside the polygon; `fetch_models` refuses a tampered file. On the laptop record detector latency on DirectML (expect ~50 ms).
 *Write-off:* progress block with counts, provider and latency.
 
-### S2.4 — OCR cascade, consensus voting, sightings with dedupe + provenance `[ ]`
+### S2.4 — OCR cascade, consensus voting, sightings with dedupe + provenance `[x]`
 *Read first:* `docs/sandbox-findings.md` §5, §7; `docs/api.md` §2 (as rewritten); `docs/decisions.md` §3; `ml/CLAUDE.md`; old reference: `D:\projects\Sentinel_Repo\src\anpr\{ocr,pipeline,sightings}.py`.
 *Build:*
 - `ml/anpr/ocr.py`: PaddleOCR with `PP-OCRv5_mobile_det` / `en_PP-OCRv5_mobile_rec`, `enable_mkldnn=False`, models under `models/paddle/` where the library allows (else document the `~/.paddlex` path in the progress block); one lock around init + predict; input = vehicle crop → upscale to ~400 px wide (≤ 4×) + CLAHE → OCR → for each text region: `plate_like()` gate, confidence, quad → bbox **mapped back to source-frame pixels as `[x, y, w, h]`**.
@@ -298,7 +298,7 @@ git rev-parse --short main origin/main
 *Acceptance:* `.venv/Scripts/python -m pytest tests/test_ocr.py tests/test_sightings.py -q`: a plate image rendered with PIL (`GJ01AB1234`, 22 px high inside a 90 px crop) reads as `GJ01AB1234` or its ambiguity-equivalent; a caption-band string is rejected; consensus over reads `[GJ01AB1234, GJ01A81234, GJ01AB1234]` yields `GJ01AB1234`; dedupe matrix (same plate 30 s later → 1 row with the higher confidence; 61 s later → 2 rows; a read whose `seen_at` is 30 s away but whose `wall_time` is 20 min earlier → separate row); a partial read is stored and never alertable; every row carries the provenance the caller gave. On the laptop: OCR latency per crop recorded (expect ~0.45 s).
 *Write-off:* progress block.
 
-### S2.5 — Alerts, events + zones, worker + supervisor, 10-minute replay soak — GATE A′ `[ ]`
+### S2.5 — Alerts, events + zones, worker + supervisor, 10-minute replay soak — GATE A′ `[x]`
 *Read first:* `docs/api.md` §3–§5 (as rewritten); `docs/decisions.md` §3 "Backend" and "Ingestion", F21, F26; `docs/sandbox-findings.md` §7 (SQLite, DirectML, process model); `ml/CLAUDE.md`; old reference: `D:\projects\Sentinel_Repo\src\ingest\worker.py`, `src\alerting\matcher.py`, `src\analytics\zones.py`.
 *Build:*
 - `backend/core/alerts.py`: `create_alert(con, *, kind, camera_id, severity, seen_at, clock_source, sighting=None, wl_row=None, rule="none", distance=0.0, event=None)` — cooldown 5 min per (`plate_canonical`, `camera_id`) for watchlist alerts and per (`zone_id`, `camera_id`) for zone alerts (both columns exist on `alerts`), **derived from the last matching `alerts` row with the same `clock_source`** (never in-memory, so a purge resets it); insert with `alert_seq` autoincrement and `alert_id = ALERT-YYYYMMDD-NNNN` derived from `alert_seq`; returns the row.
@@ -335,6 +335,7 @@ git rev-parse --short main origin/main
 *Write-off:* progress block naming which shape the live sandbox served.
 
 ### S3.1a — Analytics API: sightings, route, watchlist, alerts + SSE tailer, events, workers; demo seeder `[ ]`
+*Editor's note (23 Sep, S2.5 session):* the demo seeder bullet below is **already built** — `backend/tools/demo_seed.py` + `tests/test_demo_seed.py` (6 tests) were pulled forward on Adi's ask so the demo vehicle runs through the whole pipeline the day Phase 2 closed. This session builds the analytics API on top and keeps `tests/test_demo_seed.py` green; do not rebuild the seeder.
 *Read first:* `docs/api.md` §7 (as rewritten) and the route response; `backend/CLAUDE.md`; `docs/decisions.md` C10, C15, F13, F21, F27; old reference: `D:\projects\Sentinel_Repo\src\api\routes_analytics.py`, `src\analytics\route.py`, `src\tools\demo_seed.py`.
 *Build:*
 - `backend/app/routes_analytics.py`: `GET /api/sightings` (filters plate/camera_id/from/to/min_confidence/provenance, `limit`/`offset`, `total` computed with the same WHERE), `GET /api/plates/{plate}/route` (via `backend/services/route.py`: normalise → exact + ambiguity candidates by canonical index, fuzzy candidates flagged, order by `seen_at`, collapse same-camera stops within 2 min, Haversine elapsed/speed/distance, `suspect` on implausible speed, `departments_crossed`, `gaps`, **grouped by `clock_source`; no speed across groups and a `warnings[]` field saying so**), watchlist GET/POST/DELETE, `GET /api/alerts` (severity/acknowledged/kind/limit), `POST /api/alerts/{id}/ack` (persists actor), `GET /api/alerts/stream` (SSE; **one background tailer** on `alert_seq` with `id:` frames and `Last-Event-ID` replay; async generator; cookie auth accepted), `GET /api/events`, `GET /api/events/summary`, `GET /api/workers`.

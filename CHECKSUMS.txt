@@ -4,3 +4,4 @@
 # Entries land here from: scripts/replay_publish.py --fetch (mediamtx),
 # ml/tools/fetch_models.py (yolox_s.onnx), the launcher (ffmpeg zip, if fetched).
 faa97974861eb75a68b5aa326c78e7e7a6f670b5ef191bace78e715130381f23  https://github.com/bluenviron/mediamtx/releases/download/v1.21.1/mediamtx_v1.21.1_windows_amd64.zip  tools/mediamtx/mediamtx_v1.21.1_windows_amd64.zip
+c5c2d13e59ae883e6af3b45daea64af4833a4951c92d116ec270d9ddbe998063  https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_s.onnx  models/yolox_s.onnx
