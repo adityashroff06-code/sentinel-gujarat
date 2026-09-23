@@ -25,6 +25,11 @@ def utcnow() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def iso(ts: datetime) -> str:
+    """Canonicalise an aware datetime to the stored +00:00 seconds form."""
+    return ts.astimezone(timezone.utc).isoformat(timespec="seconds")
+
+
 def connect(db_path: str | Path | None = None) -> sqlite3.Connection:
     """Open *db_path* (default: the configured database) with the binding
     pragmas. Creates the parent directory if needed."""

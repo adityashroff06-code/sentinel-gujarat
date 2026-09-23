@@ -29,6 +29,7 @@ def test_seed_registry_add_and_replay(con):
     assert row["transport"] == "rtsp" and row["fps_tier"] == "active" and row["source"] == "manual"
     rep = con.execute("SELECT * FROM cameras WHERE camera_id = 'rep01'").fetchone()
     assert rep["transport"] == "replay" and rep["rtsp_url_template"].endswith(".mp4")
+    assert rep["fps_tier"] == "active"  # the soak's supervisor must pick it (S2.5)
 
 
 def test_seed_watchlist_idempotent_25(con):

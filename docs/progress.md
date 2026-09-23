@@ -4,23 +4,17 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 
 ---
 
-## Current state (23 Sep 2026, 18:00 UTC / 23:30 IST — plan v2.4)
+## Current state (23 Sep 2026, 21:05 UTC — Phase 2 complete, GATE A' passed)
 
-- **Decision:** fresh, structured rebuild (`docs/decisions.md` F1). This repo holds the documentation, the plan and the carried-over deliverables. The previous build at `D:\projects\Sentinel_Repo` still runs as a demo and is the read-only reference.
-- **Plan:** `docs/tasks.md` **v2.4 (23 Sep, 23:30 IST)** — v2.3 plus Adi's answers of 23 Sep and decision **F49** (every camera gets a connection check; live tests, the active tier and the demo run on the best-working cameras it picks, never on fixed ids) — see the R5 block. v2.3 (22 Sep, 23:30 IST) was v2.2 plus five new tasks ahead of the current position (**S3.0** login + hardening, **S3.7** catalogue adapter, **S3.5** hosting go-live, **S3.6** own-footage ground truth, **S6.1b** overnight hosted soak + backups) and amendments inside S2.2, S2.5, S3.2, S3.3, S3.4, S5.1, S5.4 and S5.5. Nothing already done was re-opened. Previously: v2.2 — 30 one-session tasks S0.2 → S6.3 with the protocol every Claude Code session follows, a calendar re-based to Mon 21 with gates A′/B/C/D, and a cut order. Two independent cold-start reviews (43 + 26 findings, R2) and a third review (7 findings, R3) have been applied. Open decisions O1–O7, O9, O11 are settled (F11–F38) and O8 on 23 Sep (Category 1, students); O10 remains (Adi, in S3.4).
-- **Deadline:** **28 Sep 2026 — confirmed on the portal 22 Sep**: "Last Date to Apply and Upload Your Submission", shortlisting the same day; it is an upload, not a live evaluation. The plate is handed over at the on-site hackathon on **12–13 Oct** (FAQ 27), after this plan ends. S0.3 is closed: **Category 1** (Adi registered as students, 23 Sep). Build window Mon 21 – Thu 24 for code, Fri 25 for deliverables (GATE D 09:00, code freeze at end of day), Sat 26 soak + rehearsal, Sun 27 submit, Mon 28 buffer. The Mon 21 column started a day late and was caught up on Tue 22; today (Wed 23) closed its last two laptop-only items, so the Wed 23 column (S3.0, S3.7, S3.1a, S3.1b, S3.2, S3.3) is the live one after S2.2.
-- **Session environment:** this session runs **on the laptop** (Windows 10, Git Bash, Anaconda python 3.13.9 on PATH, real `.env`, GTX 1650, ffmpeg in the old build's `tools/`). The repo had been deleted and re-cloned, so `.venv` was gone; it was rebuilt here from `requirements.txt` + `requirements-dev.txt` and **every laptop-only acceptance item carried since 22 Sep has now run** (S1.1's four lines, S0.4's doctor). The previous session ran in a Claude Code cloud container (Linux, python 3.11.15, no GPU, no ffmpeg, no `.env`), which is why those items were outstanding.
-- **Git:** `main` == `origin/main` at `92fa02a` (S2.2) on the laptop and on GitHub before R5 (checked 23 Sep 23:12 IST), clean; R5 is one docs-only commit on top. Baseline commit `577587b` ("S0.2: documentation baseline, plan v2.2") still carries the annotated tag `docs-v0`.
-- **Session result (Wed 23, laptop):** the venv is rebuilt and the two carried-over `[~]` tasks are **closed**: **S1.1 [x]** (pip check clean; exactly `opencv-contrib-python 4.10.0.84` + `onnxruntime-directml 1.24.4`; `4.10.0 1.24.4 ['DmlExecutionProvider', 'CPUExecutionProvider']`; `config.ffmpeg()` resolves to an existing exe) and **S0.4 [x]** (`.env` present with both API keys; doctor exits 0 with ffmpeg, ffprobe, Node v24.20.0, the GTX 1650 and the variable names). Suite on the laptop: **68 passed** unchanged from the cloud, then **73 passed** after five regression tests for a doctor bug. Monday's column is now **S0.2 [x], S0.4 [x], S1.1 [x], S1.2 [x], S1.3a [x], S1.3b [~], S2.1 [x]** — S1.3b's live probe is the only Monday item still open.
-- **Defect found and fixed this session:** `scripts/doctor.py` reported `npm : not found` although npm 11.19.0 is installed — `subprocess.run(["npm", ...])` cannot launch `npm.cmd` because Windows CreateProcess does no PATHEXT lookup. Resolved through `shutil.which()` now, with regression tests (`tests/test_doctor.py`). It mattered because S3.2 scaffolds the frontend with npm. The cloud smoke run could not have caught it: npm resolves normally on Linux.
-- **New scope since v2.2 (does not change what comes next):** the demo is **hosted for the judges with a login** — decisions F41 (users, sessions, roles `viewer`/`evaluator`/`admin`), F42 (tunnel; Tailscale Funnel by default), F43 (a real hit and a real route from our own footage), F44 (`-timeout`, not `-rw_timeout`), F45 (the `/api/ingest` catalogue shape), F46 (an evaluator's first screen and a feed-status strip). Source: `claude/submission-verification-2026-09-22.md` and `claude/demo-gap-review-2026-09-22.md`.
-- **Scope change v2.4 (decision F49, Adi, 23 Sep):** every camera gets a connection check (the probe, all 30); the live tests, the active tier and the demo run on the best-working cameras that check picks, never on fixed ids. `data/camera_seed.csv`'s fixed 5-camera tier (cam06, cam09, cam26, cam27, cam28) is now only the fallback; S3.7 builds the pick (`seed_registry --pick-active`), and S2.2's pull, S3.1a's demo route, S4.1's run and S4.2's harvest use it.
-- **S2.2 done (Wed 23, laptop):** RTSP frame source built and proven — harness **83 passed** (was 73; +10 for the parametrised RTSP cases and the mediamtx-publisher checksum tests), and a live cam06 smoke read **134 frames, monotonic, tee bounded at 10 segments, restarts_seen=0**, newest tee segment **hevc 1920×1080**. mediamtx v1.21.1 is fetched and SHA-256-pinned in `CHECKSUMS.txt`. A 24-agent adversarial review's 14 confirmed findings were all applied or consciously deferred (F47 scene-cut backed out after measuring a false-positive storm; F48 mediamtx localhost-only + MoQ off). **S1.3b's live probe also ran this session** (RTSP live 30/30, HLS 30/30, 0 × 403 — the grid is now mixed h264 ×24 / hevc ×6), so that Monday item is closed too. Only [Adi]'s 20 s Wi-Fi network pull for S2.2 is deferred (a session can't cut the laptop network) — **set for Thu 24**, run on the best-working camera from a fresh all-camera check (F49).
-- **Next task:** **S2.3** (motion gate MOG2, YOLOX-S detector on DirectML with one lock around `session.run()`, greedy IoU tracker, `fetch_models.py` with checksum). Laptop session; the frame source (`for_camera`) is ready to feed it. GATE A′ closes at the end of S2.5.
-- **[Adi] queue** (items don't block each other): ①–③ done 23 Sep; ④ **S0.3 done** — Category 1, students; ⑤ **S0.5 recorded** — the check that nothing on screen shows a credential is done at the end, in S5.5 (Adi's call); ⑥ a 15-minute Tailscale Funnel trial on the laptop (install, MagicDNS + HTTPS certs, `tailscale funnel --bg 8000`, open the URL from mobile data, reboot and check it comes back) — it gates S3.5, so failing early is worth knowing; ⑦ **Thu 24:** film the S3.6 clips — **10 recordings of 60–90 s**, one vehicle with a legible plate at real locations a few minutes apart, noting the coordinates; ⑧ **Thu 24:** S2.2's 20 s Wi-Fi pull, on the best-working camera from a fresh all-camera check (F49).
-- **Watch item for Wednesday:** Node is **v24.20.0**, not the v20.x the plan assumed. It clears the `>= 20.19` floor, but S3.2 pins Vite 6 / React 18.3.1 — if the scaffold misbehaves, Node 24 is the first suspect.
+- **Phase 2 is closed.** This session (a Claude Code cloud container: Linux, python 3.11.15, no GPU, no `.env`, no sandbox reach) completed **S2.3, S2.4 and S2.5** and passed **GATE A'** (the 10-minute replay soak: 614.9 s, 0 worker restarts, 1843 frames on each of 3 replay cameras, RSS +0.6 MB, stats every 10 s, 10 wrap ticks per camera). Whole suite here: **141 passed, 5 skipped** (the 5 are the mediamtx harness cases, Windows-zip only; the laptop unskips them). The full pipeline now exists end to end: frame source -> motion gate -> YOLOX-S -> tracker -> PaddleOCR consensus -> sightings with dedupe -> watchlist match -> alerts with table-derived cooldowns -> object/zone events -> single-writer supervisor with stats.
+- **The demo vehicle runs through the whole architecture** (Adi's ask, 23 Sep): `backend/tools/demo_seed.py` (S3.1a's seeder, pulled forward) injects hero `GJ01AB1234` through the real `record_sighting -> find_match -> create_alert` path — 3 stops cam06/cam10/cam09 + ambiguity near-miss, 4 alerts, 20 background plates, every row `provenance='demo'`. The Phase-3 windows (route, alerts, search, dashboard) will read these same rows; nothing on the data side blocks them.
+- **Git:** this cloud session works on branch **`claude/relaxed-dijkstra-qx8j24`** (pushed; draft PR #1 on GitHub). `main` on the laptop was at `92fa02a`+R5 when the session started; **merge the PR (or fast-forward) before the next laptop session** so S3.0 starts from Phase-2 code. Commits: S2.3 `71fefeb`, S2.4 `2e2b277`, S2.5 code `112051a`, demo seeder `3970c8a`, then the write-off commit.
+- **On first laptop run after merge:** `models/yolox_s.onnx` (36 MB) and the PP-OCRv5 mobile weights download once and verify against the committed `CHECKSUMS.txt` pin; Paddle models land in repo-controlled `models/paddle/` (`PADDLE_PDX_CACHE_HOME`, set in `ml/anpr/ocr.py`). Two new env defaults: `SENTINEL_MOTION_MIN_RATIO=0.002`, `SENTINEL_DETECT_CONF=0.4` (`.env.example`).
+- **Deferred to the laptop** (ride the next laptop session): DirectML detector latency (~50 ms expected; CPU here measured 95-135 ms), laptop OCR latency (~0.45 s expected; here 176-198 ms), and the S2.2 20 s Wi-Fi pull ([Adi], Thu 24, on the best-working camera after a fresh all-camera probe — F49).
+- **Next task: S3.0** (login, roles, sessions, hardening — schema v2), then S3.7, S3.1a (analytics API + route; its demo seeder is already built — see the editor's note in the task block), S3.1b, S3.2, S3.3 per the Wed 23 column. GATE B/C are Thu 24.
+- **[Adi] queue:** ⑥ Tailscale Funnel trial (gates S3.5); ⑦ Thu 24: film the S3.6 clips — **10 recordings of 60-90 s** with coordinates (Adi confirmed 23 Sep they arrive tomorrow; they become local01..local10 replay rows through this pipeline); ⑧ Thu 24: the S2.2 Wi-Fi pull.
 - **Blockers:** none.
-- **Timing note:** a full `.venv/Scripts/python -m pytest -q` takes **~3m20s on this laptop** (vs seconds in the cloud container) — the paddle/cv2 import cost. Budget for it; do not run it casually mid-task.
+- **Timing notes:** full suite ~3 min in this container and ~3.5 min on the laptop (paddle/cv2 imports). The soak supervisor is `python -m ml`; stop it with Ctrl-C or `data/stop`.
 
 ## What exists in this repo
 
@@ -100,7 +94,7 @@ GATE A was later reversed on the laptop (RTSP primary, decision C6). GATE B's de
 
 | Gate | Due | Decision | When | Observed |
 |---|---|---|---|---|
-| A′ — replay soak (S2.5): 10 min, zero restarts; live RTSP frames with correct timing (S2.2) | Tue 22 | | | |
+| A′ — replay soak (S2.5): 10 min, zero restarts; live RTSP frames with correct timing (S2.2) | Tue 22 | **PASS** | 2026-09-23T20:55Z | Soak: 614.9 s, 0 worker restarts, 1843 frames on each of 3 replay cameras (3.0 fps each), RSS +0.6 MB over the run, stats every 10 s, 10 wrap ticks/camera. Live RTSP timing: S2.2's cam06 smoke, 134 frames monotonic (23 Sep) |
 | B — ANPR viability on the live sandbox (S4.1): real reads with sane confidence | Thu 24 | | | |
 | C — route across ≥ 3 cameras from a plate typed into the UI (S4.2; demo vehicle qualifies) | Thu 24 20:00 | | | |
 | D — documents start whatever the code state (S5.1) | Fri 25 09:00 | | | |
@@ -774,4 +768,193 @@ Observed:  Documentation-only revision from Adi's answers in chat, 23 Sep.
 Surprise:  none - no code was touched and no completed task re-opened.
 Next:      S2.3, unchanged. Thu 24 adds two [Adi] items: the S2.2 Wi-Fi
            pull and the S3.6 filming.
+```
+
+```
+## S2.3 — DONE (motion gate, YOLOX-S detector, tracker, fetch_models; 18 tests)
+When:      2026-09-23T20:20Z (cloud container)
+Observed:  Environment first: this session is a fresh Claude Code cloud
+           container (Linux, python 3.11.15, no GPU, no .env). ffmpeg
+           6.1.1 apt-installed; .venv rebuilt from requirements.txt +
+           requirements-dev.txt — every pin resolved, pip check clean
+           (Linux markers put plain onnxruntime 1.24.4 in, never the
+           directml wheel). Baseline before S2.3: 78 passed, 5 skipped
+           (the mediamtx-harness cases skip without the Windows zip;
+           laptop equivalent was 83 passed).
+           Built: ml/tools/fetch_models.py (yolox_s.onnx from the Megvii
+           0.1.1rc0 release, SHA-256 pinned in CHECKSUMS.txt on first
+           download — c5c2d13e59ae... committed — later runs verify and
+           ChecksumMismatch refuses a tampered file); ml/anpr/motion.py
+           (MOG2 on a 320-wide downscale, 5-frame warm-up, per-camera
+           threshold from notes JSON via gate_for_camera, reset());
+           ml/anpr/detect.py (ONNX Runtime, DirectML-then-CPU provider
+           pick logged, one lock around session.run(), YOLOX letterbox +
+           grid decode, per-class NMS via cv2.dnn.NMSBoxes, 8 COCO
+           classes kept, superclass() car/truck/bus/motorcycle->vehicle,
+           ROI mask applied BEFORE inference, caption-band drop);
+           ml/anpr/track.py (greedy IoU + centre-distance fallback on
+           superclass, PTS-delta velocity, max_age 3 s, ids never reused
+           — reset() keeps the counter, per ml/CLAUDE.md zone rule).
+           Config: SENTINEL_MOTION_MIN_RATIO=0.002, SENTINEL_DETECT_CONF
+           =0.4 added to config.py + .env.example.
+           Acceptance observed: pytest tests/test_detect.py
+           tests/test_track.py -> 18 passed in 1.19s. feed_cam01.jpg ->
+           5 vehicles of 5 detections (bus, car, truck) on
+           CPUExecutionProvider; black frame -> 0; sliver ROI -> 0,
+           full-frame ROI -> still >= 3 vehicles; identical frames ->
+           <= 10 of 100 pass the gate (>= 90 % skipped); moving box
+           passes >= 80 %; tracker holds one id over 30 frames and
+           across a car->truck flip; tampered model refused.
+           Measured here (CPU): 95-135 ms/frame warm — inside the
+           116-300 ms cloud-CPU band sandbox-findings §7 predicts.
+Deferred:  DirectML latency (~50 ms expected) is a laptop measurement —
+           record it when the laptop runs the suite next (S4.1 at the
+           latest).
+Surprise:  none; the sliver-ROI test doubles as the caption-band guard
+           (band drop verified by inspection — top-centred boxes are
+           dropped in detect()).
+Next:      S2.4 (OCR cascade, consensus, sightings) in this session.
+```
+
+```
+## S2.4 — DONE (OCR cascade, consensus voting, sightings dedupe; 20 tests)
+When:      2026-09-23T20:25Z (cloud container)
+Observed:  Built: ml/anpr/ocr.py (PaddleOCR PP-OCRv5_mobile det /
+           en_PP-OCRv5_mobile_rec, enable_mkldnn=False, one lock around
+           init + predict, crop -> cubic upscale to ~400 px (<= 4x) +
+           CLAHE on LAB-L, plate_like gate, quads mapped back to
+           source-frame [x, y, w, h], caption-band rejection);
+           ml/anpr/pipeline.py (gate -> detector -> tracker -> OCR
+           budget -> per-track confidence-weighted per-character
+           consensus; commit on >= 2 agreeing reads, or on track death /
+           restart with >= 1 structurally full read; never a first-read
+           latch); ml/anpr/sightings.py (record_sighting with the B13
+           bounded dedupe — same plate_canonical + camera + clock_source
+           within 60 s of seen_at AND wall_time within 10 min -> update
+           confidence if better, never insert; ~2 KB crops under
+           data/crops/<cam>/ with forward slashes; provenance is the
+           caller's, stored verbatim).
+           MODEL PATH: PADDLE_PDX_CACHE_HOME is set (setdefault) to
+           models/paddle/ before paddleocr imports, so the PP-OCRv5
+           weights land in the repo-controlled path, NOT ~/.paddlex —
+           verified: "models under /home/user/sentinel-gujarat/models/
+           paddle". models/ is gitignored; the laptop will download
+           there on first OCR use (~30 MB, needs network once).
+           Acceptance observed: pytest tests/test_ocr.py
+           tests/test_sightings.py -> 20 passed in 3.20s.
+           - 22 px GJ01AB1234 inside a 90 px crop reads as 'GJ01AB1234'
+             conf=1.00; caption-band placement (top of a 1080 px frame)
+             rejected, lower placement reads; bbox maps to source pixels
+           - consensus [GJ01AB1234, GJ01A81234, GJ01AB1234] ->
+             GJ01AB1234; one 0.95 read outvotes two 0.3 reads; length
+             groups vote separately; [] -> None
+           - budget: <= 2 crops/frame largest-first, 1.5 s per-track gap,
+             full-consensus tracks skipped (stub-driven pipeline tests)
+           - dedupe matrix: 30 s later -> 1 row conf raised to 0.95 (and
+             never lowered); 61 s -> 2 rows; wall_time 20 min apart ->
+             2 rows; different clock_source -> 2 rows; ambiguity
+             GJ01A81234 dedupes into GJ01AB1234 via canonical
+           - partial GJ05JB432 stored, find_match -> None (F21)
+           - crop file data/crops/testcam/1.jpg, 1.2 KB, forward slashes
+           Measured here (CPU): OCR warm 176-198 ms/crop (first call
+           2.3 s includes model load) — this box is faster than the
+           laptop's measured 0.45 s/crop; budget maths unchanged.
+Deferred:  laptop OCR latency re-measure rides the next laptop suite run.
+Surprise:  none.
+Next:      S2.5 (alerts, events + zones, worker + supervisor, soak).
+```
+
+```
+## S2.5 — DONE (alerts, zones, events, worker + supervisor; GATE A' PASSED)
+When:      2026-09-23T20:55Z (cloud container)
+Observed:  Built: backend/core/alerts.py (create_alert; 5-min cooldown per
+           (plate_canonical, camera) / (zone_id, camera) derived from the
+           alerts table IN THE SAME clock_source, never memory; alert_id
+           ALERT-YYYYMMDD-NNNN derived from the AUTOINCREMENT alert_seq);
+           ml/analytics/zones.py (canonical shape validation for PATCH,
+           2-consecutive-frame confirmation for intrusion, line crossing
+           against the last CONFIRMED side, downward (+y) only, vertical
+           lines never fire, hot reload keeps state for surviving zone
+           ids); ml/analytics/events.py (per-class 5 s throttle on
+           stream time, batched best-effort object events, awaited zone
+           events so alerts can reference event_id); ml/worker.py
+           (CameraWorker thread + process_read — the single-connection
+           sighting -> commit -> find_match -> create_alert path shared
+           with tests and demo_seed; DB errors guard each frame, never
+           the loop); ml/supervisor.py (single DbWriter thread with
+           BEGIN IMMEDIATE + lock retry; active tier = transport IN
+           (rtsp, replay) AND fps_tier=active capped at
+           SENTINEL_ACTIVE_CAMERAS; never two workers per camera;
+           damped restart; watchlist + zone refresh every 10 s; atomic
+           data/worker_stats.json; SIGINT / data/stop graceful stop;
+           psutil own-tree kill only); ml/__main__.py.
+           Fix en route: seed_registry --replay rows now seed
+           fps_tier='active' (the soak supervisor would otherwise never
+           pick them); test extended.
+           Unit acceptance: pytest tests/test_alerts.py tests/test_zones.py
+           -> 22 passed. Highlights observed: watchlisted plate -> exactly
+           one alert, four repeats within 5 min suppressed; +5:01 alerts
+           again; partial never alerts; GJ01AB1235 fuzzy never alerts by
+           default; ambiguity GJ01A81234 alerts; PURGE then new sighting
+           -> new alert with a FRESH alert_seq (D4 regression); zone
+           inside,inside,outside,inside -> exactly 1 fire; inside,outside,
+           outside -> 0; line fires downward only, once, confirmed side;
+           high-severity zone -> kind='zone' alert with event_id set and
+           sighting_id NULL; zone cooldown per (zone_id, camera).
+           GATE A' — the 10-minute replay soak, observed:
+           - SENTINEL_DB=data/soak.db, 3 replay cameras
+             (seed_registry --replay synthetic_60s.mp4 replay01..03)
+           - uptime 614.9 s, ZERO worker restarts
+           - frames 5529 total, EXACTLY 1843 per camera (uniform),
+             fps_sustained 8.99 = 3.0 fps per camera
+           - rss_mb 309.2 (first write) -> 309.8 (final): +0.6 MB
+             growth over the run (< 100 MB required)
+           - stats file rewritten every 10 s (30 trace samples)
+           - 10 restart (wrap) ticks handled per camera (>= 2 required)
+           - sightings: 0 (testsrc2 has no vehicles - nothing to read;
+             "every sighting provenance='test'" holds vacuously), so the
+             pipeline-to-DB path is instead proven by test_alerts/
+             test_demo_seed through the same process_read functions
+           - data/sentinel.db untouched (does not exist on this box)
+           Whole suite after Phase 2: 141 passed, 5 skipped in 186 s
+           (the 5 skips are the mediamtx harness cases, Windows-only
+           zip; laptop unskips them).
+Surprise:  timeout -s INT exits 130, which reads as "failed" in the
+           harness — the soak itself shut down gracefully (all workers
+           joined, final stats written, 0 restarts).
+Next:      S3.0 (login + hardening) — the Wed 23 column. Laptop items
+           deferred from today: DirectML detector latency (~50 ms
+           expected), laptop OCR latency, S2.2 Wi-Fi pull (Adi, Thu 24).
+```
+
+```
+## S3.1a-partial — demo seeder pulled forward (Adi's ask, 23 Sep)
+When:      2026-09-23T20:58Z (cloud container)
+Observed:  backend/tools/demo_seed.py (inject / purge) built to the
+           S3.1a spec, a day early, so the demo vehicle exercises the
+           whole Phase-2 architecture the day it closed: hero GJ01AB1234
+           through record_sighting -> find_match -> create_alert
+           (ml/worker.process_read — the same code path a live read
+           takes) with provenance='demo', clock_source='demo', DEMO-
+           track ids; stops on cam06 (GSRTC) t, cam10 (Municipal) t+7,
+           cam09 (Police) t+15, ambiguity near-miss GJ01A81234 on cam09
+           t+21 (elapsed 420/480/360 s exactly as the S3.1a route
+           acceptance expects); 20 invented background plates chosen not
+           to match the seeded watchlist; inject purges first so it is
+           idempotent; purge deletes ONLY provenance='demo' rows and
+           their alerts. pytest tests/test_demo_seed.py -> 6 passed:
+           route shape, 24/24 rows labelled demo, 4 alerts (3 exact +
+           1 ambiguity), inject-twice no duplicates, purge leaves
+           non-demo rows and alerting still fires with a fresh
+           alert_seq, background plates never alert.
+           The F49 pick hook: route_cameras stays the pinned fallback
+           (cam06/cam10/cam09) until S3.7's --pick-active exists; the
+           S3.1a session wires the pick and keeps these tests green
+           (editor's note added to the task block).
+Surprise:  none.
+Next:      S3.0. The 10 sample clips Adi films Thu 24 (60-90 s, with
+           coordinates) feed S3.6: local01..local10 replay rows through
+           this same pipeline, and the S3.6 real hit replaces the demo
+           route as the headline route (demo stays the labelled
+           fallback, rule 12).
 ```
