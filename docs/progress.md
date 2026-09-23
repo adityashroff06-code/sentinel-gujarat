@@ -775,3 +775,49 @@ Surprise:  none - no code was touched and no completed task re-opened.
 Next:      S2.3, unchanged. Thu 24 adds two [Adi] items: the S2.2 Wi-Fi
            pull and the S3.6 filming.
 ```
+
+```
+## S2.3 — DONE (motion gate, YOLOX-S detector, tracker, fetch_models; 18 tests)
+When:      2026-09-23T20:20Z (cloud container)
+Observed:  Environment first: this session is a fresh Claude Code cloud
+           container (Linux, python 3.11.15, no GPU, no .env). ffmpeg
+           6.1.1 apt-installed; .venv rebuilt from requirements.txt +
+           requirements-dev.txt — every pin resolved, pip check clean
+           (Linux markers put plain onnxruntime 1.24.4 in, never the
+           directml wheel). Baseline before S2.3: 78 passed, 5 skipped
+           (the mediamtx-harness cases skip without the Windows zip;
+           laptop equivalent was 83 passed).
+           Built: ml/tools/fetch_models.py (yolox_s.onnx from the Megvii
+           0.1.1rc0 release, SHA-256 pinned in CHECKSUMS.txt on first
+           download — c5c2d13e59ae... committed — later runs verify and
+           ChecksumMismatch refuses a tampered file); ml/anpr/motion.py
+           (MOG2 on a 320-wide downscale, 5-frame warm-up, per-camera
+           threshold from notes JSON via gate_for_camera, reset());
+           ml/anpr/detect.py (ONNX Runtime, DirectML-then-CPU provider
+           pick logged, one lock around session.run(), YOLOX letterbox +
+           grid decode, per-class NMS via cv2.dnn.NMSBoxes, 8 COCO
+           classes kept, superclass() car/truck/bus/motorcycle->vehicle,
+           ROI mask applied BEFORE inference, caption-band drop);
+           ml/anpr/track.py (greedy IoU + centre-distance fallback on
+           superclass, PTS-delta velocity, max_age 3 s, ids never reused
+           — reset() keeps the counter, per ml/CLAUDE.md zone rule).
+           Config: SENTINEL_MOTION_MIN_RATIO=0.002, SENTINEL_DETECT_CONF
+           =0.4 added to config.py + .env.example.
+           Acceptance observed: pytest tests/test_detect.py
+           tests/test_track.py -> 18 passed in 1.19s. feed_cam01.jpg ->
+           5 vehicles of 5 detections (bus, car, truck) on
+           CPUExecutionProvider; black frame -> 0; sliver ROI -> 0,
+           full-frame ROI -> still >= 3 vehicles; identical frames ->
+           <= 10 of 100 pass the gate (>= 90 % skipped); moving box
+           passes >= 80 %; tracker holds one id over 30 frames and
+           across a car->truck flip; tampered model refused.
+           Measured here (CPU): 95-135 ms/frame warm — inside the
+           116-300 ms cloud-CPU band sandbox-findings §7 predicts.
+Deferred:  DirectML latency (~50 ms expected) is a laptop measurement —
+           record it when the laptop runs the suite next (S4.1 at the
+           latest).
+Surprise:  none; the sliver-ROI test doubles as the caption-band guard
+           (band drop verified by inspection — top-centred boxes are
+           dropped in detect()).
+Next:      S2.4 (OCR cascade, consensus, sightings) in this session.
+```

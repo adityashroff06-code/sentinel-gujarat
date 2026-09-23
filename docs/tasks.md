@@ -273,7 +273,7 @@ git rev-parse --short main origin/main
 *v2.4 (F49), for the pull still to run (Thu 24):* first re-run the connection check on **every** camera (`.venv/Scripts/python -m backend.tools.probe`), then run the pull on the best-working camera it reports — not a fixed id. cam06 above is the camera the 23 Sep smoke happened to use (the known daytime road camera); `smoke_rtsp` takes any camera id.
 *Write-off:* progress block with the observed frame count, tee state and backoff delays.
 
-### S2.3 — Motion gate, detector, tracker, model fetch with checksum `[ ]`
+### S2.3 — Motion gate, detector, tracker, model fetch with checksum `[x]`
 *Read first:* `docs/sandbox-findings.md` §5, §7; `docs/decisions.md` §3 "Ingestion", F14; `ml/CLAUDE.md`; old reference: `D:\projects\Sentinel_Repo\src\anpr\{detect,motion,track}.py`, `src\tools\fetch_models.py` (the YOLOX-S release URL).
 *Build:*
 - `ml/tools/fetch_models.py`: download YOLOX-S ONNX to `models/yolox_s.onnx`; on first download compute SHA-256 and append it to `CHECKSUMS.txt` (committed); later runs verify and refuse a mismatch.

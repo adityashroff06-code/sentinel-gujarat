@@ -50,6 +50,8 @@ _DEFAULTS: dict[str, str] = {
     "SENTINEL_PLAYBACK_OFFSET_S": "0",
     "SENTINEL_ALERT_ON_FUZZY": "false",
     "SENTINEL_HEALTH_INTERVAL_S": "300",
+    "SENTINEL_MOTION_MIN_RATIO": "0.002",
+    "SENTINEL_DETECT_CONF": "0.4",
 }
 
 
@@ -87,6 +89,8 @@ def recording_epoch() -> str: return get("SENTINEL_RECORDING_EPOCH")
 def loop_seconds() -> int: return int(get("SENTINEL_LOOP_SECONDS"))
 def playback_offset_s() -> float: return float(get("SENTINEL_PLAYBACK_OFFSET_S"))
 def health_interval_s() -> float: return float(get("SENTINEL_HEALTH_INTERVAL_S"))
+def motion_min_ratio() -> float: return float(get("SENTINEL_MOTION_MIN_RATIO"))
+def detect_conf() -> float: return float(get("SENTINEL_DETECT_CONF"))
 
 
 def alert_on_fuzzy() -> bool:
