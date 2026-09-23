@@ -1017,3 +1017,45 @@ Next:      S3.0, as Current state says. With S2.5 on main, every
            cloud-lane task is unblocked (S3.0, S3.7, S3.2, then S3.1a,
            S3.1b, S3.3, S3.3b).
 ```
+
+```
+## R6a — DONE (review of PR #2 after merge; Current state is stale for Thu 24)
+When:      2026-09-23T21:15Z (24 Sep 02:45 IST), cloud session, branch
+           claude/eloquent-hypatia-kdhdnq — docs only, this block only.
+Observed:  PR #2 (R6, plan v2.5) reviewed and merged into main as f9f9667:
+           no conflict markers, main already merged into the branch;
+           tasks.md S3.1a's pinned cameras (cam06/cam10/cam09) match
+           backend/tools/demo_seed.py. Full suite on this branch in a
+           Linux cloud container (python 3.11.15, requirements.txt +
+           requirements-dev.txt, apt ffmpeg 6.1.1): 141 passed, 5 skipped
+           (1 Windows-only PATHEXT, 4 mediamtx harness - the fetch is
+           blocked here), the same count Phase 2 recorded.
+           Current state was NOT edited: F57 reserves it for the laptop
+           lane. It is stale in three places, for the first laptop
+           session to fold in:
+           1. [Adi] queue item 7 still says "10 recordings of 60-90 s".
+              v2.5 (tasks.md S3.6) says: 10-15 minute recordings of one
+              vehicle at three or four real locations visited in order,
+              plate ~100 px wide or more, daylight, 1080p30 H.264 (iPhone:
+              Most Compatible), steady, plate >= 3 s in frame per pass;
+              note coordinates, clip start times and a department; copy
+              by cable or Drive originals, never WhatsApp. FILM TO S3.6,
+              NOT TO CURRENT STATE.
+           2. The Git line still names draft PR #1 as unmerged; PR #1
+              (ea2ebc9) and PR #2 (f9f9667) are both on main - pull main
+              on the laptop before S3.4.
+           3. The Next-task line predates the lanes (F57): cloud S3.0,
+              S3.7, S3.2, then S3.1a, S3.1b, S3.3, S3.3b; laptop S3.4 ->
+              S4.1 (GATE B) -> S3.6 (GATE C, Thu 20:00); S4.2/S4.3 cut.
+Surprise:  (1) demo_seed.py's docstring and comment (lines 15-17, 36) still
+           say S3.7's pick will replace the pinned cameras (F49); F55 cut
+           the pick, so the pinned cameras are final. Behaviour is right,
+           only the comment is stale - fix it in the next session that
+           edits that file.
+           (2) tasks.md S2.2 (line 279, v2.4) still runs the Thu 24 Wi-Fi
+           pull on "the best-working camera" the probe reports (F49); F55
+           fixes the demo tier to cam06 + up to four live sandbox cameras
+           but does not say which camera the S2.2 pull uses. Not a
+           conflict - flagged so the laptop session picks deliberately.
+Next:      unchanged - S3.0 (cloud), S3.4 (laptop).
+```
