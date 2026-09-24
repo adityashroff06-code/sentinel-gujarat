@@ -4,7 +4,7 @@ response_model so the exported OpenAPI is the real contract (docs/api.md §7).""
 from __future__ import annotations
 
 import re
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -178,3 +178,183 @@ class SessionOut(BaseModel):
 
 class MessageOut(BaseModel):
     detail: str
+
+
+# --- analytics (S3.1a; docs/api.md §2-§4, §7) ------------------------------
+
+Provenance = Literal["live", "harvest", "demo", "test"]
+WatchCategory = Literal[
+    "stolen_vehicle", "wanted_person", "missing_person", "blacklisted", "suspect"
+]
+WatchSeverity = Literal["high", "medium", "low"]
+
+
+class SightingOut(BaseModel):
+    sighting_id: int
+    plate: str
+    plate_raw: str
+    plate_canonical: str
+    confidence: float
+    camera_id: str
+    seen_at: str
+    wall_time: str
+    clock_source: str
+    provenance: str
+    pts_ms: float | None = None
+    bbox_json: str | None = None
+    vehicle_class: str | None = None
+    crop_path: str | None = None
+    frame_path: str | None = None
+    track_id: str | None = None
+    created_at: str
+    department: str | None = None
+    location_name: str | None = None
+    crop_url: str | None = None
+
+
+class SightingListOut(BaseModel):
+    total: int
+    count: int
+    sightings: list[SightingOut]
+
+
+class RouteStopOut(BaseModel):
+    sequence: int
+    camera_id: str
+    department: str | None = None
+    location_name: str | None = None
+    lat: float | None = None
+    lon: float | None = None
+    seen_at: str
+    clock_source: str
+    provenance: str
+    plate_raw: str
+    confidence: float
+    match_type: Literal["exact", "ambiguity", "fuzzy"]
+    match_distance: float
+    suspect: bool
+    crop_url: str | None = None
+    elapsed_from_previous_s: int | None = None
+    implied_speed_kmh: float | None = None
+
+
+class RouteGapOut(BaseModel):
+    after_sequence: int
+    minutes: int
+    note: str
+
+
+class RouteOut(BaseModel):
+    query_plate: str
+    normalised: str
+    match_mode: Literal["none", "exact", "ambiguity", "fuzzy"]
+    total_sightings: int
+    first_seen: str | None = None
+    last_seen: str | None = None
+    duration_seconds: int | None = None
+    distance_km: float
+    departments_crossed: list[str]
+    stops: list[RouteStopOut]
+    gaps: list[RouteGapOut]
+    warnings: list[str]
+
+
+class WatchlistIn(BaseModel):
+    plate: str = Field(min_length=1)
+    category: WatchCategory
+    severity: WatchSeverity
+    description: str | None = None
+    source_ref: str | None = None
+
+
+class WatchlistOut(BaseModel):
+    watchlist_id: int
+    plate: str
+    plate_canonical: str
+    category: str
+    severity: str
+    description: str | None = None
+    reason: str | None = None
+    authority: str | None = None
+    source_ref: str | None = None
+    expires_at: str | None = None
+    active: int
+    added_at: str
+
+
+class WatchlistDeleteOut(BaseModel):
+    deleted: int
+
+
+class AlertOut(BaseModel):
+    alert_seq: int
+    alert_id: str
+    kind: str
+    sighting_id: int | None = None
+    watchlist_id: int | None = None
+    event_id: int | None = None
+    zone_id: str | None = None
+    plate: str | None = None
+    plate_canonical: str | None = None
+    camera_id: str
+    category: str | None = None
+    severity: str
+    match_type: str
+    match_distance: float
+    clock_source: str
+    fired_at: str
+    acknowledged_at: str | None = None
+    acknowledged_by: str | None = None
+    clip_path: str | None = None
+    clip_sha256: str | None = None
+    department: str | None = None
+    location_name: str | None = None
+    crop_url: str | None = None
+
+
+class EventOut(BaseModel):
+    event_id: int
+    camera_id: str
+    zone_id: str | None = None
+    event_type: str
+    object_class: str | None = None
+    confidence: float | None = None
+    occurred_at: str
+    wall_time: str
+    clock_source: str
+    provenance: str
+    bbox_json: str | None = None
+    crop_path: str | None = None
+
+
+class CameraEventSummaryOut(BaseModel):
+    objects: dict[str, int] = Field(default_factory=dict)
+    intrusion: int = 0
+    line_cross: int = 0
+
+
+class EventsSummaryOut(BaseModel):
+    minutes: int
+    total: int
+    cameras: dict[str, CameraEventSummaryOut]
+
+
+class WorkersOut(BaseModel):
+    """The supervisor's stats snapshot (data/worker_stats.json), or
+    ``available: false`` when no worker has written one yet."""
+
+    available: bool
+    written_at: str | None = None
+    uptime_s: float | None = None
+    restarts: int | None = None
+    rss_mb: float | None = None
+    frames: int | None = None
+    fps_sustained: float | None = None
+    inferred: int | None = None
+    motion_skip_rate: float | None = None
+    detections: int | None = None
+    detections_per_min: float | None = None
+    sightings: int | None = None
+    alerts: int | None = None
+    zone_events: int | None = None
+    cameras: dict[str, dict[str, Any]] = Field(default_factory=dict)

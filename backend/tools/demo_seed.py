@@ -12,10 +12,10 @@ demo clock domain never mixes with live routes (B6).
 ``purge`` deletes only ``provenance='demo'`` rows and their alerts;
 alerting keeps working afterwards (cooldowns derive from the table, D4).
 
-The three cameras come from the best-working pick once S3.7's
-``seed_registry --pick-active`` exists (F49); until a pick is recorded
-the pinned fallback is cam06 (GSRTC), cam10 (Municipal), cam09 (Police)
-— one geographic cluster, three departments — and the tests pin it.
+The three cameras are pinned and final — decision F55 cut S3.7's
+``--pick-active`` (R6a): cam06 (GSRTC), cam10 (Municipal), cam09
+(Police) — one geographic cluster, three departments — and the tests
+pin them.
 
 CLI: ``python -m backend.tools.demo_seed inject|purge [--at ISO8601]``
 """
@@ -33,7 +33,7 @@ from ml.worker import process_read
 
 HERO = "GJ01AB1234"
 NEAR_MISS = "GJ01A81234"  # 8<->B ambiguity of the hero
-# ponytail: pinned fallback until S3.7's probe pick exists (F49)
+# Pinned final — F55 cut the S3.7 pick (R6a surprise 1).
 ROUTE = [("cam06", "GSRTC"), ("cam10", "Municipal"), ("cam09", "Police")]
 ROUTE_OFFSETS_MIN = (0, 7, 15)  # elapsed 420 s and 480 s between stops
 NEAR_MISS_OFFSET_MIN = 21       # 360 s after the third stop

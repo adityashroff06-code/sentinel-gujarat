@@ -224,7 +224,7 @@ The ambiguity map is applied only during canonicalisation and matching, never du
 | GET | `/auth/me` | the signed-in username, role and session expiry (what the UI renders its menu from) |
 | GET | `/users` · POST · PATCH `/{id}` · DELETE `/{id}` | account administration, **admin only**; passwords are never returned and never logged |
 | POST | `/session` | validates an API key, sets the `sentinel_key` cookie (F23) — kept for scripts |
-| DELETE | `/session` | clears the cookie |
+| DELETE | `/session` | clears the cookie — behind auth like every non-open path (schema v2) |
 | GET | `/cameras` | list; filters `department`, `health`, `tier`, `q` |
 | GET | `/cameras/gap-analysis` | uncovered areas + ageing/offline cameras (Model 1 deliverable) — registered **before** `/{camera_id}` |
 | POST | `/cameras/import` | CSV bulk onboarding; per-row `accepted[] / rejected[]{row, reason}`, one transaction, no partial commit — registered **before** `/{camera_id}` |
@@ -235,12 +235,12 @@ The ambiguity map is applied only during canonicalisation and matching, never du
 | GET | `/sightings` | filters `plate`, `camera_id`, `from`, `to`, `min_confidence`, `provenance`; returns `{"total", "count", "sightings"}` with `limit` (≤ 2000) and `offset`; `total` reuses the row query's WHERE |
 | GET | `/plates/{plate}/route` | **the scored endpoint** — see below |
 | GET | `/watchlist` · POST · DELETE `/{id}` | watchlist CRUD (POST takes `plate, category, severity, description?, source_ref?`) |
-| GET | `/alerts` | recent alerts, filters `severity`, `acknowledged`, `limit` |
-| POST | `/alerts/{alert_id}/ack` | acknowledge |
+| GET | `/alerts` | recent alerts, filters `severity`, `acknowledged`, `kind`, `limit` |
+| POST | `/alerts/{alert_id}/ack` | acknowledge; accepts the human `alert_id` or the numeric `alert_seq`; persists `acknowledged_by` = the auth actor (username, or `key:<role>` for the key transport) |
 | GET | `/alerts/stream` | **SSE** — one background tailer over `alerts` (both kinds); frames carry `id: <alert_seq>`, honours `Last-Event-ID` |
 | GET | `/events` | zone/object events; filters `camera_id`, `event_type`, `limit` |
-| GET | `/events/summary` | `?minutes=` — object/zone counts per camera per class over the last N minutes of the recording timeline |
-| GET | `/workers` | the worker supervisor's stats snapshot (sustained fps, skip rate, detections/min per camera) |
+| GET | `/events/summary` | `?minutes=` — `{minutes, total, cameras{<cam>: {objects{class: count}, intrusion, line_cross}}}`, anchored at the newest event |
+| GET | `/workers` | the supervisor's stats snapshot verbatim (`{available, written_at, uptime_s, restarts, rss_mb, frames, fps_sustained, inferred, motion_skip_rate, detections, detections_per_min, sightings, alerts, zone_events, cameras{<cam>: {…, alive}}}` mirroring `ml/supervisor._write_stats`); `{available: false}` when no snapshot exists |
 | GET | `/stats` | `cameras_online, cameras_total, departments, sightings_total, plates_unique, events_total, zone_events, alerts_active` |
 | GET | `/reports/detections` | **timestamped detection report — a named deliverable**; `?format=csv\|html` + filters `camera_id`, `from`, `to`, `plate`; every row carries `provenance` |
 | GET | `/reports/gap-analysis` | rendered gap report (HTML) |
@@ -249,10 +249,11 @@ The ambiguity map is applied only during canonicalisation and matching, never du
 
 **Auth transport (B12, F23, and decision F41 from schema v2 onward):** two credentials reach the same authorisation check.
 
-- **People sign in** (F41): `POST /api/auth/login` with a username and password sets `sentinel_session` — `HttpOnly`, `Secure`, `SameSite=Strict`, 8 hours, revocable server-side. Because the UI and the API share one origin, that cookie carries `<img>` crops, hls.js segments and the alert `EventSource` as well as ordinary calls, and it authorises **whatever the role allows, mutations included** (the `SameSite=Strict` cookie plus an `Origin` check on every mutation is what closes CSRF; a cross-site form cannot send either).
+- **People sign in** (F41): `POST /api/auth/login` with a username and password sets `sentinel_session` — `HttpOnly`, `Secure`, `SameSite=Strict`, 8 hours, revocable server-side. Because the UI and the API share one origin, that cookie carries `<img>` crops, hls.js segments and the alert `EventSource` as well as ordinary calls, and it authorises **whatever the role allows, mutations included** (the `SameSite=Strict` cookie plus an `Origin` check on every **session-authenticated** mutation is what closes CSRF; a cross-site form cannot send either. `X-API-Key` mutations are exempt from the `Origin` check — a script sends no Origin, and the header itself cannot be attached cross-site).
 - **Scripts use a key**: the `X-API-Key` header keeps working exactly as F23 describes, as does `POST /api/session` for the `sentinel_key` cookie on GET media. The API refuses to start if either key is unset.
 - **Roles** are `viewer` (read), `evaluator` (read, acknowledge, watchlist add and remove, reports, the onboarding form) and `admin` (everything, including `/api/users`, zones and tier changes).
 - **Open paths** are `/`, `/assets/*`, `/api/health` and `/api/auth/login` **only**. `/docs` and `/openapi.json` move behind the login once the platform is public (the committed `deliverables/registry-api.json` remains the API-documentation deliverable).
+- **Audit actor**: the `audit.actor` column carries the username the auth dependency resolved (or `key:<role>` for the key transport); the bare role appears only on paths that never authenticated. `/docs` alone gets a relaxed CSP (cdn.jsdelivr.net + inline bootstrap — Swagger UI cannot boot under the strict policy); the strict CSP applies everywhere else.
 - `TrustedHostMiddleware` allows `localhost`, `127.0.0.1` **and the published tunnel hostname** from `SENTINEL_PUBLIC_HOST` (decision F42). Every mutation and every plate/route query writes an `audit` row (`audit(audit_id, at, actor, role, action, entity, entity_id, before_json, after_json)` — `before/after` supplied by handlers). Every endpoint declares a `response_model`, so the exported OpenAPI (`deliverables/registry-api.json`) is the real contract; no `snapshot.jpg` endpoint exists. Every timestamp is canonicalised at the API boundary to the stored `+00:00` form; HTML reports escape their inputs; CSV cells beginning `= + - @` are prefixed (B11).
 
 ### `GET /api/plates/{plate}/route` — the response the whole submission turns on
