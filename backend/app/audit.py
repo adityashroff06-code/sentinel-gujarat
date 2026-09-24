@@ -50,7 +50,10 @@ class AuditMiddleware(BaseHTTPMiddleware):
             extra = getattr(request.state, "audit", {}) or {}
             row = (
                 dbmod.utcnow(),
-                getattr(request.state, "role", None),
+                # Username (or "key:<role>") when the auth dependency resolved
+                # one; the bare role only for paths that never authenticated.
+                getattr(request.state, "actor", None)
+                or getattr(request.state, "role", None),
                 getattr(request.state, "role", None),
                 f"{request.method} {request.url.path} -> {response.status_code}",
                 extra.get("entity"),

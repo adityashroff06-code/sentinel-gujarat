@@ -1,4 +1,5 @@
-"""S1.1 acceptance: every table, column, enum default and index of schema v1."""
+"""S1.1 acceptance: every table, column, enum default and index of schema v1
+— extended in S3.0 with the schema v2 auth tables (docs/api.md §9)."""
 
 from __future__ import annotations
 
@@ -42,6 +43,16 @@ EXPECTED_COLUMNS = {
         "audit_id", "at", "actor", "role", "action", "entity", "entity_id",
         "before_json", "after_json",
     },
+    # schema v2 (0002_auth.sql — docs/api.md §9, task S3.0)
+    "users": {
+        "user_id", "username", "password_hash", "role", "active",
+        "created_at", "last_login",
+    },
+    "sessions": {
+        "session_id", "user_id", "issued_at", "expires_at", "revoked_at",
+        "user_agent",
+    },
+    "login_attempts": {"key", "failures", "locked_until"},
     "schema_version": {"version", "applied_at"},
 }
 
@@ -50,6 +61,7 @@ EXPECTED_INDEXES = {
     "idx_sightings_plate", "idx_sightings_canonical", "idx_sightings_camera",
     "idx_sightings_time", "idx_watchlist_canonical", "idx_events_time",
     "idx_events_camera", "idx_alerts_fired", "idx_alerts_canonical",
+    "idx_sessions_user",
 }
 
 NOT_NULL = {
@@ -61,6 +73,8 @@ NOT_NULL = {
                "match_distance", "clock_source", "fired_at"},
     "watchlist": {"plate", "plate_canonical", "category", "severity", "active", "added_at"},
     "audit": {"at", "action"},
+    "users": {"username", "password_hash", "role", "active", "created_at"},
+    "sessions": {"user_id", "issued_at", "expires_at"},
 }
 
 
@@ -123,7 +137,7 @@ def test_pragmas_and_migration_idempotent(con):
     assert con.execute("PRAGMA busy_timeout").fetchone()[0] == 30000
     assert dbmod.migrate(con) == []  # second run applies nothing
     versions = [r["version"] for r in con.execute("SELECT version FROM schema_version")]
-    assert versions == [1]
+    assert versions == [1, 2]  # schema v2: 0002_auth.sql (S3.0)
 
 
 def test_zone_alert_can_exist_without_sighting(con):

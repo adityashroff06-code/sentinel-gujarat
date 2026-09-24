@@ -16,7 +16,7 @@ from pydantic import ValidationError
 
 from backend.app import schemas
 from backend.app.audit import set_audit
-from backend.app.auth import require_admin, require_auth
+from backend.app.auth import require_admin, require_auth, require_evaluator
 from backend.core import db as dbmod
 
 router = APIRouter(prefix="/api/cameras", tags=["cameras"])
@@ -157,12 +157,13 @@ def stream_url(
     return {"hls": f"/api/hls/{camera_id}/live.m3u8"}
 
 
-@router.post("", response_model=schemas.CameraOut, status_code=201)
+@router.post("", response_model=schemas.CameraOut, status_code=201)  # §7 roles:
+# the onboarding form is an evaluator action; PATCH (tier/ROI/zones) stays admin
 def create_camera(
     request: Request,
     cam: schemas.CameraIn,
     con: sqlite3.Connection = Depends(get_db),
-    _: str = Depends(require_admin),
+    _: str = Depends(require_evaluator),
 ):
     """Manual camera onboarding (Model 1 deliverable); 409 on a duplicate id."""
     try:

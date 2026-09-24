@@ -33,6 +33,7 @@ _DEFAULTS: dict[str, str] = {
     "SENTINEL_API_KEY_ADMIN": "",
     "SENTINEL_API_KEY_VIEWER": "",
     "SENTINEL_CDN": "https://cctv.corp8.cloud",
+    "SENTINEL_CATALOGUE_URL": "",
     "SENTINEL_STREAM_IP": "103.250.160.189",
     "SENTINEL_RTSP_PORT": "8554",
     "SENTINEL_WHEP_PORT": "8889",
@@ -52,6 +53,8 @@ _DEFAULTS: dict[str, str] = {
     "SENTINEL_HEALTH_INTERVAL_S": "300",
     "SENTINEL_MOTION_MIN_RATIO": "0.002",
     "SENTINEL_DETECT_CONF": "0.4",
+    "SENTINEL_SESSION_TTL_H": "8",
+    "SENTINEL_PUBLIC_HOST": "",
 }
 
 
@@ -74,6 +77,7 @@ def password() -> str: return get("SENTINEL_PASSWORD")
 def api_key_admin() -> str: return get("SENTINEL_API_KEY_ADMIN")
 def api_key_viewer() -> str: return get("SENTINEL_API_KEY_VIEWER")
 def cdn() -> str: return get("SENTINEL_CDN").rstrip("/")
+def catalogue_url() -> str: return get("SENTINEL_CATALOGUE_URL").strip()
 def stream_ip() -> str: return get("SENTINEL_STREAM_IP")
 def rtsp_port() -> int: return int(get("SENTINEL_RTSP_PORT"))
 def whep_port() -> int: return int(get("SENTINEL_WHEP_PORT"))
@@ -91,6 +95,8 @@ def playback_offset_s() -> float: return float(get("SENTINEL_PLAYBACK_OFFSET_S")
 def health_interval_s() -> float: return float(get("SENTINEL_HEALTH_INTERVAL_S"))
 def motion_min_ratio() -> float: return float(get("SENTINEL_MOTION_MIN_RATIO"))
 def detect_conf() -> float: return float(get("SENTINEL_DETECT_CONF"))
+def session_ttl_h() -> float: return float(get("SENTINEL_SESSION_TTL_H"))
+def public_host() -> str: return get("SENTINEL_PUBLIC_HOST").strip()
 
 
 def alert_on_fuzzy() -> bool:
