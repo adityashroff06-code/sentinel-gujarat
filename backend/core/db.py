@@ -35,7 +35,14 @@ def connect(db_path: str | Path | None = None) -> sqlite3.Connection:
     pragmas. Creates the parent directory if needed."""
     path = Path(db_path) if db_path is not None else config.db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(path, timeout=30)
+    # check_same_thread=False: FastAPI runs a sync dependency's teardown in
+    # a different anyio worker thread than its body under concurrent
+    # requests, so ``con.close()`` in ``get_db`` otherwise raises
+    # ProgrammingError and 500s the request (found by scripts/
+    # smoke_frontend.py, S3.2 — the Header stats poll racing a page load).
+    # Each connection is still used by one request at a time, and CPython's
+    # sqlite3 is threadsafety=3 (serialized).
+    con = sqlite3.connect(path, timeout=30, check_same_thread=False)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA journal_mode=WAL")
     con.execute("PRAGMA foreign_keys=ON")

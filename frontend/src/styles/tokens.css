@@ -1,0 +1,99 @@
+/* Sentinel design tokens — the ONE token sheet (frontend/CLAUDE.md,
+ * decision F53). One theme: dark, control room. No colour or size
+ * literal may live outside this file; component styles consume tokens.
+ * Ported from D:\projects\Sentinel_Repo\ui\src\styles.css :root (F52)
+ * and extended into a full scale. */
+
+:root {
+  color-scheme: dark;
+
+  /* ---- surface layers (darkest to lightest) ---- */
+  --bg: #0a0e14;            /* app background */
+  --surface-1: #111823;     /* panels, cards, nav */
+  --surface-2: #16202e;     /* inputs, hover, nested panels */
+  --surface-3: #1c2939;     /* active rows, raised chips */
+  --border: #1e2a3a;
+  --border-strong: #2c3d54;
+
+  /* ---- text ---- */
+  --text: #e6edf5;
+  --text-muted: #8a97a6;
+  --text-faint: #5c6875;
+  --text-on-color: #ffffff;
+
+  /* ---- accent and status ---- */
+  --accent: #3d7fd6;
+  --accent-strong: #5895e4;
+  --accent-soft: rgba(61, 127, 214, 0.16);
+  --ok: #39a56a;
+  --warn: #e0912f;
+  --danger: #d64f6a;
+  --danger-soft: rgba(214, 79, 106, 0.14);
+  --focus-ring: #5895e4;
+
+  /* ---- the six department colours (shared palette: map pins, wall
+     labels, legends — docs/api.md §1) ---- */
+  --dept-police: #3d7fd6;
+  --dept-gsrtc: #e0912f;
+  --dept-municipal: #39a56a;
+  --dept-panchayat: #b45fd1;
+  --dept-health: #d64f6a;
+  --dept-unknown: #8a97a6;
+
+  /* ---- severity (every value incl. critical — D13) ---- */
+  --sev-critical: #ff3b5c;
+  --sev-high: #d64f6a;
+  --sev-medium: #e0912f;
+  --sev-low: #8a97a6;
+
+  /* ---- provenance (live | harvest | demo | test — F46; a judge must
+     never mistake a seeded row for a live read) ---- */
+  --prov-live: #39a56a;
+  --prov-harvest: #3d7fd6;
+  --prov-demo: #e0912f;
+  --prov-test: #8a97a6;
+
+  /* ---- health ---- */
+  --health-online: #39a56a;
+  --health-degraded: #e0912f;
+  --health-offline: #d64f6a;
+
+  /* ---- spacing scale ---- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 32px;
+  --s-8: 48px;
+
+  /* ---- radii ---- */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+
+  /* ---- type scale (system UI stack — the venue may be offline;
+     plates always mono + upper case; numerals tabular) ---- */
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Consolas, monospace;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 15px;
+  --fs-xl: 18px;
+  --fs-2xl: 24px;
+  --fs-hero: 32px;
+  --lh-tight: 1.25;
+  --lh-normal: 1.5;
+
+  /* ---- shadows ---- */
+  --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 6px 24px rgba(0, 0, 0, 0.5);
+
+  /* ---- motion (a new element animates once, never loops — F53) ---- */
+  --t-fast: 120ms;
+  --t-med: 200ms;
+  --ease: cubic-bezier(0.2, 0, 0.2, 1);
+}
