@@ -54,3 +54,6 @@ Thumbs.db
 # Claude Code: the shared permissions file .claude/settings.json IS committed (decision F38);
 # personal "don't ask again" approvals are not.
 .claude/settings.local.json
+
+# Consistent DB snapshots (backend/CLAUDE.md "back up before it changes"); local only
+/data/backup/

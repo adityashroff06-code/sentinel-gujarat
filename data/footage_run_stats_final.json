@@ -1,0 +1,61 @@
+{
+ "written_at": "2026-09-24T18:25:56+00:00",
+ "uptime_s": 573.6,
+ "restarts": 0,
+ "rss_mb": 193.8,
+ "frames": 324,
+ "fps_sustained": 0.56,
+ "inferred": 139,
+ "motion_skip_rate": 0.571,
+ "detections": 2907,
+ "detections_per_min": 304.1,
+ "sightings": 21,
+ "alerts": 3,
+ "zone_events": 0,
+ "cameras": {
+  "local01": {
+   "frames": 84,
+   "inferred": 38,
+   "motion_skipped": 46,
+   "detections": 727,
+   "sightings": 4,
+   "alerts": 0,
+   "zone_events": 0,
+   "restart_ticks": 3,
+   "alive": true
+  },
+  "local02": {
+   "frames": 66,
+   "inferred": 35,
+   "motion_skipped": 31,
+   "detections": 944,
+   "sightings": 8,
+   "alerts": 1,
+   "zone_events": 0,
+   "restart_ticks": 3,
+   "alive": true
+  },
+  "local03": {
+   "frames": 84,
+   "inferred": 32,
+   "motion_skipped": 52,
+   "detections": 613,
+   "sightings": 8,
+   "alerts": 2,
+   "zone_events": 0,
+   "restart_ticks": 2,
+   "alive": true
+  },
+  "local04": {
+   "frames": 90,
+   "inferred": 34,
+   "motion_skipped": 56,
+   "detections": 623,
+   "sightings": 1,
+   "alerts": 0,
+   "zone_events": 0,
+   "restart_ticks": 2,
+   "alive": true
+  }
+ }
+}

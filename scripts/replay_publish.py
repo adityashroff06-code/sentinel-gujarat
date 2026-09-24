@@ -204,25 +204,40 @@ def start_mediamtx(port: int = DEFAULT_PORT) -> subprocess.Popen:
     return proc
 
 
-def publish(file: str | Path, name: str, port: int = DEFAULT_PORT) -> subprocess.Popen:
+def _publish_cmd(file: str | Path, name: str, port: int,
+                 copy: bool = False) -> list[str]:
+    """The ffmpeg argv publish() runs (split out so a test can assert it)."""
+    if copy:
+        codec = ["-c:v", "copy"]
+    else:
+        codec = ["-c:v", "libx264", "-preset", "veryfast", "-g", "50",
+                 "-keyint_min", "50"]
+    return [
+        config.ffmpeg(), "-nostdin", "-hide_banner", "-loglevel", "warning",
+        "-re", "-stream_loop", "-1", "-i", str(file),
+        *codec,
+        "-an", "-f", "rtsp", "-rtsp_transport", "tcp",
+        f"rtsp://127.0.0.1:{port}/stream/{name}",
+    ]
+
+
+def publish(file: str | Path, name: str, port: int = DEFAULT_PORT,
+            copy: bool = False) -> subprocess.Popen:
     """Loop-publish *file* at rtsp://127.0.0.1:<port>/stream/<name>.
 
     ``-g 50`` forces a keyframe every 2 s at 25 fps so the consumer's
     stream-copied HLS tee can actually cut 2 s segments (hls_time 2 splits
     on keyframes; libx264's default 250-frame GOP would give 10 s ones).
-    Caller owns the returned handle.
+    ``copy=True`` skips the re-encode (near-zero CPU — what several
+    concurrent demo feeds need on the 4-core laptop); the input file must
+    then already carry a <= 2 s GOP, e.g. transcoded with ``-g 60`` at
+    30 fps. Caller owns the returned handle.
     """
     log_dir = config.log_dir()
     log_dir.mkdir(parents=True, exist_ok=True)
     log = open(log_dir / "replay_publish.log", "ab")
-    cmd = [
-        config.ffmpeg(), "-nostdin", "-hide_banner", "-loglevel", "warning",
-        "-re", "-stream_loop", "-1", "-i", str(file),
-        "-c:v", "libx264", "-preset", "veryfast", "-g", "50", "-keyint_min", "50",
-        "-an", "-f", "rtsp", "-rtsp_transport", "tcp",
-        f"rtsp://127.0.0.1:{port}/stream/{name}",
-    ]
-    return subprocess.Popen(cmd, stdout=log, stderr=log)
+    return subprocess.Popen(_publish_cmd(file, name, port, copy),
+                            stdout=log, stderr=log)
 
 
 def main() -> int:
@@ -232,6 +247,8 @@ def main() -> int:
     parser.add_argument("--file", default=str(DEFAULT_CLIP))
     parser.add_argument("--name", default="test")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
+    parser.add_argument("--copy", action="store_true",
+                        help="publish with -c:v copy (input needs a <= 2 s GOP)")
     args = parser.parse_args()
 
     if args.fetch:
@@ -243,7 +260,7 @@ def main() -> int:
     server = start_mediamtx(args.port)
     publisher = None
     try:
-        publisher = publish(args.file, args.name, args.port)
+        publisher = publish(args.file, args.name, args.port, copy=args.copy)
         print(
             f"publishing {args.file} at rtsp://127.0.0.1:{args.port}/stream/"
             f"{args.name} - Ctrl+C to stop", flush=True,
