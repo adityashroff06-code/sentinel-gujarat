@@ -1,0 +1,46 @@
+[
+ {
+  "id": "cam06",
+  "location": "Timbavadi Gate Plaza (grid-published)",
+  "department": "Municipal",
+  "latitude": 21.4931,
+  "longitude": 70.4542,
+  "codec": "H.264",
+  "live": true,
+  "width": 1920,
+  "height": 1080,
+  "fps": 25,
+  "bitrate_kbps": 745,
+  "rtsp": "rtsp://sandbox.example:8554/stream/cam06",
+  "whep": "http://sandbox.example:8889/stream/cam06/whep",
+  "hls": "http://sandbox.example/live/stream/cam06/index.m3u8"
+ },
+ {
+  "id": "cam09",
+  "location": "New Bypass Circle (grid-published)",
+  "codec": "hevc",
+  "live": false,
+  "width": 1280,
+  "height": 720,
+  "fps": 15,
+  "rtsp": "rtsp://user%40example.com:not-a-real-secret@sandbox.example:8554/stream/cam09",
+  "whep": "http://sandbox.example:8889/stream/cam09/whep",
+  "hls": "http://sandbox.example/live/stream/cam09/index.m3u8"
+ },
+ {
+  "id": "cam31",
+  "location": "Gandhinagar Sachivalaya Gate 3",
+  "department": "Police",
+  "lat": 23.2231,
+  "lon": 72.6497,
+  "codec": "h264",
+  "status": "live",
+  "width": 2560,
+  "height": 1440,
+  "frame_rate": 30,
+  "bitrate_kbps": 1200,
+  "rtsp_url": "rtsp://sandbox.example:8554/stream/cam31",
+  "whep_url": "http://sandbox.example:8889/stream/cam31/whep",
+  "hls_url": "http://sandbox.example/live/stream/cam31/index.m3u8"
+ }
+]

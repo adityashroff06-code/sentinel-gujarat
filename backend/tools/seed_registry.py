@@ -1,10 +1,15 @@
-"""Seed the camera registry (decisions C8, F35).
+"""Seed the camera registry (decisions C8, F35, F45).
 
-Upserts **every** id from the committed ``data/cameras_raw.json`` first
-(``transport='none'``, ``source='catalogue'``), so a fresh database gets
-all 30 rows without the sandbox, then applies the disclosed
-``data/camera_seed.csv`` (department, location, coordinates, tier).
-Idempotent: running twice leaves the same rows.
+Upserts **every** id from the committed ``data/cameras_raw.json`` first —
+either published catalogue shape (task S3.7): the sandbox's ``cameras.json``
+or the Integrator's Guide's ``GET /api/ingest``. Whatever the catalogue
+supplies is written verbatim (``source='catalogue'`` either way); the
+disclosed ``data/camera_seed.csv`` then fills only what the catalogue did
+not carry (department, location, coordinates), plus the seed-owned
+``fps_tier``. ``SENTINEL_CATALOGUE_URL`` naming a local JSON file replaces
+the committed catalogue; fetching a URL is the probe's business — the
+seeder never touches the network. Idempotent: running twice leaves the
+same rows.
 
     python -m backend.tools.seed_registry
     python -m backend.tools.seed_registry --add local01 Municipal rtsp://127.0.0.1:8554/stream/local01 --tier active
@@ -15,43 +20,85 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
 import sqlite3
+from pathlib import Path
+from typing import Any
 
 from backend.core import config
 from backend.core import db as dbmod
+from backend.tools import probe  # the shared catalogue normaliser (F45)
 
 CATALOGUE = config.REPO_ROOT / "data" / "cameras_raw.json"
 SEED_CSV = config.REPO_ROOT / "data" / "camera_seed.csv"
 
+# The registry columns a catalogue may supply (docs/api.md §1). transport,
+# tier and the seed-owned fields stay out: probing and the seed own those.
+CATALOGUE_COLUMNS = (
+    "department", "location_name", "lat", "lon", "codec", "width", "height",
+    "declared_fps", "bitrate_kbps", "hls_url", "rtsp_url_template",
+    "whep_url_template", "health",
+)
 
-def upsert_catalogue(con: sqlite3.Connection) -> int:
-    entries = json.loads(CATALOGUE.read_text(encoding="utf-8"))
+
+def _catalogue_path() -> Path:
+    """``data/cameras_raw.json``, unless ``SENTINEL_CATALOGUE_URL`` names a
+    local JSON file (an http(s) URL is ignored here — the probe fetches and
+    commits it; the seeder is offline by design, F35)."""
+    src = config.catalogue_url()
+    if src and not src.lower().startswith(("http://", "https://")):
+        path = Path(src)
+        return path if path.is_absolute() else config.REPO_ROOT / path
+    return CATALOGUE
+
+
+def _catalogue_entries() -> list[dict[str, Any]]:
+    return probe.load_catalogue_file(_catalogue_path())
+
+
+def upsert_catalogue(con: sqlite3.Connection,
+                     entries: list[dict[str, Any]] | None = None) -> int:
+    """Upsert every catalogue id (both shapes, F45). Catalogue-supplied
+    fields overwrite; fields it does not carry are left for
+    :func:`apply_seed`. Returns the number of entries applied."""
+    if entries is None:
+        entries = _catalogue_entries()
     now = dbmod.utcnow()
-    for entry in entries:
+    for rec in entries:
+        cols = [c for c in CATALOGUE_COLUMNS if c in rec]
+        fields = ["camera_id", *cols, "transport", "source", "created_at", "updated_at"]
+        values = [rec["camera_id"], *(rec[c] for c in cols),
+                  "none", "catalogue", now, now]
+        updates = ", ".join(f"{c} = excluded.{c}" for c in [*cols, "updated_at"])
         con.execute(
-            "INSERT INTO cameras (camera_id, location_name, transport, source,"
-            " created_at, updated_at) VALUES (?, ?, 'none', 'catalogue', ?, ?)"
-            " ON CONFLICT(camera_id) DO NOTHING",
-            (entry["id"], entry["name"], now, now),
+            f"INSERT INTO cameras ({', '.join(fields)})"
+            f" VALUES ({', '.join('?' * len(fields))})"
+            f" ON CONFLICT(camera_id) DO UPDATE SET {updates}",
+            values,
         )
     return len(entries)
 
 
 def apply_seed(con: sqlite3.Connection) -> int:
+    """Fill from the disclosed seed only what the catalogue did not carry
+    (F45): department, location, coordinates fall back; ``fps_tier`` is
+    seed-owned (no catalogue shape carries a tier). Updates only rows the
+    catalogue created — a camera absent from the catalogue is never
+    invented. Returns the number of registry rows the seed matched."""
     applied = 0
     now = dbmod.utcnow()
     with open(SEED_CSV, newline="", encoding="utf-8") as fh:
         for row in csv.DictReader(fh):
-            con.execute(
-                "UPDATE cameras SET department = ?, location_name = ?, lat = ?,"
-                " lon = ?, fps_tier = ?, updated_at = ? WHERE camera_id = ?",
+            cur = con.execute(
+                "UPDATE cameras SET department = COALESCE(department, ?),"
+                " location_name = COALESCE(location_name, ?),"
+                " lat = COALESCE(lat, ?), lon = COALESCE(lon, ?),"
+                " fps_tier = ?, updated_at = ? WHERE camera_id = ?",
                 (
                     row["department"], row["location_name"], float(row["lat"]),
                     float(row["lon"]), row["fps_tier"], now, row["camera_id"],
                 ),
             )
-            applied += 1
+            applied += cur.rowcount
     return applied
 
 
@@ -94,7 +141,7 @@ def summarise(con: sqlite3.Connection) -> tuple[int, int, int, bool]:
         "SELECT COUNT(DISTINCT department) FROM cameras"
         " WHERE fps_tier = 'active' AND department IS NOT NULL"
     ).fetchone()[0]
-    catalogue_ids = {e["id"] for e in json.loads(CATALOGUE.read_text(encoding="utf-8"))}
+    catalogue_ids = {e["camera_id"] for e in _catalogue_entries()}
     present = {
         r[0] for r in con.execute("SELECT camera_id FROM cameras").fetchall()
     }
