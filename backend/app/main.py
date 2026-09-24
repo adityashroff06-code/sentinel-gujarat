@@ -12,6 +12,7 @@ import is capped at 2 MB / 5,000 rows.
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
@@ -25,9 +26,12 @@ from backend.app import auth, schemas
 from backend.app.audit import AuditMiddleware
 from backend.app.routes_analytics import router as analytics_router
 from backend.app.routes_cameras import router as cameras_router
+from backend.app.routes_hls import router as hls_router
 from backend.app.routes_meta import router as meta_router
+from backend.app.routes_reports import router as reports_router
 from backend.app.routes_users import router as users_router
 from backend.core import config
+from backend.services import health as health_service
 
 FRONTEND_DIST = config.REPO_ROOT / "frontend" / "dist"
 CROPS_DIR = config.REPO_ROOT / "data" / "crops"
@@ -123,9 +127,24 @@ class CsvImportLimitMiddleware:
         await JSONResponse({"detail": reason}, status_code=413)(scope, receive, send)
 
 
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    """Run the camera health checker while the API is up (S3.1b, F31):
+    a daemon thread on SENTINEL_HEALTH_INTERVAL_S (0 = off), stopped on
+    shutdown. It waits one interval before its first pass, so short-lived
+    test apps never fire one."""
+    stop = health_service.start_background()
+    try:
+        yield
+    finally:
+        if stop is not None:
+            stop.set()
+
+
 def create_app() -> FastAPI:
     auth.assert_keys_configured()
     app = FastAPI(
+        lifespan=_lifespan,
         title="Sentinel — Integrated Video Management & Analytics Platform",
         version="2.0",
         description="Camera registry, ANPR sightings, watchlist alerts and "
@@ -169,6 +188,8 @@ def create_app() -> FastAPI:
     app.include_router(meta_router)
     app.include_router(cameras_router)
     app.include_router(analytics_router)
+    app.include_router(reports_router)
+    app.include_router(hls_router)
     app.include_router(auth.router)
     app.include_router(users_router)
 
@@ -218,7 +239,28 @@ def create_app() -> FastAPI:
         return FileResponse(target)
 
     if FRONTEND_DIST.is_dir():  # pragma: no cover — dist is not built in tests
-        app.mount("/", StaticFiles(directory=FRONTEND_DIST, html=True), name="frontend")
+        # Serve the built SPA (task S3.2): /assets/* as static files, and
+        # index.html for every non-API path so client-side routes like
+        # /map deep-link straight into the app. Open by design — F41's
+        # open paths are exactly `/`, `/assets/*` (+ /api/health and
+        # /api/auth/login); the app itself renders nothing without a
+        # session. API routes are registered before this catch-all, so
+        # they always win; unknown /api/ or /crops/ paths stay JSON 404s.
+        app.mount(
+            "/assets",
+            StaticFiles(directory=FRONTEND_DIST / "assets"),
+            name="frontend-assets",
+        )
+
+        @app.get("/{spa_path:path}", include_in_schema=False)
+        def spa(spa_path: str):
+            if spa_path.split("/", 1)[0] in ("api", "crops"):
+                raise HTTPException(status_code=404, detail="not found")
+            if spa_path:
+                target = (FRONTEND_DIST / spa_path).resolve()
+                if str(target).startswith(str(FRONTEND_DIST.resolve())) and target.is_file():
+                    return FileResponse(target)
+            return FileResponse(FRONTEND_DIST / "index.html")
     else:
         @app.get("/", include_in_schema=False)
         def root():

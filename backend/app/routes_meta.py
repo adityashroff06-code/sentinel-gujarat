@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from typing import Iterator
 
 from fastapi import APIRouter, Depends
 
 from backend.app import schemas
+from backend.app import routes_analytics
 from backend.app.auth import require_auth
 from backend.core import db as dbmod
 
@@ -29,6 +31,21 @@ def _count(con: sqlite3.Connection, sql: str) -> int:
         return 0
 
 
+def _worker_count() -> int:
+    """Alive workers from the same supervisor snapshot ``GET /api/workers``
+    serves (S3.1b fix: this was hardcoded 0); 0 when no snapshot exists."""
+    try:
+        data = json.loads(
+            routes_analytics._worker_stats_path().read_text(encoding="utf-8")
+        )
+    except (OSError, json.JSONDecodeError):
+        return 0
+    cameras = data.get("cameras") if isinstance(data, dict) else None
+    if not isinstance(cameras, dict):
+        return 0
+    return sum(1 for v in cameras.values() if isinstance(v, dict) and v.get("alive"))
+
+
 @router.get("/health", response_model=schemas.HealthOut)
 def health(con: sqlite3.Connection = Depends(get_db)):
     """Open endpoint — no auth (docs/api.md §7 open paths)."""
@@ -45,7 +62,7 @@ def health(con: sqlite3.Connection = Depends(get_db)):
             "cameras": _count(con, "SELECT COUNT(*) FROM cameras"),
             "sightings": _count(con, "SELECT COUNT(*) FROM sightings"),
             "alerts": _count(con, "SELECT COUNT(*) FROM alerts"),
-            "workers": 0,  # the supervisor snapshot lands in S3.1a
+            "workers": _worker_count(),
         },
     }
 

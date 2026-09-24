@@ -245,7 +245,7 @@ The ambiguity map is applied only during canonicalisation and matching, never du
 | GET | `/reports/detections` | **timestamped detection report — a named deliverable**; `?format=csv\|html` + filters `camera_id`, `from`, `to`, `plate`; every row carries `provenance` |
 | GET | `/reports/gap-analysis` | rendered gap report (HTML) |
 | GET | `/reports/route/{plate}` | route report export |
-| GET | `/hls/{camera_id}/live.m3u8` · `/key` · `/seg/{name}` · `/local/{name}` | the Pipeline 1 relay: rewritten playlist, proxied AES key, proxied segment (only names present in the upstream playlist, only inside the configured CDN origin), worker's local tee |
+| GET | `/hls/{camera_id}/live.m3u8` · `/key` · `/seg/{name}` · `/local/{name}` | the Pipeline 1 relay: rewritten playlist, proxied AES key, proxied segment (only names present in the upstream playlist, only inside the configured CDN origin), worker's local tee. A `transport='rtsp'` camera never falls back to the CDN — fresh tee (< 20 s), else stale tee (≤ 24 h), else 503 (its live view is our own pull; the CDN copy is a different source — old-build launcher lesson) |
 
 **Auth transport (B12, F23, and decision F41 from schema v2 onward):** two credentials reach the same authorisation check.
 

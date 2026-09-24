@@ -389,6 +389,1345 @@
     }
    }
   },
+  "/api/sightings": {
+   "get": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "List Sightings",
+    "description": "Search sightings with filters; paginated, newest first; ``total``\nis computed with the same WHERE as the rows (B11).",
+    "operationId": "list_sightings_api_sightings_get",
+    "parameters": [
+     {
+      "name": "plate",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Plate"
+      }
+     },
+     {
+      "name": "camera_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Camera Id"
+      }
+     },
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     },
+     {
+      "name": "min_confidence",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "number",
+       "maximum": 1.0,
+       "minimum": 0.0,
+       "default": 0.0,
+       "title": "Min Confidence"
+      }
+     },
+     {
+      "name": "provenance",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "live",
+          "harvest",
+          "demo",
+          "test"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Provenance"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 2000,
+       "minimum": 1,
+       "default": 200,
+       "title": "Limit"
+      }
+     },
+     {
+      "name": "offset",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 0,
+       "default": 0,
+       "title": "Offset"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SightingListOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/plates/{plate}/route": {
+   "get": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "Plate Route",
+    "description": "THE scored endpoint \u2014 a vehicle's timestamped, location-wise route\nacross the camera network (docs/api.md \u00a77; audited by middleware;\nrate-limited per identity, \u00a79).",
+    "operationId": "plate_route_api_plates__plate__route_get",
+    "parameters": [
+     {
+      "name": "plate",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Plate"
+      }
+     },
+     {
+      "name": "min_confidence",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "number",
+       "maximum": 1.0,
+       "minimum": 0.0,
+       "default": 0.0,
+       "title": "Min Confidence"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RouteOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/watchlist": {
+   "get": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "List Watchlist",
+    "description": "The watchlist, highest severity first.",
+    "operationId": "list_watchlist_api_watchlist_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/WatchlistOut"
+         },
+         "type": "array",
+         "title": "Response List Watchlist Api Watchlist Get"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "Add Watchlist",
+    "description": "Add a plate to the watchlist (normalised and canonical-folded at the\nboundary); 409 when it is already listed. Evaluator or admin (F41).",
+    "operationId": "add_watchlist_api_watchlist_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WatchlistIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WatchlistOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/watchlist/{watchlist_id}": {
+   "delete": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "Delete Watchlist",
+    "description": "Remove a watchlist entry; 404 when it does not exist. Evaluator or\nadmin (F41: watchlist add and remove).",
+    "operationId": "delete_watchlist_api_watchlist__watchlist_id__delete",
+    "parameters": [
+     {
+      "name": "watchlist_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Watchlist Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WatchlistDeleteOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/alerts": {
+   "get": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "List Alerts",
+    "description": "Recent alerts (both kinds), newest first.",
+    "operationId": "list_alerts_api_alerts_get",
+    "parameters": [
+     {
+      "name": "severity",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "high",
+          "medium",
+          "low",
+          "critical"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Severity"
+      }
+     },
+     {
+      "name": "acknowledged",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Acknowledged"
+      }
+     },
+     {
+      "name": "kind",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "watchlist",
+          "zone"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Kind"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 1000,
+       "minimum": 1,
+       "default": 100,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/AlertOut"
+         },
+         "title": "Response List Alerts Api Alerts Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/alerts/{alert_id}/ack": {
+   "post": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "Ack Alert",
+    "description": "Acknowledge an alert (by its ``alert_id``, or the numeric\n``alert_seq``), persisting who acknowledged it. Evaluator or admin\n(F41: acknowledge).",
+    "operationId": "ack_alert_api_alerts__alert_id__ack_post",
+    "parameters": [
+     {
+      "name": "alert_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Alert Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AlertOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/alerts/stream": {
+   "get": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "Alerts Stream",
+    "description": "SSE \u2014 live alert push (both kinds, one table, one tailer).\n\nAlerts fire in the worker process, so this tails the ``alerts`` table\n(never an in-process bus, F27). The session cookie is accepted here\nbecause ``EventSource`` cannot send headers.",
+    "operationId": "alerts_stream_api_alerts_stream_get",
+    "responses": {
+     "200": {
+      "description": "Server-sent alert events; frames carry id: <alert_seq> and Last-Event-ID replays the gap.",
+      "content": {
+       "application/json": {
+        "schema": {}
+       },
+       "text/event-stream": {
+        "schema": {
+         "type": "string"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/events": {
+   "get": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "List Events",
+    "description": "Zone and object events, newest first.",
+    "operationId": "list_events_api_events_get",
+    "parameters": [
+     {
+      "name": "camera_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Camera Id"
+      }
+     },
+     {
+      "name": "event_type",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "intrusion",
+          "line_cross",
+          "object_detected"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Event Type"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 2000,
+       "minimum": 1,
+       "default": 200,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/EventOut"
+         },
+         "title": "Response List Events Api Events Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/events/summary": {
+   "get": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "Events Summary",
+    "description": "Per-camera object/zone event counts over the last *minutes* of the\nrecording timeline (event timestamps live on that shared timeline, so\nthe window is anchored at the newest event, not the wall clock).",
+    "operationId": "events_summary_api_events_summary_get",
+    "parameters": [
+     {
+      "name": "minutes",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 1440,
+       "minimum": 1,
+       "default": 60,
+       "title": "Minutes"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EventsSummaryOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workers": {
+   "get": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "Worker Stats",
+    "description": "The worker supervisor's last stats snapshot (data/worker_stats.json):\nsustained fps, skip rate, detections/min, per-camera counters.",
+    "operationId": "worker_stats_api_workers_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkersOut"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/reports/detections": {
+   "get": {
+    "tags": [
+     "reports"
+    ],
+    "summary": "Detections Report",
+    "description": "The timestamped detection report \u2014 a named deliverable. Fresh from\nthe sightings table on every request; every row carries provenance;\nHTML-escaped, CSV formula-prefix escaped (docs/api.md \u00a77, B11, B14).",
+    "operationId": "detections_report_api_reports_detections_get",
+    "parameters": [
+     {
+      "name": "format",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "csv",
+        "html"
+       ],
+       "type": "string",
+       "default": "html",
+       "title": "Format"
+      }
+     },
+     {
+      "name": "camera_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Camera Id"
+      }
+     },
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "From"
+      }
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "To"
+      }
+     },
+     {
+      "name": "plate",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "maxLength": 32
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Plate"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 2000,
+       "minimum": 1,
+       "default": 500,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "The rendered report (HTML page or CSV export)",
+      "content": {
+       "application/json": {
+        "schema": {}
+       },
+       "text/html": {
+        "schema": {
+         "type": "string"
+        }
+       },
+       "text/csv": {
+        "schema": {
+         "type": "string"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/reports/route/{plate}": {
+   "get": {
+    "tags": [
+     "reports"
+    ],
+    "summary": "Route Report",
+    "description": "Route report export for one plate \u2014 the scored reconstruction as a\nprintable page or CSV, stops carrying provenance and clock source.",
+    "operationId": "route_report_api_reports_route__plate__get",
+    "parameters": [
+     {
+      "name": "plate",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Plate"
+      }
+     },
+     {
+      "name": "format",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "csv",
+        "html"
+       ],
+       "type": "string",
+       "default": "html",
+       "title": "Format"
+      }
+     },
+     {
+      "name": "min_confidence",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "number",
+       "maximum": 1.0,
+       "minimum": 0.0,
+       "default": 0.0,
+       "title": "Min Confidence"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "The rendered report (HTML page or CSV export)",
+      "content": {
+       "application/json": {
+        "schema": {}
+       },
+       "text/html": {
+        "schema": {
+         "type": "string"
+        }
+       },
+       "text/csv": {
+        "schema": {
+         "type": "string"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/reports/gap-analysis": {
+   "get": {
+    "tags": [
+     "reports"
+    ],
+    "summary": "Gap Analysis Report",
+    "description": "The printable gap-analysis report (Model 1 deliverable), regenerated\nfrom the registry on every request so it is never stale.",
+    "operationId": "gap_analysis_report_api_reports_gap_analysis_get",
+    "responses": {
+     "200": {
+      "description": "The rendered report",
+      "content": {
+       "application/json": {
+        "schema": {}
+       },
+       "text/html": {
+        "schema": {
+         "type": "string"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/hls/{camera_id}/live.m3u8": {
+   "get": {
+    "tags": [
+     "hls"
+    ],
+    "summary": "Live Playlist",
+    "description": "A live playlist for the wall: the worker's local tee when fresh\n(< 20 s), else an RTSP camera's stale tee (never the CDN), else a\nsliding window over the CDN recording at the shared-timeline position.",
+    "operationId": "live_playlist_api_hls__camera_id__live_m3u8_get",
+    "parameters": [
+     {
+      "name": "camera_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Camera Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "The rewritten HLS media playlist",
+      "content": {
+       "application/json": {
+        "schema": {}
+       },
+       "application/vnd.apple.mpegurl": {
+        "schema": {
+         "type": "string"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/hls/{camera_id}/key": {
+   "get": {
+    "tags": [
+     "hls"
+    ],
+    "summary": "Hls Key",
+    "description": "Proxy the AES-128 key named by the upstream playlist, with the\nbackend's CDN session; refused unless it is a 16-byte key from inside\nthe CDN origin. Never cached.",
+    "operationId": "hls_key_api_hls__camera_id__key_get",
+    "parameters": [
+     {
+      "name": "camera_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Camera Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "The proxied bytes",
+      "content": {
+       "application/json": {
+        "schema": {}
+       },
+       "application/octet-stream": {
+        "schema": {
+         "type": "string",
+         "format": "binary"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/hls/{camera_id}/seg/{name}": {
+   "get": {
+    "tags": [
+     "hls"
+    ],
+    "summary": "Hls Segment",
+    "description": "Proxy one media segment \u2014 **only** a name present in the fetched\nupstream playlist, resolved **only** inside the configured CDN origin\n(B11). Relay only; nothing is written to disk.",
+    "operationId": "hls_segment_api_hls__camera_id__seg__name__get",
+    "parameters": [
+     {
+      "name": "camera_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Camera Id"
+      }
+     },
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Name"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "The proxied bytes",
+      "content": {
+       "application/json": {
+        "schema": {}
+       },
+       "application/octet-stream": {
+        "schema": {
+         "type": "string",
+         "format": "binary"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/hls/{camera_id}/local/{name}": {
+   "get": {
+    "tags": [
+     "hls"
+    ],
+    "summary": "Local Segment",
+    "description": "One segment of the worker's local live window (the RTSP tee).",
+    "operationId": "local_segment_api_hls__camera_id__local__name__get",
+    "parameters": [
+     {
+      "name": "camera_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Camera Id"
+      }
+     },
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Name"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "The proxied bytes",
+      "content": {
+       "application/json": {
+        "schema": {}
+       },
+       "application/octet-stream": {
+        "schema": {
+         "type": "string",
+         "format": "binary"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/auth/login": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Login",
+    "description": "Sign in with a username and password; sets the ``sentinel_session``\ncookie (HttpOnly, SameSite=Strict, Secure when SENTINEL_PUBLIC_HOST is\nset). Throttled: 5 failures per username or address lock logins for\n15 minutes (the lock survives a restart). Audited on success and\nfailure \u2014 the audit row never carries the password.",
+    "operationId": "login_api_auth_login_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LoginIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MeOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/auth/logout": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Logout",
+    "description": "Revoke the current session server-side and clear the cookie; audited.",
+    "operationId": "logout_api_auth_logout_post",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AuthMessageOut"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/auth/me": {
+   "get": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Me",
+    "description": "The signed-in username, role and session expiry (what the UI renders\nits menu from). Key-authenticated callers get their role with a null\nusername and expiry.",
+    "operationId": "me_api_auth_me_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MeOut"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/users": {
+   "get": {
+    "tags": [
+     "users"
+    ],
+    "summary": "List Users",
+    "description": "List accounts (names, roles, status \u2014 never password material).",
+    "operationId": "list_users_api_users_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/UserOut"
+         },
+         "type": "array",
+         "title": "Response List Users Api Users Get"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "users"
+    ],
+    "summary": "Create User",
+    "description": "Create an account; 409 on a duplicate username.",
+    "operationId": "create_user_api_users_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/UserIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/users/{user_id}": {
+   "patch": {
+    "tags": [
+     "users"
+    ],
+    "summary": "Patch User",
+    "description": "Change role, active flag or password. Disabling an account or\nchanging its password revokes its open sessions.",
+    "operationId": "patch_user_api_users__user_id__patch",
+    "parameters": [
+     {
+      "name": "user_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "User Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/UserPatch"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "users"
+    ],
+    "summary": "Delete User",
+    "description": "Delete an account and its sessions.",
+    "operationId": "delete_user_api_users__user_id__delete",
+    "parameters": [
+     {
+      "name": "user_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "User Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserMessageOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/session": {
    "post": {
     "tags": [
@@ -435,7 +1774,7 @@
      "auth"
     ],
     "summary": "Close Session",
-    "description": "Clear the sentinel_key cookie.",
+    "description": "Clear the sentinel_key cookie (authenticated \u2014 F41 leaves only /,\n/assets/*, /api/health and /api/auth/login open).",
     "operationId": "close_session_api_session_delete",
     "responses": {
      "200": {
@@ -501,6 +1840,226 @@
  },
  "components": {
   "schemas": {
+   "AlertOut": {
+    "properties": {
+     "alert_seq": {
+      "type": "integer",
+      "title": "Alert Seq"
+     },
+     "alert_id": {
+      "type": "string",
+      "title": "Alert Id"
+     },
+     "kind": {
+      "type": "string",
+      "title": "Kind"
+     },
+     "sighting_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sighting Id"
+     },
+     "watchlist_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Watchlist Id"
+     },
+     "event_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Event Id"
+     },
+     "zone_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Zone Id"
+     },
+     "plate": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Plate"
+     },
+     "plate_canonical": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Plate Canonical"
+     },
+     "camera_id": {
+      "type": "string",
+      "title": "Camera Id"
+     },
+     "category": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category"
+     },
+     "severity": {
+      "type": "string",
+      "title": "Severity"
+     },
+     "match_type": {
+      "type": "string",
+      "title": "Match Type"
+     },
+     "match_distance": {
+      "type": "number",
+      "title": "Match Distance"
+     },
+     "clock_source": {
+      "type": "string",
+      "title": "Clock Source"
+     },
+     "fired_at": {
+      "type": "string",
+      "title": "Fired At"
+     },
+     "acknowledged_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Acknowledged At"
+     },
+     "acknowledged_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Acknowledged By"
+     },
+     "clip_path": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Clip Path"
+     },
+     "clip_sha256": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Clip Sha256"
+     },
+     "department": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Department"
+     },
+     "location_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Location Name"
+     },
+     "crop_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Crop Url"
+     }
+    },
+    "type": "object",
+    "required": [
+     "alert_seq",
+     "alert_id",
+     "kind",
+     "camera_id",
+     "severity",
+     "match_type",
+     "match_distance",
+     "clock_source",
+     "fired_at"
+    ],
+    "title": "AlertOut"
+   },
+   "AuthMessageOut": {
+    "properties": {
+     "detail": {
+      "type": "string",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "required": [
+     "detail"
+    ],
+    "title": "AuthMessageOut"
+   },
    "Body_import_csv_api_cameras_import_post": {
     "properties": {
      "file": {
@@ -514,6 +2073,29 @@
      "file"
     ],
     "title": "Body_import_csv_api_cameras_import_post"
+   },
+   "CameraEventSummaryOut": {
+    "properties": {
+     "objects": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "type": "object",
+      "title": "Objects"
+     },
+     "intrusion": {
+      "type": "integer",
+      "title": "Intrusion",
+      "default": 0
+     },
+     "line_cross": {
+      "type": "integer",
+      "title": "Line Cross",
+      "default": 0
+     }
+    },
+    "type": "object",
+    "title": "CameraEventSummaryOut"
    },
    "CameraIn": {
     "properties": {
@@ -1311,6 +2893,130 @@
     ],
     "title": "DepartmentSummaryOut"
    },
+   "EventOut": {
+    "properties": {
+     "event_id": {
+      "type": "integer",
+      "title": "Event Id"
+     },
+     "camera_id": {
+      "type": "string",
+      "title": "Camera Id"
+     },
+     "zone_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Zone Id"
+     },
+     "event_type": {
+      "type": "string",
+      "title": "Event Type"
+     },
+     "object_class": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Object Class"
+     },
+     "confidence": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Confidence"
+     },
+     "occurred_at": {
+      "type": "string",
+      "title": "Occurred At"
+     },
+     "wall_time": {
+      "type": "string",
+      "title": "Wall Time"
+     },
+     "clock_source": {
+      "type": "string",
+      "title": "Clock Source"
+     },
+     "provenance": {
+      "type": "string",
+      "title": "Provenance"
+     },
+     "bbox_json": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Bbox Json"
+     },
+     "crop_path": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Crop Path"
+     }
+    },
+    "type": "object",
+    "required": [
+     "event_id",
+     "camera_id",
+     "event_type",
+     "occurred_at",
+     "wall_time",
+     "clock_source",
+     "provenance"
+    ],
+    "title": "EventOut"
+   },
+   "EventsSummaryOut": {
+    "properties": {
+     "minutes": {
+      "type": "integer",
+      "title": "Minutes"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "cameras": {
+      "additionalProperties": {
+       "$ref": "#/components/schemas/CameraEventSummaryOut"
+      },
+      "type": "object",
+      "title": "Cameras"
+     }
+    },
+    "type": "object",
+    "required": [
+     "minutes",
+     "total",
+     "cameras"
+    ],
+    "title": "EventsSummaryOut"
+   },
    "GapAnalysisOut": {
     "properties": {
      "generated_at": {
@@ -1472,6 +3178,65 @@
     ],
     "title": "IsolatedCoverageOut"
    },
+   "LoginIn": {
+    "properties": {
+     "username": {
+      "type": "string",
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Username"
+     },
+     "password": {
+      "type": "string",
+      "maxLength": 1024,
+      "minLength": 1,
+      "title": "Password"
+     }
+    },
+    "type": "object",
+    "required": [
+     "username",
+     "password"
+    ],
+    "title": "LoginIn"
+   },
+   "MeOut": {
+    "properties": {
+     "username": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Username"
+     },
+     "role": {
+      "type": "string",
+      "title": "Role"
+     },
+     "expires_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expires At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "username",
+     "role",
+     "expires_at"
+    ],
+    "title": "MeOut"
+   },
    "MessageOut": {
     "properties": {
      "detail": {
@@ -1531,6 +3296,273 @@
     ],
     "title": "OfflineCameraOut"
    },
+   "RouteGapOut": {
+    "properties": {
+     "after_sequence": {
+      "type": "integer",
+      "title": "After Sequence"
+     },
+     "minutes": {
+      "type": "integer",
+      "title": "Minutes"
+     },
+     "note": {
+      "type": "string",
+      "title": "Note"
+     }
+    },
+    "type": "object",
+    "required": [
+     "after_sequence",
+     "minutes",
+     "note"
+    ],
+    "title": "RouteGapOut"
+   },
+   "RouteOut": {
+    "properties": {
+     "query_plate": {
+      "type": "string",
+      "title": "Query Plate"
+     },
+     "normalised": {
+      "type": "string",
+      "title": "Normalised"
+     },
+     "match_mode": {
+      "type": "string",
+      "enum": [
+       "none",
+       "exact",
+       "ambiguity",
+       "fuzzy"
+      ],
+      "title": "Match Mode"
+     },
+     "total_sightings": {
+      "type": "integer",
+      "title": "Total Sightings"
+     },
+     "first_seen": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "First Seen"
+     },
+     "last_seen": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Seen"
+     },
+     "duration_seconds": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Duration Seconds"
+     },
+     "distance_km": {
+      "type": "number",
+      "title": "Distance Km"
+     },
+     "departments_crossed": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Departments Crossed"
+     },
+     "stops": {
+      "items": {
+       "$ref": "#/components/schemas/RouteStopOut"
+      },
+      "type": "array",
+      "title": "Stops"
+     },
+     "gaps": {
+      "items": {
+       "$ref": "#/components/schemas/RouteGapOut"
+      },
+      "type": "array",
+      "title": "Gaps"
+     },
+     "warnings": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Warnings"
+     }
+    },
+    "type": "object",
+    "required": [
+     "query_plate",
+     "normalised",
+     "match_mode",
+     "total_sightings",
+     "distance_km",
+     "departments_crossed",
+     "stops",
+     "gaps",
+     "warnings"
+    ],
+    "title": "RouteOut"
+   },
+   "RouteStopOut": {
+    "properties": {
+     "sequence": {
+      "type": "integer",
+      "title": "Sequence"
+     },
+     "camera_id": {
+      "type": "string",
+      "title": "Camera Id"
+     },
+     "department": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Department"
+     },
+     "location_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Location Name"
+     },
+     "lat": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lat"
+     },
+     "lon": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lon"
+     },
+     "seen_at": {
+      "type": "string",
+      "title": "Seen At"
+     },
+     "clock_source": {
+      "type": "string",
+      "title": "Clock Source"
+     },
+     "provenance": {
+      "type": "string",
+      "title": "Provenance"
+     },
+     "plate_raw": {
+      "type": "string",
+      "title": "Plate Raw"
+     },
+     "confidence": {
+      "type": "number",
+      "title": "Confidence"
+     },
+     "match_type": {
+      "type": "string",
+      "enum": [
+       "exact",
+       "ambiguity",
+       "fuzzy"
+      ],
+      "title": "Match Type"
+     },
+     "match_distance": {
+      "type": "number",
+      "title": "Match Distance"
+     },
+     "suspect": {
+      "type": "boolean",
+      "title": "Suspect"
+     },
+     "crop_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Crop Url"
+     },
+     "elapsed_from_previous_s": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Elapsed From Previous S"
+     },
+     "implied_speed_kmh": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Implied Speed Kmh"
+     }
+    },
+    "type": "object",
+    "required": [
+     "sequence",
+     "camera_id",
+     "seen_at",
+     "clock_source",
+     "provenance",
+     "plate_raw",
+     "confidence",
+     "match_type",
+     "match_distance",
+     "suspect"
+    ],
+    "title": "RouteStopOut"
+   },
    "SessionIn": {
     "properties": {
      "api_key": {
@@ -1556,6 +3588,194 @@
      "role"
     ],
     "title": "SessionOut"
+   },
+   "SightingListOut": {
+    "properties": {
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "count": {
+      "type": "integer",
+      "title": "Count"
+     },
+     "sightings": {
+      "items": {
+       "$ref": "#/components/schemas/SightingOut"
+      },
+      "type": "array",
+      "title": "Sightings"
+     }
+    },
+    "type": "object",
+    "required": [
+     "total",
+     "count",
+     "sightings"
+    ],
+    "title": "SightingListOut"
+   },
+   "SightingOut": {
+    "properties": {
+     "sighting_id": {
+      "type": "integer",
+      "title": "Sighting Id"
+     },
+     "plate": {
+      "type": "string",
+      "title": "Plate"
+     },
+     "plate_raw": {
+      "type": "string",
+      "title": "Plate Raw"
+     },
+     "plate_canonical": {
+      "type": "string",
+      "title": "Plate Canonical"
+     },
+     "confidence": {
+      "type": "number",
+      "title": "Confidence"
+     },
+     "camera_id": {
+      "type": "string",
+      "title": "Camera Id"
+     },
+     "seen_at": {
+      "type": "string",
+      "title": "Seen At"
+     },
+     "wall_time": {
+      "type": "string",
+      "title": "Wall Time"
+     },
+     "clock_source": {
+      "type": "string",
+      "title": "Clock Source"
+     },
+     "provenance": {
+      "type": "string",
+      "title": "Provenance"
+     },
+     "pts_ms": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Pts Ms"
+     },
+     "bbox_json": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Bbox Json"
+     },
+     "vehicle_class": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Vehicle Class"
+     },
+     "crop_path": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Crop Path"
+     },
+     "frame_path": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Frame Path"
+     },
+     "track_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Track Id"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     },
+     "department": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Department"
+     },
+     "location_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Location Name"
+     },
+     "crop_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Crop Url"
+     }
+    },
+    "type": "object",
+    "required": [
+     "sighting_id",
+     "plate",
+     "plate_raw",
+     "plate_canonical",
+     "confidence",
+     "camera_id",
+     "seen_at",
+     "wall_time",
+     "clock_source",
+     "provenance",
+     "created_at"
+    ],
+    "title": "SightingOut"
    },
    "StatsOut": {
     "properties": {
@@ -1618,6 +3838,140 @@
     ],
     "title": "StreamOut"
    },
+   "UserIn": {
+    "properties": {
+     "username": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{3,32}$",
+      "title": "Username"
+     },
+     "password": {
+      "type": "string",
+      "maxLength": 1024,
+      "minLength": 8,
+      "title": "Password"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "viewer",
+       "evaluator",
+       "admin"
+      ],
+      "title": "Role"
+     }
+    },
+    "type": "object",
+    "required": [
+     "username",
+     "password",
+     "role"
+    ],
+    "title": "UserIn"
+   },
+   "UserMessageOut": {
+    "properties": {
+     "detail": {
+      "type": "string",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "required": [
+     "detail"
+    ],
+    "title": "UserMessageOut"
+   },
+   "UserOut": {
+    "properties": {
+     "user_id": {
+      "type": "integer",
+      "title": "User Id"
+     },
+     "username": {
+      "type": "string",
+      "title": "Username"
+     },
+     "role": {
+      "type": "string",
+      "title": "Role"
+     },
+     "active": {
+      "type": "boolean",
+      "title": "Active"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     },
+     "last_login": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Login"
+     }
+    },
+    "type": "object",
+    "required": [
+     "user_id",
+     "username",
+     "role",
+     "active",
+     "created_at"
+    ],
+    "title": "UserOut"
+   },
+   "UserPatch": {
+    "properties": {
+     "password": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 1024,
+        "minLength": 8
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Password"
+     },
+     "role": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "viewer",
+         "evaluator",
+         "admin"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Role"
+     },
+     "active": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Active"
+     }
+    },
+    "type": "object",
+    "title": "UserPatch"
+   },
    "ValidationError": {
     "properties": {
      "loc": {
@@ -1657,6 +4011,340 @@
      "type"
     ],
     "title": "ValidationError"
+   },
+   "WatchlistDeleteOut": {
+    "properties": {
+     "deleted": {
+      "type": "integer",
+      "title": "Deleted"
+     }
+    },
+    "type": "object",
+    "required": [
+     "deleted"
+    ],
+    "title": "WatchlistDeleteOut"
+   },
+   "WatchlistIn": {
+    "properties": {
+     "plate": {
+      "type": "string",
+      "minLength": 1,
+      "title": "Plate"
+     },
+     "category": {
+      "type": "string",
+      "enum": [
+       "stolen_vehicle",
+       "wanted_person",
+       "missing_person",
+       "blacklisted",
+       "suspect"
+      ],
+      "title": "Category"
+     },
+     "severity": {
+      "type": "string",
+      "enum": [
+       "high",
+       "medium",
+       "low"
+      ],
+      "title": "Severity"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "source_ref": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Ref"
+     }
+    },
+    "type": "object",
+    "required": [
+     "plate",
+     "category",
+     "severity"
+    ],
+    "title": "WatchlistIn"
+   },
+   "WatchlistOut": {
+    "properties": {
+     "watchlist_id": {
+      "type": "integer",
+      "title": "Watchlist Id"
+     },
+     "plate": {
+      "type": "string",
+      "title": "Plate"
+     },
+     "plate_canonical": {
+      "type": "string",
+      "title": "Plate Canonical"
+     },
+     "category": {
+      "type": "string",
+      "title": "Category"
+     },
+     "severity": {
+      "type": "string",
+      "title": "Severity"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason"
+     },
+     "authority": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Authority"
+     },
+     "source_ref": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Ref"
+     },
+     "expires_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expires At"
+     },
+     "active": {
+      "type": "integer",
+      "title": "Active"
+     },
+     "added_at": {
+      "type": "string",
+      "title": "Added At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "watchlist_id",
+     "plate",
+     "plate_canonical",
+     "category",
+     "severity",
+     "active",
+     "added_at"
+    ],
+    "title": "WatchlistOut"
+   },
+   "WorkersOut": {
+    "properties": {
+     "available": {
+      "type": "boolean",
+      "title": "Available"
+     },
+     "written_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Written At"
+     },
+     "uptime_s": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Uptime S"
+     },
+     "restarts": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Restarts"
+     },
+     "rss_mb": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rss Mb"
+     },
+     "frames": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Frames"
+     },
+     "fps_sustained": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fps Sustained"
+     },
+     "inferred": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Inferred"
+     },
+     "motion_skip_rate": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Motion Skip Rate"
+     },
+     "detections": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Detections"
+     },
+     "detections_per_min": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Detections Per Min"
+     },
+     "sightings": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sightings"
+     },
+     "alerts": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Alerts"
+     },
+     "zone_events": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Zone Events"
+     },
+     "cameras": {
+      "additionalProperties": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "object",
+      "title": "Cameras"
+     }
+    },
+    "type": "object",
+    "required": [
+     "available"
+    ],
+    "title": "WorkersOut",
+    "description": "The supervisor's stats snapshot (data/worker_stats.json), or\n``available: false`` when no worker has written one yet."
    }
   }
  }

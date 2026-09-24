@@ -29,7 +29,7 @@ from fastapi.responses import StreamingResponse
 
 from backend.app import schemas
 from backend.app.audit import set_audit
-from backend.app.auth import require_auth, require_evaluator
+from backend.app.auth import RateLimiter, require_auth, require_evaluator
 from backend.core import config, plates
 from backend.core import db as dbmod
 from backend.core.logging_setup import setup
@@ -41,6 +41,10 @@ router = APIRouter(prefix="/api", tags=["analytics"])
 
 _SSE_POLL_S = 2.0
 _SSE_KEEPALIVE_S = 15.0
+
+#: docs/api.md §9: the route query is rate-limited per identity (S3.1b).
+#: Generous — an analyst working a case, not a scraper; 429 over queueing.
+_limit_route = RateLimiter("route", limit=120, window_s=60.0)
 
 _ALERT_SELECT = (
     "SELECT a.*, s.crop_path AS _crop_path, c.department, c.location_name"
@@ -133,9 +137,11 @@ def plate_route(
     min_confidence: float = Query(default=0.0, ge=0.0, le=1.0),
     con: sqlite3.Connection = Depends(get_db),
     _: str = Depends(require_auth),
+    __: None = Depends(_limit_route),
 ):
     """THE scored endpoint — a vehicle's timestamped, location-wise route
-    across the camera network (docs/api.md §7; audited by middleware)."""
+    across the camera network (docs/api.md §7; audited by middleware;
+    rate-limited per identity, §9)."""
     return reconstruct_route(con, plate, min_confidence)
 
 
