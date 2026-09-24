@@ -506,3 +506,12 @@ def test_evaluator_may_use_the_onboarding_form_viewer_may_not(app):
     denied = _login_as(app, "vic").post(
         "/api/cameras", json={**body, "camera_id": "onb02"}, headers=ORIGIN)
     assert denied.status_code == 403
+
+
+def test_route_report_lookup_writes_an_audit_row(app):
+    """Regression (wave-2 follow-up): GET /api/reports/route/{plate} is a
+    plate lookup (B12) and must be audited like /api/plates/*."""
+    c = _login_as(app, "eva")
+    c.get("/api/reports/route/GJ01AB1234?format=csv")
+    actions = [r["action"] for r in _audit_rows()]
+    assert any(a.startswith("GET /api/reports/route/GJ01AB1234") for a in actions), actions

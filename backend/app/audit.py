@@ -21,7 +21,9 @@ def _should_audit(request: Request) -> bool:
     if request.method != "GET":
         return True
     path = request.url.path
-    return path.startswith("/api/plates/") or path.startswith("/api/sightings")
+    # /api/reports/route/ is a plate lookup too (B12) — same scandal pattern.
+    return (path.startswith("/api/plates/") or path.startswith("/api/sightings")
+            or path.startswith("/api/reports/route/"))
 
 
 def set_audit(

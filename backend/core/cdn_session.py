@@ -73,7 +73,11 @@ class CdnSession:
         """GET with the session cookie. *path_or_url* may be a path on the
         CDN or an absolute URL **inside the CDN origin** (relay rule B11)."""
         url = path_or_url if path_or_url.startswith("http") else f"{config.cdn()}{path_or_url}"
-        if not url.startswith(config.cdn()):
+        # Origin check must be boundary-exact: a bare startswith(cdn) admits
+        # e.g. https://cctv.example.evil.tld when cdn is https://cctv.example
+        # (wave-2 review finding, 25 Sep).
+        origin = config.cdn().rstrip("/")
+        if url != origin and not url.startswith(origin + "/"):
             raise CdnError(f"refusing non-CDN fetch: {config.masked(url)}")
         if not self._logged_in:
             self.login()
