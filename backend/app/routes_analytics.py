@@ -91,12 +91,16 @@ def list_sightings(
     to: str | None = None,
     min_confidence: float = Query(default=0.0, ge=0.0, le=1.0),
     provenance: schemas.Provenance | None = None,
+    vehicle_class: str | None = Query(default=None, pattern=r"^[a-z_]{1,32}$"),
     limit: int = Query(default=200, ge=1, le=2000),
     offset: int = Query(default=0, ge=0),
 ):
     """Search sightings with filters; paginated, newest first; ``total``
     is computed with the same WHERE as the rows (B11)."""
     where, params = ["s.confidence >= ?"], [min_confidence]
+    if vehicle_class:
+        where.append("s.vehicle_class = ?")
+        params.append(vehicle_class)
     if plate:
         where.append("s.plate LIKE ?")
         params.append(f"%{plates.normalise(plate)}%")

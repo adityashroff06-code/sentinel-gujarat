@@ -209,6 +209,19 @@ def test_sightings_filters_and_pagination_total(seeded) -> None:
     assert ordered == sorted(ordered, reverse=True)   # newest first
 
 
+def test_sightings_vehicle_class_filter_is_server_side(seeded) -> None:
+    """S3.3 follow-up: the Search class filter must narrow in SQL (shared
+    WHERE with total), not client-side over one fetched page."""
+    c = seeded
+    trucks = c.get("/api/sightings?vehicle_class=truck", headers=VIEWER).json()
+    assert trucks["total"] > 0 and trucks["total"] < 24
+    assert all(s["vehicle_class"] == "truck" for s in trucks["sightings"])
+    # limit=1 with the filter: total still counts every matching row (B11)
+    one = c.get("/api/sightings?vehicle_class=truck&limit=1", headers=VIEWER).json()
+    assert one["total"] == trucks["total"] and one["count"] == 1
+    assert c.get("/api/sightings?vehicle_class=No!", headers=VIEWER).status_code == 422
+
+
 # ------------------------------------------------------------------ watchlist
 
 def test_watchlist_crud_and_roles(seeded) -> None:

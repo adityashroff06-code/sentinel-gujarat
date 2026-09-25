@@ -232,7 +232,7 @@ The ambiguity map is applied only during canonicalisation and matching, never du
 | POST | `/cameras` | manual onboarding (Model 1 deliverable) |
 | PATCH | `/cameras/{camera_id}` | edit metadata, ROI, zones, tier |
 | GET | `/cameras/{camera_id}/stream` | `{"hls": "/api/hls/{camera_id}/live.m3u8"}` — only backend-relayed paths, never an upstream URL |
-| GET | `/sightings` | filters `plate`, `camera_id`, `from`, `to`, `min_confidence`, `provenance`; returns `{"total", "count", "sightings"}` with `limit` (≤ 2000) and `offset`; `total` reuses the row query's WHERE |
+| GET | `/sightings` | filters `plate`, `camera_id`, `from`, `to`, `min_confidence`, `provenance`, `vehicle_class`; returns `{"total", "count", "sightings"}` with `limit` (≤ 2000) and `offset`; `total` reuses the row query's WHERE |
 | GET | `/plates/{plate}/route` | **the scored endpoint** — see below |
 | GET | `/watchlist` · POST · DELETE `/{id}` | watchlist CRUD (POST takes `plate, category, severity, description?, source_ref?`) |
 | GET | `/alerts` | recent alerts, filters `severity`, `acknowledged`, `kind`, `limit` |
