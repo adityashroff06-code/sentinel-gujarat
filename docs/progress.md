@@ -4,7 +4,17 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 
 ---
 
-## Current state (23 Sep 2026, 21:05 UTC — Phase 2 complete, GATE A' passed)
+## Current state (25 Sep 2026, ~08:00 UTC / 13:30 IST — PHASE 3 COMPLETE except the [Adi]-physical steps)
+
+- **Phase 3 was completed in one autonomous overnight run on the laptop** (Adi's direction, 24 Sep — decisions F58, F59; the F57 lanes are collapsed, their reason gone with Phase 2 closed). Done, each with its acceptance run, its own commit and its Log block below: **S3.0** (login/roles/sessions/hardening, schema v2), **S3.7** (catalogue adapter + new-feeds runbook), **S3.1a** (analytics API + route + SSE), **S3.1b** (reports, relay, health, OpenAPI re-export), **S3.2** (frontend foundation + login hero + Playwright smoke), **S3.3** (all seven operations screens, smoke 43), **S3.3b** (design pass + the F53 review gate: /security-review 0 findings; /code-review high 7 findings — 6 fixed, 1 answered; smoke 67), **S3.4** (launcher + second system + a 26-min live end-to-end walkthrough). **S3.5 is PARTIAL** (runbook written; the Funnel trial, accounts and checks are [Adi]). **S3.6 waits on Adi's filming** (GATE C is already passed by the labelled demo vehicle — see the gate table).
+- **The sample-footage feeds are integrated** (F58): Adi's 28 stock CCTV clips were scored by the real detector+OCR (`scripts/analyze_footage.py` — 24 distinct full Indian plates), the best 4 transcoded to 1080p30 and published over mediamtx with the new copy mode as `local01..local04` (registered in `sentinel.db` with disclosed seeded coordinates). A verification run on `footage.db` produced 21 live-path sightings and **3 real alerts (2 exact + 1 ambiguity fold)**; the S3.4 walkthrough then ran **both systems in one worker set** — 5 live sandbox cameras + local01 — for 26 min: 0 restarts, 137 sightings (13 REAL reads on live cam06), clean stop, no orphans.
+- **Suites:** laptop full suite grew 146 → **232 passed, 0 failed** through the night (final run 330.97 s, 25 Sep ~13:45 IST). The smoke is 67 browser assertions against the real API. `main` is pushed at every task boundary — each commit is a fallback demo (rule 10).
+- **The evidence DB (`data/sentinel.db`)** now holds real live sandbox reads + the labelled demo route; back it up before experiments (`data/backup/`, gitignored).
+- **[Adi] queue (everything left needs your hands):** ① S3.5 go-live — `docs/runbook-hosting.md` §0: Tailscale Funnel trial from mobile data, create the evaluator+admin accounts, set `SENTINEL_PUBLIC_HOST`, reboot check (~15 min). ② S3.6 — film the one-vehicle route (10–15 min at 3-4 locations, plate ≥ 100 px, 1080p30); the sample feeds cover the wall/feed role but NOT the real multi-camera route. ③ The S2.2 20 s Wi-Fi pull (unchanged). ④ Consider `SENTINEL_ACTIVE_CAMERAS=6` in `.env` so `local01` joins without a per-process override. ⑤ [Adi verify] the five hero screens in Chrome (S3.2/S3.3/S3.3b note) — `python launch.py start` and look.
+- **Next Claude session: S4.1** (probe + pick the demo tier + the formal 10-minute measurement — **GATE B**), then Phase 5 documents (GATE D was 09:00 Fri — the code state it starts from is now complete Phase 3, so S5.1 can begin immediately).
+- **Blockers:** none.
+
+## Previous state (23 Sep 2026, 21:05 UTC — Phase 2 complete, GATE A' passed)
 
 - **Phase 2 is closed.** This session (a Claude Code cloud container: Linux, python 3.11.15, no GPU, no `.env`, no sandbox reach) completed **S2.3, S2.4 and S2.5** and passed **GATE A'** (the 10-minute replay soak: 614.9 s, 0 worker restarts, 1843 frames on each of 3 replay cameras, RSS +0.6 MB, stats every 10 s, 10 wrap ticks per camera). Whole suite here: **141 passed, 5 skipped** (the 5 are the mediamtx harness cases, Windows-zip only; the laptop unskips them). The full pipeline now exists end to end: frame source -> motion gate -> YOLOX-S -> tracker -> PaddleOCR consensus -> sightings with dedupe -> watchlist match -> alerts with table-derived cooldowns -> object/zone events -> single-writer supervisor with stats.
 - **The demo vehicle runs through the whole architecture** (Adi's ask, 23 Sep): `backend/tools/demo_seed.py` (S3.1a's seeder, pulled forward) injects hero `GJ01AB1234` through the real `record_sighting -> find_match -> create_alert` path — 3 stops cam06/cam10/cam09 + ambiguity near-miss, 4 alerts, 20 background plates, every row `provenance='demo'`. The Phase-3 windows (route, alerts, search, dashboard) will read these same rows; nothing on the data side blocks them.
@@ -96,7 +106,7 @@ GATE A was later reversed on the laptop (RTSP primary, decision C6). GATE B's de
 |---|---|---|---|---|
 | A′ — replay soak (S2.5): 10 min, zero restarts; live RTSP frames with correct timing (S2.2) | Tue 22 | **PASS** | 2026-09-23T20:55Z | Soak: 614.9 s, 0 worker restarts, 1843 frames on each of 3 replay cameras (3.0 fps each), RSS +0.6 MB over the run, stats every 10 s, 10 wrap ticks/camera. Live RTSP timing: S2.2's cam06 smoke, 134 frames monotonic (23 Sep) |
 | B — ANPR viability on the live sandbox (S4.1): real reads with sane confidence | Thu 24 | | | |
-| C — route across ≥ 3 cameras from a plate typed into the UI (S4.2; demo vehicle qualifies) | Thu 24 20:00 | | | |
+| C — route across ≥ 3 cameras from a plate typed into the UI (S4.2; demo vehicle qualifies) | Thu 24 20:00 | **PASS — demo vehicle (labelled)**; own-footage upgrade pending Adi's S3.6 filming | 2026-09-25T05:35Z | The smoke types GJ01AB1234 into the real UI (headless Chromium against `python -m backend.app`): Route renders 4 timeline entries incl. the ambiguity near-miss, numbered pins on 3 cameras, 3 departments in the header — asserted on two consecutive runs (S3.3), and re-checked at both viewports in S3.3b. Late vs the Thu 20:00 due: the plan's Wed/Thu columns compressed into the overnight run (F59) |
 | D — documents start whatever the code state (S5.1) | Fri 25 09:00 | | | |
 
 ## Open risks
@@ -1059,3 +1069,341 @@ Surprise:  (1) demo_seed.py's docstring and comment (lines 15-17, 36) still
            conflict - flagged so the laptop session picks deliberately.
 Next:      unchanged - S3.0 (cloud), S3.4 (laptop).
 ```
+
+```
+## Phase-2 laptop verification — DONE (first laptop run after the merges)
+When:      2026-09-24T18:00Z (24 Sep 23:30 IST), laptop, main fast-forwarded
+           to f601147 (PR #1, #2, #3 all in).
+Observed:  models/yolox_s.onnx fetched and checksum-verified against the
+           committed pin; PaddleOCR PP-OCRv5 mobile weights downloaded to
+           models/paddle/ during the suite run; mediamtx v1.21.1 present
+           with its recorded zip. Whole suite on this laptop:
+           **146 passed, 0 skipped, 0 failed in 368.6 s** — the 5 cases
+           the cloud container skips (mediamtx harness + PATHEXT) run and
+           pass here. Phase 2 is now proven end to end on the demo machine.
+Surprise:  none.
+Next:      Adi's direction (24 Sep, in chat): ingest the sample CCTV
+           archive as live feeds AND complete the whole Phase 3 in one
+           autonomous overnight run (recorded as F58, F59).
+```
+
+```
+## S3.0 — DONE (login, roles, sessions, hardening; schema v2) [commit 60062ee]
+When:      2026-09-24T19:15Z (25 Sep 00:45 IST), laptop, wave-1 subagent
+           (F59) + orchestrator review.
+Observed:  Everything the task block names, built and green: 0002_auth.sql
+           (users/sessions/login_attempts), scrypt passwords, session
+           cookie + key resolving to (actor, role), viewer<evaluator<admin,
+           5-fail/15-min lock surviving restart, /api/users CRUD, users
+           CLI via getpass, five security headers, /docs behind login,
+           TrustedHost from SENTINEL_PUBLIC_HOST, CSV caps via pure-ASGI
+           middleware, reusable RateLimiter (wired to route/reports/relay
+           in S3.1b). Acceptance: test_auth + test_registry_api +
+           test_schema -> 36 passed (agent run); the whole-suite run is
+           logged under "Wave-1 full suite" below.
+           Interpretation recorded: the Origin check is CSRF defence on
+           session-authenticated mutations only; X-API-Key mutations are
+           exempt (the acceptance itself demands the old key path
+           unchanged). /docs alone carries a relaxed CSP (Swagger UI
+           cannot boot under the strict one).
+           Orchestrator follow-ups, each with a regression test:
+           audit.actor now stores the resolved username (or key:<role>),
+           never the bare role; POST /api/cameras moved admin->evaluator
+           (api.md §7 grants the evaluator the onboarding form; PATCH
+           stays admin). test_auth 20 passed, +registry 32 passed.
+Surprise:  FastAPI parses multipart before dependencies, so the CSV cap
+           became ASGI middleware; FastAPI 0.141.1 include_router keeps
+           _IncludedRouter wrappers (route walk flattens them); the
+           parallel S3.1a agent and this one cross-edited
+           routes_analytics.py deps mid-run and converged on
+           require_evaluator for ack + watchlist (F41) without conflict.
+Next:      S3.7/S3.1a (same wave).
+```
+
+```
+## S3.7 — DONE (catalogue adapter + new-feeds runbook) [commit 37d40af]
+When:      2026-09-24T19:20Z, laptop, wave-1 subagent (F59).
+Observed:  fetch_catalogue() accepts cameras.json {id,name} AND the
+           /api/ingest record shape, normalises to registry columns,
+           catalogue verbatim wins, seed CSV only fills gaps (F45);
+           SENTINEL_CATALOGUE_URL overrides the source. Runbook written
+           with the five onboarding commands + the local demo-feed path.
+           Acceptance: test_catalogue + test_seed_tools -> 8 passed.
+           The --pick-active pick stays cut (F55).
+           Consequence to know: for the sandbox flow the catalogue's raw
+           location_name ('06 Timbavadi gate-Junagadh') now wins over the
+           seed's label — UI copy shows raw names; deliberate (F45),
+           one-line reversal in apply_seed if Adi prefers labels.
+Deferred:  seed_registry against the live sandbox (expect ACCEPTANCE:
+           PASS, 30 rows) rides the next probe run (S4.1).
+Next:      S3.1a (same wave).
+```
+
+```
+## S3.1a — DONE (analytics API + route service + SSE) [commit c01fbcd]
+When:      2026-09-24T19:25Z, laptop, wave-1 subagent (F59).
+Observed:  Ported from src/api/routes_analytics.py + src/analytics/
+           route.py (F52), adapted to seen_at/clock_source/provenance and
+           session auth; defects D3 (boundary timestamps), D4 (SSE cursor
+           = alert_seq + Last-Event-ID), D8 (pagination total shares the
+           WHERE) fixed in the port. Route response validates
+           field-for-field against api.md for the seeded demo: 4 stops /
+           3 cameras, elapsed 420/480/360 s, 3 departments, near-miss as
+           ambiguity, fuzzy stop flagged, mixed clock_source -> warnings[]
+           and no cross-group speed. SSE: subscribe->insert->receive
+           < 4 s; purge does not reset the tailer (alert_seq is
+           AUTOINCREMENT); Last-Event-ID replays from the table.
+           Acceptance: test_analytics_api + test_demo_seed -> 19 passed.
+           api.md §7 updated in the same commit (alerts kind filter, ack
+           semantics, workers/events-summary shapes).
+Surprise:  starlette 1.6 TestClient runs the ASGI app to completion, so
+           unbounded SSE deadlocks client.stream — the SSE tests drive
+           the raw ASGI protocol in-process; S3.3's smoke should test SSE
+           through a real port, not TestClient.
+Next:      wave 2 (S3.1b + S3.2).
+```
+
+```
+## F58 footage integration — DONE (S3.4-partial: 4 sample feeds through
+##                                the whole live path) [commit 31890fa]
+When:      2026-09-24T18:56Z (25 Sep 00:26 IST), laptop, orchestrator.
+Observed:  Adi's archive.zip -> 28 stock CCTV clips (Indian traffic,
+           mostly 4K30 H.264, 7-120 s), extracted OUTSIDE the repo to
+           D:\projects\sentinel-footage\raw. scripts/analyze_footage.py
+           scored every clip through the real detector+OCR at 1080p:
+           24 distinct structurally-full plates across 8 clips; best
+           clip 13270133 (10 plates, 20.8 vehicles/frame). Top 4 clips
+           transcoded once to 1080p30 H.264 g=60 -> local01..local04,
+           published over mediamtx with the NEW copy mode
+           (replay_publish --copy; ~zero publish CPU), registered in
+           BOTH data/footage.db (the run DB) and data/sentinel.db
+           (integration; tier active, seeded Gandhinagar-cluster
+           coordinates, disclosure inside location_name - Adi approved
+           seeded coordinates in chat, F58).
+           Verification run (footage.db; looped feeds are F56-legal on a
+           test DB): supervisor 582 s, 4/4 workers, 0 restarts, 380
+           frames sampled, 2949 detections, **21 sightings with
+           provenance='live', clock_source='rtsp-live'** (conf 0.81-0.99,
+           crops on disk), watchlist seeded FROM observed sightings
+           mid-run (cache refresh <=10 s, no restart), and **3 real
+           alerts through record_sighting->find_match->create_alert:
+           ALERT-20260924-0001 exact MH04JH3316 local03,
+           -0002 exact MH47AU0099 local02,
+           -0003 ambiguity MH04GN2055~MH046N2055 (G<->6) local03** —
+           the ambiguity machinery fired on a live read.
+           Shutdown clean via data/stop: no orphan ffmpeg/mediamtx.
+Surprise:  (1) ~85 s of zero frames at start - four concurrent ffprobe
+           size-probes + ffmpeg spawns serialised under load before the
+           first ticks; it cleared on its own, watchdogs never fired.
+           (2) With 4 dense 1080p feeds the shared OCR lock is the
+           bottleneck (~0.5-1 fps/camera effective while wave-1 agents
+           also ran; sampler drops by PTS as designed). Detector/OCR
+           latency numbers tonight are load-contaminated - S4.1 owns the
+           clean 10-minute measurement.
+           (3) Same physical plate OCR-misreads differently pass to pass
+           (MH04MA4386 -> MH042A4386 / MH04A4386), so watchlist hits
+           want the -from-sightings seeding, which is exactly what it is
+           for.
+Next:      wave 2; the S3.4 session proper wires launch.py replay-start
+           over these feeds; S3.6 (real filmed route) stays [Adi].
+```
+
+```
+## Wave-1 full suite — PASS (cross-task integration after S3.0+S3.7+S3.1a)
+When:      2026-09-24T19:45Z (25 Sep 01:15 IST), laptop.
+Observed:  .venv/Scripts/python -m pytest -q -> **186 passed, 0 failed in
+           358.5 s**, run while the wave-2 agents (S3.1b, S3.2) were
+           already working on this machine. 146 Phase-2 tests + the 40
+           wave-1 tests hold together: schema v2, auth, catalogue,
+           analytics, mediamtx harness, all green in one run.
+Next:      wave 2 (S3.1b + S3.2), then S3.3, S3.3b, S3.4.
+```
+
+```
+## S3.1b — DONE (reports, HLS relay, health checker; OpenAPI re-export)
+##          [commit 584860d]
+When:      2026-09-24T20:15Z (25 Sep 01:45 IST), wave-2 subagent (F59).
+Observed:  Ported (F52) from src/api/routes_hls.py, routes_reports.py +
+           report.py, ingest/health.py — with the old build's worst habit
+           FIXED: the health checker never touches the CDN (regression
+           test asserts zero CdnSession calls; paced RTSP ffprobe 2-at-a-
+           time, -timeout per F44). Reports render in memory with a
+           provenance column, HTML-escaped, CSV formula-prefixed.
+           Relay: playlist-membership check on /seg, boundary-exact CDN
+           origin, 16-byte key check, 20 s tee freshness; policy recorded
+           in api.md — transport='rtsp' cameras NEVER fall to the CDN
+           (fresh tee -> stale tee <= 24 h -> 503): their live view is our
+           own pull; the CDN copy is a different source. RateLimiter
+           wired: route 120/min, reports 60/min, relay 600/min per
+           identity. /api/health counts.workers now reads the stats
+           snapshot (was hardcoded 0). OpenAPI re-exported.
+           Acceptance: test_reports+test_relay+test_health+test_openapi
+           -> 28 passed.
+Surprise:  starlette normalises dot-segments before routing, so '..'
+           traversal names die client-side as 404; the real guard (no CDN
+           fetch for off-playlist names) is what the tests assert.
+Next:      S3.2 (same wave).
+```
+
+```
+## S3.2 — DONE (frontend foundation; a real backend defect found by the
+##          smoke) [commit b0925d7]
+When:      2026-09-24T20:20Z (25 Sep 01:50 IST), wave-2 subagent (F59).
+Observed:  Vite 6 + react 18.3.1 (pinned back from the React-19 scaffold),
+           ported ui/src (F52): api.js -> lib/api.js on the session cookie
+           (no key dialog; 401 -> /login; typed errors to the status
+           strip), Header/Tile/FitBounds/MapView, styles.css -> tokens.css
+           (the token system). Login built as a hero screen. Pages: Map,
+           Cameras (onboarding form, CSV import with per-row results),
+           Watchlist. scripts/smoke_frontend.py drives the real
+           `python -m backend.app` on a random free port with a temp DB
+           and per-run secrets that never touch argv or logs.
+           SMOKE PASS 13 assertions (login redirect, viewer sign-in,
+           30 pins == 30 cameras, viewer-hidden forms + 403s, CSV
+           2-accepted/1-rejected, watchlist round-trip, sign-out).
+           REAL DEFECT found by the smoke and fixed in backend/core/db.py:
+           FastAPI runs a sync dependency's teardown in a different anyio
+           worker thread under concurrent requests, so get_db's close()
+           crossed threads -> sqlite3.ProgrammingError 500s on random
+           requests (3/4 runs before the fix, 0/3 after).
+           check_same_thread=False + regression test tests/test_db.py.
+Surprise:  create-vite@6 scaffolds React 19 — pinned back per F28.
+Next:      S3.3.
+```
+
+```
+## Wave-2 follow-ups + full suite — PASS [commits 2365968, 27b91cd]
+When:      2026-09-24T21:20Z → 25 Sep 04:10 IST (interrupted by the
+           account's usage-limit window ~02:00-02:50 IST; both waves
+           relaunched clean after the reset — nothing was lost, the
+           interrupted attempts had written no files).
+Observed:  Review follow-ups with tests: GET /api/reports/route/{plate}
+           now audited like /api/plates/* (B12); cdn_session origin
+           check boundary-exact (startswith admitted
+           https://<cdn-host>.evil.tld). Two auth-test interactions with
+           the new main.py fixed (late-registered fixture route shadowed
+           by the SPA catch-all; the route walk now treats the SPA shell
+           as the open login page it is, rule 11).
+           Full suite: **217 passed, 0 failed in 342 s**.
+Next:      wave 3 (S3.3), S3.4 build.
+```
+
+```
+## S3.3 — DONE (all seven operations screens; smoke 43 assertions)
+##          [commits 0b30b57, 8b8e8b8]
+When:      2026-09-25T05:35Z (11:05 IST), wave-3 subagent (F59).
+Observed:  Command, Live Wall, Search, Route, Alerts, Zones, Reports
+           ported from ui/src/pages (F52) onto the S3.2 tokens, with the
+           F46 additions: Start here panel (names GJ01AB1234 and real
+           local-feed plate MH04JH3316), feed-status strip (no-traffic /
+           feed-down / pipeline-dead; stale >90 s heartbeat counts as
+           dead), provenance badges everywhere, vehicle-class filter,
+           person count. Tile owns ONE retry policy (hls.js internals
+           disabled). SMOKE PASS 43 assertions, identical on two runs:
+           route/GJ01AB1234 -> 4 timeline entries incl. the ambiguity
+           near-miss on 3 cameras/3 departments; SSE card < 3 s through
+           a real port; ack persists reload; wall 4 playlist requests
+           then 0 after paging destroys the players; class filter;
+           viewer gating; pipeline-down strip.
+           Follow-up committed same hour: the class filter is now
+           server-side in GET /api/sightings (was client-side over one
+           page) — api.md + test.
+Surprise:  react-leaflet v4 lets a second <Tooltip> silently replace the
+           first bindTooltip — caught by the smoke's pin-count assertion.
+Next:      S3.3b.
+```
+
+```
+## S3.3b — DONE (design pass + the F53 review gate) [commit 6f2e120]
+When:      2026-09-25T07:20Z (12:50 IST), design pass by a subagent,
+           review gate + fixes by the orchestrating session.
+Observed:  Design pass BY HAND against frontend/CLAUDE.md — no front-end
+           design plugin is installed on this machine (recorded per F53:
+           a missing skill is recorded, never a blocker). Applied:
+           --text-faint contrast 3.1:1 -> >= 4.5:1; the wall now fills
+           1366x768 and 1920x1080 exactly; operator-worded tile errors;
+           Route tiles-offline note; pluralisation; route-level
+           code-splitting (993 kB -> 212 kB entry + on-demand chunks, no
+           new dependency). Smoke extended to **67 assertions**: five
+           heroes at both viewports no-horizontal-scroll, designed empty
+           states on a fresh DB, status-strip error states with the API
+           killed mid-session, hero-*.png at 1920x1080 for the deck.
+           Review gate: **/security-review — 0 findings** (parameterised
+           SQL, no unsafe React sinks, smoke secrets never in argv).
+           **/code-review at high effort — 7 findings, 6 fixed**: landing
+           now /command (the Start-here panel is the first screen a judge
+           sees — it was /map), Search 'unknown' class no longer queries
+           a literal the server cannot match, Safari native-HLS tiles get
+           an error overlay + the retry ladder, dead 'auto' class ->
+           'bicycle' (+ 'buses'), applyAck coerces alert_seq, a
+           background poll's success no longer wipes an unrelated
+           status-strip error. 1 answered: DEPT/ROUTE colour literals
+           stay in api.js (Leaflet paints SVG attributes where CSS var()
+           does not resolve — documented in-file). Build + lint clean,
+           smoke 67/67 after the fixes.
+Next:      S3.4 walkthrough.
+```
+
+```
+## S3.4 — DONE (launcher + second system; end-to-end walkthrough on the
+##          real platform) [commit 51e1569]
+When:      2026-09-25T06:40Z (12:10 IST), build by a subagent, walkthrough
+           by the orchestrating session.
+Observed:  launch.py ported from the old launcher (F52) — resumable
+           ffmpeg fetch, req-hash reinstall stamp, DirectML guard, PID
+           file, friendly steps — with the old blanket
+           `taskkill /IM ffmpeg.exe` deliberately NOT ported: stop
+           touches only recorded PID trees (repo-cmdline guard), after a
+           graceful data/stop window. replay_publish --many publishes one
+           path per clip, ONCE-through by default with --offsets real
+           gaps (F56), --loop explicit, copy mode default. 17 launcher/
+           publisher tests green.
+           WALKTHROUGH, observed live (11:20-12:10 IST):
+           `python launch.py start` -> 9 steps, port bound, browser
+           opened; login page serves at :8000 with the audit disclosure;
+           `replay-start` -> local01..04 on mediamtx; with
+           SENTINEL_ACTIVE_CAMERAS=6 one worker set ran BOTH systems —
+           cam06/09/26/27/28 pulled LIVE from the sandbox + local01 from
+           mediamtx. 26-min run: 0 restarts, 7,284 frames, 17,565
+           detections, **137 sightings (13 REAL live reads on sandbox
+           cam06, 124 on local01, 107 unique plates)**; `demo` -> 24
+           labelled rows + 4 alerts; `stop` + `replay-stop` -> ZERO
+           ffmpeg/mediamtx processes left (tasklist), only recorded PID
+           trees touched. sentinel.db now holds real live sandbox reads —
+           S4.1's formal 10-minute measurement still owns GATE B.
+Surprise:  the .env cap is 5, so local01 only joined at cap 6 (set per
+           process for the run). S4.1 should pick the tier deliberately;
+           consider SENTINEL_ACTIVE_CAMERAS=6 in .env [Adi].
+Next:      S4.1 (GATE B measurement), S3.5 go-live ([Adi] Funnel trial),
+           S3.6 ([Adi] filming).
+```
+
+```
+## S3.5 — PARTIAL (runbook written; go-live gates on Adi's Funnel trial)
+When:      2026-09-25T07:40Z (13:10 IST), orchestrating session.
+Observed:  docs/runbook-hosting.md written: the 15-minute [Adi] go-live
+           block (Tailscale Funnel, mobile-data check, reboot check),
+           account creation via backend.tools.users (passwords prompted,
+           never in argv/logs; the evaluator password goes ONLY in the
+           submission form), SENTINEL_PUBLIC_HOST wiring, the Windows
+           power/update/Task-Scheduler settings, a symptom table and the
+           one-minute daily check.
+Done so far: the runbook and everything S3.0/S3.4 built that it relies
+           on. NOT done (physically Adi's): the Funnel trial itself, the
+           evaluator + admin accounts, the mobile-data + reboot checks,
+           `SENTINEL_PUBLIC_HOST` in .env.
+Next:      [Adi] runs runbook §0; then S6.1b adds the watchdog + backups.
+```
+
+```
+## Phase-3 final suite — PASS (the phase's closing verification)
+When:      2026-09-25T08:15Z (13:45 IST), laptop, ports free, platform
+           stopped.
+Observed:  .venv/Scripts/python -m pytest -q -> **232 passed, 0 failed
+           in 330.97 s**. 146 Phase-2 tests + 86 added tonight (auth 24,
+           catalogue 4, analytics 14, reports/relay/health 28, db 1,
+           cdn_session 3, launcher 9, replay-publish +7 incl. --many),
+           including the mediamtx harness. Phase 3 closes verified.
+Next:      S4.1 (GATE B measurement); Phase 5 documents (GATE D).
+```
+
