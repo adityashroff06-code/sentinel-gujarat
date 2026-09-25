@@ -4,8 +4,10 @@ HLS relay (S3.1b) and the harvest (S4.2).
 Form login to ``/auth/login`` (fields ``email``, ``password``), cookie jar,
 browser-like User-Agent (the CDN 403s non-browser agents), jittered
 exponential backoff with **one** re-login on 403/timeout. The CDN
-rate-limits hard: callers keep requests gentle; this class never hammers.
-Every log line is masked (root rule 1).
+rate-limits hard: callers keep requests gentle; this class never hammers —
+concurrent 403s share ONE re-login. Every request, redirect hops included,
+stays inside the configured CDN origin (B11). Every log line is masked
+(root rule 1).
 """
 
 from __future__ import annotations
@@ -45,21 +47,53 @@ def backoff_delay(attempt: int) -> tuple[float, float]:
     return base, base * random.uniform(0.5, 1.5)
 
 
+#: Redirects followed per request. Every hop is origin-checked, so this is
+#: a bound on work, not the guard; the CDN's own 302s are one hop.
+MAX_REDIRECTS = 5
+
+
+def _refuse_off_origin(request: httpx.Request) -> None:
+    """httpx request hook, run before EVERY hop is sent — the first request
+    and each redirect alike. Raises ``CdnError`` (status ``None``, the
+    origin guard) for anything outside the configured CDN origin: scheme,
+    host and port must match, and the path must sit under the origin's."""
+    origin = httpx.URL(config.cdn())
+    url = request.url
+    prefix = origin.path.rstrip("/")
+    if ((url.scheme, url.host, url.port) != (origin.scheme, origin.host, origin.port)
+            or (prefix and url.path != prefix and not url.path.startswith(prefix + "/"))):
+        raise CdnError(f"refusing off-origin redirect: {config.masked(str(url))}")
+
+
 class CdnSession:
     """A logged-in CDN client. ``get()`` retries with backoff and re-logs
     in once on a 403 before giving up."""
 
-    def __init__(self, timeout_s: float = 15.0) -> None:
+    def __init__(self, timeout_s: float = 15.0,
+                 transport: httpx.BaseTransport | None = None) -> None:
+        """*transport* is for tests only (an ``httpx.MockTransport`` CDN)."""
         self.log = logging_setup.setup("cdn")
+        # Redirects stay on (the CDN 302s to /auth/login), but the request
+        # hook re-checks the origin on every hop: without it a 3xx carried
+        # the session cookie off-origin and the relay served what came back
+        # (25 Sep review). A response hook would not do — httpx builds the
+        # next hop only after response hooks have run.
         self._client = httpx.Client(
             headers={"User-Agent": _UA},
             timeout=timeout_s,
             follow_redirects=True,
+            max_redirects=MAX_REDIRECTS,
+            event_hooks={"request": [_refuse_off_origin]},
+            transport=transport,
         )
         self._logged_in = False
         # The HLS relay shares one session across request threads: only one
-        # of them logs in when the session is fresh (no login burst).
+        # of them logs in when the session is fresh, and only one re-logs in
+        # when a wave of 403s lands (no login burst — the CDN bans bursts).
         self._login_lock = threading.Lock()
+        #: Login attempts FINISHED (ok or refused). A thread that saw a 403
+        #: re-logs in only if no attempt finished since its GET went out.
+        self._login_gen = 0
 
     def close(self) -> None:
         self._client.close()
@@ -89,9 +123,31 @@ class CdnSession:
         self._logged_in = True
         self.log.info("cdn login ok (%s)", config.cdn())
 
+    def _login_counted(self) -> None:
+        """``login()`` — the caller holds ``_login_lock`` — counted as one
+        finished attempt whether it succeeds or is refused."""
+        try:
+            self.login()
+        finally:
+            self._login_gen += 1
+
+    def _relogin_once(self, seen_gen: int) -> None:
+        """Re-login after a 403, unless another thread's login attempt
+        finished after this thread's GET went out (*seen_gen*): that attempt
+        already renewed the cookie, or was itself refused, and a second POST
+        would only feed the burst the CDN bans (25 Sep review: 16 concurrent
+        403s made 16 logins). Raises ``CdnError`` if this attempt is refused."""
+        with self._login_lock:
+            if self._login_gen != seen_gen:
+                return
+            self._login_counted()
+
     def get(self, path_or_url: str, max_attempts: int = 4) -> httpx.Response:
         """GET with the session cookie. *path_or_url* may be a path on the
-        CDN or an absolute URL **inside the CDN origin** (relay rule B11)."""
+        CDN or an absolute URL **inside the CDN origin** (relay rule B11);
+        a redirect is followed only while it stays inside that origin.
+        Returns the (< 400) response. Raises ``CdnError`` — at once for an
+        off-origin URL or redirect, else after *max_attempts* refusals."""
         url = path_or_url if path_or_url.startswith("http") else f"{config.cdn()}{path_or_url}"
         # Origin check must be boundary-exact: a bare startswith(cdn) admits
         # e.g. https://cctv.example.evil.tld when cdn is https://cctv.example
@@ -102,10 +158,11 @@ class CdnSession:
         if not self._logged_in:
             with self._login_lock:
                 if not self._logged_in:
-                    self.login()
+                    self._login_counted()
         relogged = False
         status: int | str = "timeout"
         for attempt in range(max_attempts):
+            seen_gen = self._login_gen  # read before the GET goes out
             try:
                 response = self._client.get(url)
             except httpx.HTTPError as exc:
@@ -117,7 +174,7 @@ class CdnSession:
             if status == 403 and not relogged:
                 relogged = True
                 try:
-                    self.login()
+                    self._relogin_once(seen_gen)
                 except CdnError as exc:
                     self.log.warning("re-login failed: %s", exc)
             base, delay = backoff_delay(attempt)
