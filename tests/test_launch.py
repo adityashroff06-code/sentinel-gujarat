@@ -231,10 +231,31 @@ def test_start_feeds_keeps_a_running_publisher_and_drops_a_stale_record(
 
 
 def test_start_feeds_forgets_a_publisher_that_dies_at_once(sandbox, monkeypatch):
-    monkeypatch.setattr(sandbox, "_spawn_detached", lambda a, log: _FakeProc(5, rc=1))
+    monkeypatch.setattr(sandbox, "FEED_RETRY_DELAY_S", 0.0)
+    spawned: list[int] = []
+    monkeypatch.setattr(sandbox, "_spawn_detached",
+                        lambda a, log: spawned.append(1) or _FakeProc(5, rc=1))
     monkeypatch.setattr(sandbox, "_port_busy", lambda port: False)
     sandbox.start_feeds(Path("venv-python"))     # reported, start continues
     assert not sandbox.REPLAY_PIDFILE.exists()
+    assert len(spawned) == 2                     # one retry, then give up
+
+
+def test_feed_publisher_that_dies_at_birth_is_retried_once(sandbox, monkeypatch,
+                                                           capsys):
+    """Regression (25 Sep, laptop): after a stop+start the publisher died
+    at birth (rc 3221225786) and start carried on with no local feeds on
+    the wall; the identical start succeeded the next time. One retry."""
+    monkeypatch.setattr(sandbox, "FEED_RETRY_DELAY_S", 0.0)
+    procs = iter([_FakeProc(5, rc=3221225786), _FakeProc(77)])
+    monkeypatch.setattr(sandbox, "_spawn_detached", lambda a, log: next(procs))
+    busy = iter([False, True])   # port free before; bound on the second try
+    monkeypatch.setattr(sandbox, "_port_busy", lambda port: next(busy, True))
+    monkeypatch.setattr(sandbox, "_rtsp_publishing", lambda name: True)
+    sandbox.start_feeds(Path("venv-python"))
+    assert sandbox.REPLAY_PIDFILE.read_text(encoding="utf-8") == "feeds 77\n"
+    out = capsys.readouterr().out
+    assert "retrying once" in out and "feeds publishing" in out
 
 
 def test_start_brings_the_feeds_up_after_the_seeds_before_the_worker(

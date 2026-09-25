@@ -657,6 +657,10 @@ def _rtsp_publishing(name: str, port: int | None = None,
     return head.startswith("RTSP/1.0 200")
 
 
+#: Wait before the one retry of a feed publisher that died at birth.
+FEED_RETRY_DELAY_S = 3.0
+
+
 def start_feeds(vp: Path) -> None:
     """Step 9: publish the register's stock feeds on the local mediamtx
     (RTSP 127.0.0.1:8554 for the worker, HLS 127.0.0.1:8888 for the wall's
@@ -692,22 +696,32 @@ def start_feeds(vp: Path) -> None:
             " not record - continuing without the local feeds")
         return
     LOGS.mkdir(parents=True, exist_ok=True)
-    proc = _spawn_detached(_register_cmd(vp), LOGS / "replay.launcher.log")
     DATA.mkdir(exist_ok=True)
-    REPLAY_PIDFILE.write_text(f"feeds {proc.pid}\n", encoding="utf-8")
-    for _ in range(30):  # checksum verify + mediamtx bind: a few seconds
-        if proc.poll() is not None:
-            REPLAY_PIDFILE.unlink(missing_ok=True)
-            say(f"[!] the feed publisher exited rc={proc.returncode}"
-                " - see data/logs/replay.launcher.log; continuing without"
-                " the local feeds")
-            return
-        if _port_busy(RTSP_PORT):
+    for attempt in (1, 2):
+        proc = _spawn_detached(_register_cmd(vp), LOGS / "replay.launcher.log")
+        REPLAY_PIDFILE.write_text(f"feeds {proc.pid}\n", encoding="utf-8")
+        for _ in range(30):  # checksum verify + mediamtx bind: a few seconds
+            if proc.poll() is not None or _port_busy(RTSP_PORT):
+                break
+            time.sleep(0.5)
+        else:
+            say(f"[!] mediamtx did not bind 127.0.0.1:{RTSP_PORT} in 15 s -"
+                " the worker's local cameras will retry with backoff")
+        if proc.poll() is None:
             break
-        time.sleep(0.5)
-    else:
-        say(f"[!] mediamtx did not bind 127.0.0.1:{RTSP_PORT} in 15 s -"
-            " the worker's local cameras will retry with backoff")
+        REPLAY_PIDFILE.unlink(missing_ok=True)
+        if attempt == 1:
+            # 25 Sep: once, the publisher died at birth (rc 0xC000013A)
+            # right after a stop+start, and the wall came up with no local
+            # feeds; the identical start succeeded the next time. One retry.
+            say(f"[!] the feed publisher exited rc={proc.returncode} at"
+                f" start - retrying once in {FEED_RETRY_DELAY_S:.0f} s")
+            time.sleep(FEED_RETRY_DELAY_S)
+            continue
+        say(f"[!] the feed publisher exited rc={proc.returncode}"
+            " - see data/logs/replay.launcher.log; continuing without"
+            " the local feeds (python launch.py replay-start retries)")
+        return
     up: list[str] = []
     for _ in range(20):  # publishers connect a moment after the bind
         up = [i for i in present if _rtsp_publishing(i)]

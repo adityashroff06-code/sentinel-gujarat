@@ -1,3 +1,4 @@
+import { browserDecodesHevc } from '../lib/media.js'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Hls from 'hls.js'
@@ -60,7 +61,6 @@ const SOURCE_BADGE = {
   },
 }
 
-const HEVC_PROBE = 'video/mp4; codecs="hvc1.1.6.L123.B0"'
 // Measured 25 Sep on the demo laptop: Google Chrome 122 decodes hvc1
 // through MSE (hardware, headed); Edge 153 does not (it needs Windows'
 // HEVC Video Extensions). So the tile names Chrome, and the tooltip says
@@ -70,13 +70,6 @@ const HEVC_DETAIL =
   'MediaSource cannot play hvc1 here. Chrome decodes H.265 with hardware support; ' +
   'Edge needs the HEVC Video Extensions from the Microsoft Store.'
 
-function browserDecodesHevc() {
-  try {
-    return Boolean(window.MediaSource?.isTypeSupported?.(HEVC_PROBE))
-  } catch {
-    return false // no MSE at all: the HLS path below reports it
-  }
-}
 
 // Operator words for a failure: the HTTP status the relay answered (when
 // there was one) plus the path it was on. Raw hls.js detail strings

@@ -19,7 +19,10 @@ with the fresh build's rules:
   held across a network call (backend/CLAUDE.md SQLite rules).
 
 Runs as a background thread in the API process (``SENTINEL_HEALTH_INTERVAL_S``,
-0 = off), waiting one interval before the first pass so startup is quiet.
+0 = off). The first pass runs ``FIRST_PASS_DELAY_S`` after start (startup
+stays quiet), then every interval — waiting a whole interval first left the
+map and header showing the previous run's health ("1/58 online") for five
+minutes after every ``launch.py start`` (found 25 Sep on the live platform).
 The credentialed RTSP URL exists only in memory and is never logged
 unmasked (root rule 1).
 """
@@ -49,6 +52,10 @@ PROBE_TIMEOUT_S = 20.0
 PROBE_WORKERS = 2
 #: RTSP socket timeout in microseconds; the flag is ``-timeout`` (F44).
 _RTSP_SOCKET_TIMEOUT_US = "15000000"
+
+
+#: Seconds after start before the first pass (then every interval).
+FIRST_PASS_DELAY_S = 30.0
 
 
 def tee_playlist(camera_id: str) -> Path:
@@ -180,15 +187,21 @@ def check_all() -> dict[str, int]:
     return tally
 
 
-def run_loop(interval_s: float, stop: threading.Event) -> None:
+def run_loop(interval_s: float, stop: threading.Event,
+             first_delay_s: float | None = None) -> None:
     """Run health passes every *interval_s* until *stop* is set.
 
-    Waits one interval before the first pass (startup stays quiet; a
-    short-lived test app never fires one). A failed pass is logged and the
-    loop continues — a health loop must not die (root §7: no silent
-    failure, but a checker crash must not take the API down).
+    The first pass waits *first_delay_s* (default ``FIRST_PASS_DELAY_S``,
+    never longer than the interval): startup stays quiet and a short-lived
+    test app never fires one, yet the registry's health is current within
+    seconds of a start instead of a whole interval later. A failed pass is
+    logged and the loop continues — a health loop must not die (root §7:
+    no silent failure, but a checker crash must not take the API down).
     """
-    while not stop.wait(interval_s):
+    delay = min(FIRST_PASS_DELAY_S if first_delay_s is None else first_delay_s,
+                interval_s)
+    while not stop.wait(delay):
+        delay = interval_s
         try:
             check_all()
         except Exception:

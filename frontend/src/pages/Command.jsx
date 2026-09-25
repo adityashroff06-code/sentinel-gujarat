@@ -8,6 +8,7 @@ import BaseLayers from '../components/map/BaseLayers.jsx'
 import { NetworkOverview } from '../components/map/GisLayers.jsx'
 import { ProvenanceBadge } from '../components/Badges.jsx'
 import Tile from '../components/Tile.jsx'
+import { browserDecodesHevc } from '../lib/media.js'
 import { api, deptColor } from '../lib/api.js'
 import { useAlertStream, usePolled } from '../lib/poll.js'
 import { formatTimeIST } from '../lib/time.js'
@@ -22,7 +23,6 @@ import { formatTimeIST } from '../lib/time.js'
 // D13 fixed (IST times, no silent .catch, critical severity styled,
 // designed empty/loading states).
 
-const SORT_TIER = { active: 0 }
 const SORT_HEALTH = { online: 0, degraded: 1 }
 // the classes the detector actually emits (ml/anpr/detect.py COCO_KEEP);
 // 'auto' was a dead counter — YOLOX has no such class
@@ -33,6 +33,7 @@ const classLabel = (cls) => CLASS_LABELS[cls] || `${cls}s`
 const fetchCameras = () => api.cameras()
 const fetchLatest = () => api.sightings({ limit: 50 })
 const fetchSummary = () => api.eventsSummary(60)
+const fetchSuggest = () => api.plateSuggest(3)
 
 export default function Command() {
   const stats = usePolled('stats', api.stats, 5000)?.data
@@ -47,18 +48,30 @@ export default function Command() {
   const sightings = useMemo(() => latestPolled?.data?.sightings ?? [], [latestPolled])
   const summary = summaryPolled?.data ?? null
 
-  const liveTiles = useMemo(
-    () =>
-      [...cams]
-        .sort(
-          (a, b) =>
-            (SORT_TIER[a.fps_tier] ?? 1) - (SORT_TIER[b.fps_tier] ?? 1) ||
-            (SORT_HEALTH[a.health] ?? 2) - (SORT_HEALTH[b.health] ?? 2) ||
-            String(a.camera_id).localeCompare(String(b.camera_id))
-        )
-        .slice(0, 4),
-    [cams]
-  )
+  // The four tiles an evaluator sees first must play in THIS browser:
+  // analysed cameras (their own tee) first, then local feeds (our media
+  // server, always up), then sandbox cameras that depend on the
+  // organisers' CDN; an H.265 camera goes last where MSE cannot decode
+  // hvc1 (Edge without the HEVC extension) — the wall still shows it,
+  // with the reason (25 Sep: half of Command was "open in Chrome" in Edge).
+  const liveTiles = useMemo(() => {
+    const hevcOk = browserDecodesHevc()
+    const rank = (c) =>
+      (c.fps_tier === 'active' ? 0 : /^local/i.test(String(c.camera_id)) ? 1 : 2) +
+      (!hevcOk && String(c.codec || '').toLowerCase() === 'hevc' ? 10 : 0)
+    return [...cams]
+      .sort(
+        (a, b) =>
+          rank(a) - rank(b) ||
+          (SORT_HEALTH[a.health] ?? 2) - (SORT_HEALTH[b.health] ?? 2) ||
+          String(a.camera_id).localeCompare(String(b.camera_id))
+      )
+      .slice(0, 4)
+  }, [cams])
+  // a real plate to try, from the live reads themselves (never hard-coded:
+  // the 24 Sep suggestion named a plate this database did not hold)
+  const suggestPolled = usePolled('plates-suggest', fetchSuggest, 60000)
+  const topLive = suggestPolled?.data?.top_live?.[0] ?? null
   const pts = useMemo(
     () => cams.filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lon)),
     [cams]
@@ -120,22 +133,35 @@ export default function Command() {
             <Link className="plate" to="/route/GJ01AB1234">
               GJ01AB1234
             </Link>{' '}
-            (the labelled demonstration vehicle) or{' '}
-            <Link className="plate" to="/route/MH04JH3316">
-              MH04JH3316
-            </Link>{' '}
-            (a real plate read live from our own filmed feeds) on the Route
-            screen — or search any partial plate under Search.
+            (the labelled demonstration vehicle — 3 cameras, 3 departments) on
+            the Route screen
+            {topLive ? (
+              <>
+                , or run an ANPR search for a real live read such as{' '}
+                <Link className="plate" to={`/search?plate=${encodeURIComponent(topLive.plate)}`}>
+                  {topLive.plate}
+                </Link>{' '}
+                ({topLive.reads} {topLive.reads === 1 ? 'read' : 'reads'} from the live
+                pipeline)
+              </>
+            ) : (
+              ', or run an ANPR search for any full or partial plate'
+            )}
+            .
           </li>
           <li>
             <b>Where the live feeds come from:</b> the organisers&apos; sandbox
-            camera grid, pulled live over the gateway, plus our own filmed
-            cameras (<span className="mono">local01…</span>) replayed over RTSP —
-            two different systems in one viewer.
+            camera grid — the analysed cameras pulled live over the RTSP gateway
+            (ANPR, objects, zones), the rest viewed through the organisers&apos;
+            CDN recording — plus 28 local stock-footage feeds (
+            <span className="mono">local01–local28</span>) published over our own
+            media server. Two different systems in one viewer, every tile
+            through the same relay.
           </li>
           <li>
-            <b>What is demonstration data:</b> the geography of our own feeds is
-            seeded, and every row carries a provenance badge — rows marked{' '}
+            <b>What is demonstration data:</b> the local feeds are looped stock
+            clips at seeded coordinates, and every row carries a provenance
+            badge — rows marked{' '}
             <span className="prov-badge prov-demo">demo</span> are demonstration
             data, never live reads.
           </li>

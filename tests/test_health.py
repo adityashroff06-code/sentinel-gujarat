@@ -222,8 +222,8 @@ def test_interval_zero_means_off(monkeypatch) -> None:
 
 
 def test_run_loop_waits_first_and_stops_cleanly(monkeypatch) -> None:
-    """The loop waits one interval before the first pass (a short-lived
-    test app never fires one) and exits when the stop event is set."""
+    """The loop waits before the first pass (a short-lived test app never
+    fires one) and exits when the stop event is set."""
     passes: list[int] = []
     monkeypatch.setattr(health, "check_all", lambda: passes.append(1))
 
@@ -240,3 +240,36 @@ def test_run_loop_waits_first_and_stops_cleanly(monkeypatch) -> None:
     t.join(timeout=2)
     assert not t.is_alive()
     assert passes  # at least one pass ran on the interval
+
+
+def test_first_health_pass_runs_soon_after_start_not_a_whole_interval_later(
+        monkeypatch) -> None:
+    """Regression (25 Sep, live platform): the loop slept a full 300 s
+    interval before its first pass, so after every launch.py start the map
+    and header showed the previous run's health ("1/58 cameras online")
+    for five minutes. The first pass now runs FIRST_PASS_DELAY_S after
+    start, then every interval."""
+    assert health.FIRST_PASS_DELAY_S <= 60
+    passes: list[float] = []
+    monkeypatch.setattr(health, "check_all", lambda: passes.append(time.monotonic()))
+    stop = threading.Event()
+    t0 = time.monotonic()
+    t = threading.Thread(target=health.run_loop, args=(300.0, stop, 0.05), daemon=True)
+    t.start()
+    deadline = time.monotonic() + 3
+    while not passes and time.monotonic() < deadline:
+        time.sleep(0.02)
+    stop.set()
+    t.join(timeout=2)
+    assert passes, "no pass ran within 3 s of start"
+    assert passes[0] - t0 < 1.0          # not 300 s
+    assert len(passes) == 1              # then it waits the full interval
+    # and the delay never exceeds a (short) configured interval
+    passes.clear()
+    stop = threading.Event()
+    t = threading.Thread(target=health.run_loop, args=(0.05, stop), daemon=True)
+    t.start()
+    time.sleep(0.5)
+    stop.set()
+    t.join(timeout=2)
+    assert passes
