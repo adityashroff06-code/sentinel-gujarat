@@ -79,7 +79,7 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S3.3b | **Design pass on the five hero screens + the review gate** — new in v2.5 (F53) — cloud lane | Thu 24 | 1.5 h | [x] done Fri 25; smoke 67 assertions (both viewports, empty-DB, API-stopped); /security-review 0 findings; /code-review high 7 findings, 6 fixed 1 answered; bundle split 993->212 kB entry |
 | S3.4 | Launcher, second system over mediamtx, end-to-end walkthrough | Thu 24 | 2 h | [x] done Fri 25; 26-min live walkthrough: both systems in one worker set, 137 sightings (13 real on cam06), clean stop, no orphans |
 | S3.5 | **Hosting go-live: tunnel, evaluator accounts, 24/7 runbook** — new in v2.3 | Thu 24 | 1.5 h | [~] runbook written Fri 25 (docs/runbook-hosting.md); the Funnel trial, accounts and mobile-data check are [Adi] and still gate go-live |
-| S3.6 | **[Adi + Claude] Own-footage ground truth: a real hit and a real multi-camera route** — v2.5: 10–15 min recordings, published once with the real gaps (F56); **GATE C** moves here (F54) | Thu 24 | 2 h | |
+| S3.6 | **[Adi + Claude] Own-footage ground truth: a real hit and a real multi-camera route** — v2.5: 10–15 min recordings, published once with the real gaps (F56); **GATE C** moves here (F54) | Thu 24 | 2 h | [x] closed Fri 25 by Adi's decision F70: the stock CCTV feeds are the local demo footage (3 real alerts from real reads on the test DB, F58); no filming; the route stays the labelled demo vehicle |
 | S4.1 | Live sandbox run on the demo tier (F55), 10-minute measurement — **GATE B** | Thu 24 | 2 h | [x] done Fri 25 (laptop): 600 s window, 5/5 alive, 0 restarts, 12 full reads on cam06, 53 live line_cross events; **GATE B PASS**; sampler 'unmeasured' fix + test |
 | S4.2 | HLS VOD reader + harvest for a real multi-camera route | Thu 24 | 3 h | [-] cut v2.5 (F54): own footage supplies the real route; GATE C moved to S3.6 |
 | S4.3 | Pipeline 3 evidence clips | Fri 25 pm | 3 h | [-] cut v2.5 (F54): Pipeline 3 is described and validated separately, not built |
@@ -395,7 +395,8 @@ git rev-parse --short main origin/main
 *Acceptance:* from a device on mobile data, in a private window: the URL loads the login page over HTTPS; the evaluator credentials sign in; Command, Map, Live Wall, Search, Route, Alerts and Reports all render; an alert arrives over SSE while the page is open (confirming the tunnel carries Server-Sent Events); a crop image and a live tile both load; signing out and reloading returns to the login page. `curl -sI <url>` shows the five security headers. Reboot the laptop; within two minutes of logging in, the URL answers again with no manual step.
 *Write-off:* progress block with the URL (no password), the reboot result and the mobile-data check.
 
-### S3.6 — [Adi + Claude] Own-footage ground truth: a real hit and a real multi-camera route `[ ]`
+### S3.6 — [Adi + Claude] Own-footage ground truth: a real hit and a real multi-camera route `[x]`
+*Closed 25 Sep by Adi's decision **F70**: no filming — the 28 stock CCTV feeds (`local01…local28`, F58/F67) are the local demo footage. Their real alerts from real reads were proven on the test DB (F58); the multi-camera route stays the labelled demo vehicle (GATE C's basis, unchanged). The block below is kept as the record of what was planned.*
 *New in v2.3, decision F43. This is what makes video 1 a working demonstration rather than an injected one.*
 *Read first:* `docs/decisions.md` F43, F9, F19, O10; `docs/demo-script.md` (video 1, as rewritten in v2.3).
 *Build:*

@@ -14,7 +14,8 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 - **Platform:** running from `python launch.py start` (API, worker, 28 feeds, all re-encoded without B-frames — see the last Log block). Verified live at ~21:15 IST: cam01 plays from the organisers' CDN, the four local feeds that had failed play continuously (~150 s advanced in 150 s each, 0 false stall overlays in 40 samples). `python launch.py status` must show `feeds: 28/28` — if not, `python launch.py replay-start`.
 - **The organisers' side was unstable today** (not ours to fix): CDN origin down 16:40–~20:30 IST (Cloudflare 521); RTSP gateway 401 on all cameras 16:59–17:14 IST; cam26 drops its pull every ~2 min. Everything on our side shows it in operator words and backs off.
 - **Known limits, stated honestly:** the six H.265 cameras (cam06/12/17/18/22/26) play in **Chrome**, not in this laptop's Edge (no HEVC extension) — record the videos in Chrome; a 16-up wall of CDN tiles may trip the organisers' rate limiter (default grid is 4); `deliverables/gap-analysis-report.html` was captured during the outage — re-run `.venv/Scripts/python scripts/export_deliverables.py` (without `--gap-note`) once the sandbox is steady.
-- **[Adi] queue:** ① **S3.5 go-live** — `docs/runbook-hosting.md` §0 (Tailscale Funnel, evaluator + admin accounts, `SENTINEL_PUBLIC_HOST`), and set the laptop to **never sleep on AC** (the worker log shows a ~2 h gap this evening consistent with sleep). ② S3.6 filming (own-footage route; GATE C's headline). ③ S5.4 demo videos (Chrome; the Start-here panel now names a real live plate on cam06). ④ **`git push`** — this session committed to `main` but did not push. ⑤ The S2.2 20 s Wi-Fi pull. (`SENTINEL_ACTIVE_CAMERAS=6` is no longer useful: stock feeds are view-only.)
+- **[Adi] queue:** ① **S3.5 go-live** — `docs/runbook-hosting.md` §0 (Tailscale Funnel, evaluator + admin accounts, `SENTINEL_PUBLIC_HOST`), and set the laptop to **never sleep on AC** (the worker log shows a ~2 h gap this evening consistent with sleep). ② S5.4 demo videos (Chrome; the Start-here panel now names a real live plate on cam06; the route beat uses the labelled demo vehicle, F70). ③ The S2.2 20 s Wi-Fi pull. (`SENTINEL_ACTIVE_CAMERAS=6` is no longer useful: stock feeds are view-only.)
+- **Update 23:15 IST (cloud session):** **S3.6 closed by Adi's decision F70** — the stock CCTV feeds are the local demo footage, no filming; GATE C stays on the labelled demo vehicle. `main` **is pushed** (`origin/main` = `042524e`, checked from the cloud).
 - **Next Claude task: S5.5** (README rewritten for a judge, credential sweep across history/deliverables/screens, checklist walk-through; the `v2.0-submission` tag once S3.5's URL is in), then **S6.1** soak Saturday.
 - **Blockers:** none on our side.
 
@@ -132,7 +133,7 @@ GATE A was later reversed on the laptop (RTSP primary, decision C6). GATE B's de
 |---|---|---|---|---|
 | A′ — replay soak (S2.5): 10 min, zero restarts; live RTSP frames with correct timing (S2.2) | Tue 22 | **PASS** | 2026-09-23T20:55Z | Soak: 614.9 s, 0 worker restarts, 1843 frames on each of 3 replay cameras (3.0 fps each), RSS +0.6 MB over the run, stats every 10 s, 10 wrap ticks/camera. Live RTSP timing: S2.2's cam06 smoke, 134 frames monotonic (23 Sep) |
 | B — ANPR viability on the live sandbox (S4.1): real reads with sane confidence | Thu 24 | **PASS — continue on the current tier (no model tuning)** | 2026-09-25T08:58Z | 10-minute window (20260925-084754Z): 9 sightings, 12 full consensus reads, 0 restarts; cam06 carries the plates — 55 `provenance='live'` reads with crops over the afternoon run (conf 0.78–0.99, e.g. GJ11S7924 0.96, GJ03MH7800 0.96 seen twice, GJ32AG2883 0.97); cam09/26/27/28 contribute detections, motion and zone analytics but no plate reads (small/oblique plates, quiet end of the looped recording). The cam06 crossing line fired 53 `line_cross` events on the live feed — the first zone event ever on a real feed. Late vs the Thu 24 due: the run needed the laptop and daylight, both available Fri 25 afternoon |
-| C — route across ≥ 3 cameras from a plate typed into the UI (S4.2; demo vehicle qualifies) | Thu 24 20:00 | **PASS — demo vehicle (labelled)**; own-footage upgrade pending Adi's S3.6 filming | 2026-09-25T05:35Z | The smoke types GJ01AB1234 into the real UI (headless Chromium against `python -m backend.app`): Route renders 4 timeline entries incl. the ambiguity near-miss, numbered pins on 3 cameras, 3 departments in the header — asserted on two consecutive runs (S3.3), and re-checked at both viewports in S3.3b. Late vs the Thu 20:00 due: the plan's Wed/Thu columns compressed into the overnight run (F59) |
+| C — route across ≥ 3 cameras from a plate typed into the UI (S4.2; demo vehicle qualifies) | Thu 24 20:00 | **PASS — demo vehicle (labelled)**; final — S3.6 closed without filming (F70, 25 Sep), so no own-footage upgrade | 2026-09-25T05:35Z | The smoke types GJ01AB1234 into the real UI (headless Chromium against `python -m backend.app`): Route renders 4 timeline entries incl. the ambiguity near-miss, numbered pins on 3 cameras, 3 departments in the header — asserted on two consecutive runs (S3.3), and re-checked at both viewports in S3.3b. Late vs the Thu 20:00 due: the plan's Wed/Thu columns compressed into the overnight run (F59) |
 | D — documents start whatever the code state (S5.1) | Fri 25 09:00 | **PASS (late)** — S5.1 done, S5.2/S5.3 running | 2026-09-25T10:50Z | Documents started once the S4.1 laptop run had landed (it needed daylight and the laptop); the HLD cites only the six S4.1 [measured] rows |
 
 ## Open risks
@@ -1826,4 +1827,28 @@ Observed:  (1) mediamtx destroyed its HLS muxer on local01..04 - "unable to
            worker) plays through the organisers' CDN -> relay -> Edge at
            1920 px, badge CDN RECORDING.
            Suites: smoke_playback 31/31, smoke_frontend 92/92.
+```
+
+```
+## S3.6 — DONE by decision (Adi, F70): the stock CCTV feeds are the
+##        local demo footage; no own-vehicle filming
+When:      2026-09-25T17:45Z (23:15 IST), cloud session.
+Observed:  Adi: "3.6 is done, the CCTV feeds we are using locally are the
+           demo videos". Nothing was run in this session; the evidence is
+           the F58 block above: on the test DB data/footage.db (24 Sep),
+           4 stock feeds through the whole live path gave 21 sightings
+           with provenance='live' and 3 real alerts from real reads
+           (ALERT-20260924-0001 exact MH04JH3316 local03, -0002 exact
+           MH47AU0099 local02, -0003 ambiguity MH04GN2055~MH046N2055).
+           Against S3.6's acceptance: the real-alert half is met on the
+           test DB; the multi-camera route of one real vehicle is not
+           (each stock clip is a different place and different traffic,
+           and the feeds are view-only on the platform DB, F67). GATE C
+           stays PASS on the labelled demo vehicle GJ01AB1234 - its row
+           now says that basis is final.
+Surprise:  None. git: origin/main = 042524e, so the Current state's
+           "git push" item was already done.
+Next:      S5.5; video 1 (S5.4) uses the labelled demo vehicle for the
+           route beats (demo-script.md beats 6-7) and discloses the local
+           feeds as stock footage with seeded coordinates.
 ```
