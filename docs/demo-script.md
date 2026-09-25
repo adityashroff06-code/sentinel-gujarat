@@ -1,5 +1,52 @@
 > **Editor's note (fresh build):** copied verbatim from the previous build's `05-demo-script.md`. The screens it names exist in the fresh build under the same names except Command (`Dashboard`); the walkthrough the videos follow is task S3.4, the recording task is S5.4.
 
+# Demo run sheets — v2.6 (25 Sep 2026, decision F70) — **record these**
+
+These supersede the v2.3 tables below for recording: S3.6 closed without filming (F70), so "our own feed" is a stock traffic clip that **we onboard as our own camera on camera** and publish **once through**, which puts the real detection → watchlist → alert path on screen (F56's once-through rule, so every read is counted once). The multi-camera route is the labelled demonstration vehicle. Beat content and the rules at the bottom of this file are unchanged.
+
+**What the videos are.** Two **screen recordings of the running platform**, each ≤ 3 minutes, narrated, uploaded **unlisted**; the links go on the submission form and into deck slide 18. The CCTV clips in `archive.zip` are the platform's *input* (the local feeds), not these videos.
+
+## Before recording (both videos)
+
+- **Where:** the laptop, **Google Chrome**, `http://127.0.0.1:8000/`. The hosted URL is not needed (S5.4 does not wait on S3.5). Chrome, not Edge, because cam06 and five other sandbox cameras are H.265 (F62).
+- **Screen:** Chrome in a fresh guest window, bookmarks bar hidden, zoom 100 %, 1920 × 1080; record the Chrome window only (Win + Alt + R, or OBS). No terminal, `.env`, log tail or password manager in shot. Sign in with the password field masked, or sign in before starting the recorder and show the login page only by signing out at the end.
+- **State:** `python launch.py status` shows the worker alive and `feeds: 28/28`; Command's feed strip shows **cam06 READING** (daylight on the sandbox loop; the S4.1 reads came 13:30–17:00 IST on 25 Sep). If the sandbox is down, record video 1 first; it does not depend on the sandbox.
+- **Takes:** several; keep the best; trim dead air only (no reordering, no overlays that invent anything).
+
+## Video 1 — our own feed (≤ 3 min)
+
+**One-time setup, then a full dry run before the real take** (a laptop Claude session can do both; nothing here has run yet):
+
+1. A 1080p copy of stock clip `13270133_3840_2160_30fps.mp4` (the source of `local01`; the wall's copy is 720p, too small for its ~45 px plates) with 30 s of black in front, so the worker is connected before the first vehicle: `<ffmpeg> -i D:\projects\sentinel-footage\raw\13270133_3840_2160_30fps.mp4 -vf "scale=-2:1080,tpad=start_duration=30:color=black" -r 30 -c:v libx264 -preset veryfast -crf 20 -bf 0 -g 60 -an D:\projects\sentinel-footage\own01.mp4` (`<ffmpeg>` = the path printed by `.venv\Scripts\python -c "from backend.core import config; print(config.ffmpeg())"`). The offline scoring (`data/footage_analysis.json`) read, in the clip's own time: `MH02F15860`/`MH02EZ1785` at ~9 s, `MH02FG7423` at ~25 s, **`MH02EX1995` at ~41 s (conf 0.90)**, `MH02FG5664` at ~49 s. With the pre-roll add 30 s to each.
+2. `.env`: `SENTINEL_ACTIVE_CAMERAS=6` (the five analysed sandbox cameras plus `own01`), then `python launch.py stop` and `python launch.py start` (the cap is read at start).
+3. After every dry run: delete `own01` (Cameras → edit, or set its tier to `registered`) and remove the test watchlist entries, so the real take starts clean. Its reads stay as `live` reads on camera `own01` — one pass each, which is what F56 requires.
+
+| # | Beat | Says | Shows |
+|---|---|---|---|
+| 1 | **Sign in** | "One platform, role-based access." | The login page, signing in as **admin**; the header shows the user and role. Two seconds |
+| 2 | **Onboard a camera** | "Nothing is hard-coded. A camera is onboarded through this form, in bulk by CSV, or over the API." | Cameras → **Add camera**: id `own01`, department, location name *"Own camera 1 — stock traffic clip, seeded coordinates"*, latitude/longitude, transport **rtsp**, RTSP URL template `rtsp://127.0.0.1:8556/stream/own01`, tier **active**, notes *"private camera, consent on file (O10)"* → it appears in the table and as a pin on Map. Point at **Bulk import (CSV)** on the same screen |
+| 3 | **The watchlist** | "A representative watchlist. I am adding this vehicle now." | Watchlist → add `MH02EX1995` (stolen vehicle, high) and `MH02FG7423` |
+| 4 | **It is live** | "That camera is now a feed like any other — a different system from the government grid, in the same viewer. It replays a stock traffic clip once through: not footage we filmed." | Off camera, start the feed: `.venv\Scripts\python scripts\replay_publish.py --many own01=D:\projects\sentinel-footage\own01.mp4 --port 8556 --hls-port 0` (once through, its own mediamtx on 8556; the wall's feeds stay on 8554). Live Wall → the `own01` tile (from the worker's tee) beside the sandbox tiles |
+| 5 | **Nothing is recorded** | "This video is relayed, not stored. Watching is not the same as storing." | Over the live wall |
+| 6 | **Detection and the hit** | "The pipeline reads every plate it can. The watchlisted vehicle passes." | Search or Command filling with `own01` reads (`LIVE`, crops, confidences); then the alert arrives on **Alerts** from the real read: plate, crop, camera, timestamp, match type, `LIVE` |
+| 7 | **The route** | "Where else has it been? Our own camera is one location, so for the multi-camera route this is our **injected demonstration vehicle**, badged DEMO." | Route → `GJ01AB1234`: numbered pins on three cameras, the timeline with DEMO crops and timestamps. Keep the DEMO badge in shot |
+| 8 | **The report** | "Exported with timestamps and where every row came from." | Reports → Detection report (HTML), provenance column visible, `own01` rows `live` |
+
+If `own01` produces no watchlist hit in the take (OCR misreads the same plate differently pass to pass — F58), use a plate it did read as the next take's watchlist entry, from Search.
+
+## Video 2 — the government-provided feed (≤ 3 min)
+
+| # | Beat | Shows |
+|---|---|---|
+| 1 | **Onboarding** | Cameras: the 30 sandbox cameras with source **catalogue**, onboarded from the organisers' catalogue at start (`launch.py` step 6); Map shows them by department. Say: "the catalogue is the contract; nothing is hard-coded", and that departments and coordinates are seeded because the catalogue carries none |
+| 2 | **Viewing** | Live Wall → **Analysed 5**, 4-up: `LIVE · RTSP` tiles with department labels; then **Sandbox 30** to show `CDN RECORDING` tiles — never call a recording live |
+| 3 | **ANPR** | Search → a plate from *Most read live* on **cam06**: crops, confidences, timestamps, all `LIVE` |
+| 4 | **Vehicle and person detection** | Reports → *Object detection per camera* (car, motorcycle, truck, bus, person counts) |
+| 5 | **Line crossing** | Zones → cam06's *Bypass crossing line*; Reports' line-cross column (53 events on the live feed, 25 Sep) |
+| 6 | **The report** | Reports → **Detection report (HTML)** opened on screen: vehicles and plates with timestamps, camera, department and provenance |
+
+---
+
 # Demo run sheets — v2.3 (22 Sep 2026)
 
 **These two tables are the ones to record.** They replace the 15 Sep run sheet kept below, which missed what the portal actually asks for: onboarding is the **first** thing the own-feed video must show, and the government-feed video must show more analytics than ANPR. Both still run to 2–3 minutes, rehearsed with a timer, narrated over a screen recording, with no slides inside the video.

@@ -86,8 +86,8 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S5.1 | HLD corrections + PDF | Fri 25 | 2 h | [x] done Fri 25 (HLD lane): every Part C/D row fixed or retained; 6 [measured] = 6 S4.1 rows; §8 cost [model]; PDF 19 pp |
 | S5.2 | Deck with live screenshots, links, PDF; diagram PNG | Fri 25 | 2 h | [x] done Fri 25: 18 slides from live captures, claims per the corrected HLD, PDF via PowerPoint; slide 18 URL/videos pending S3.5/S5.4 |
 | S5.3 | Reports, `registry-api.json`, sample dataset, notes regenerated | Fri 25 | 1 h | [x] done Fri 25: reports/OpenAPI (35 paths)/dataset/Model-2 note from the live DB; gap report to re-run once the sandbox is back |
-| S5.4 | [Adi + Claude] Demo video 1 (own feed) and video 2 (government feed) | Fri 25 | 2 h | |
-| S5.5 | Submission checklist walk-through, credential sweep, tag `v2.0-submission` | Fri 25 | 1 h | |
+| S5.4 | [Adi + Claude] Demo video 1 (own feed) and video 2 (government feed) | Fri 25 | 2 h | [~] Claude half done Fri 25 (cloud): run sheets v2.6 in demo-script.md per F70 (a stock clip onboarded on camera and published once for the real hit; labelled demo route). Recording, the video-1 dry run and the upload are [Adi] (+ a laptop Claude session for the dry run) |
+| S5.5 | Submission checklist walk-through, credential sweep, tag `v2.0-submission` | Fri 25 | 1 h | [~] Fri 25 (cloud): README for judges, credential sweep clean (history, deliverables, images), checklist 42/60 ticked with observations, `frontend-dist.zip`, HLD NVDEC + backup wording, Part D re-walked. Open: laptop PDF renders, gap report re-run, the 18 boxes waiting on S3.5/S5.4/S6.3, the tag |
 | S6.1 | Soak + fault injection; fix blockers only (the 60 s network pull is Adi's step) | Sat 26 | 3 h | |
 | S6.1b | **Overnight hosted soak, database backups, restart watchdog** — new in v2.3 | Sat 26 | 1 h + overnight | |
 | S6.2 | [Adi] Rehearsal, fallback footage of every screen | Sat 26 | 2 h | |
@@ -450,12 +450,12 @@ git rev-parse --short main origin/main
 *Build:* with the live DB (after S4.1, demo rows present and labelled): `deliverables/detection-report.{csv,html}` (provenance column present), `deliverables/route-GJ01AB1234.{csv,html}`, `deliverables/gap-analysis-report.html`, `deliverables/registry-api.json` (re-export; no stale endpoints), `deliverables/sample-camera-dataset.csv` (registry export with the disclosure line), and a one-page `deliverables/departmental-systems-unaffected.md` (read-only pull, no writes, no control-API calls — Model 2 deliverable; HLD §2.5 is the source).
 *Acceptance:* each file opens; the detection CSV has ≥ 1 `live` row and the demo rows labelled `demo`; `registry-api.json` lists no `snapshot.jpg`.
 
-### S5.4 — [Adi + Claude] Demo videos `[ ]`
+### S5.4 — [Adi + Claude] Demo videos `[~]`
 *Read first:* `docs/demo-script.md` (both run sheets); `docs/decisions.md` C10.
 *Build:* follow `docs/demo-script.md` as rewritten in v2.3 — **video 1 opens on onboarding our own camera through the form** (the portal lists onboarding first) and its hit and route are the **real** ones from S3.6, with the injected vehicle shown only if S3.6 produced nothing, and labelled; **video 2 shows the four analytics FAQ 31 names on the government feed** (cam06 and the demo tier pulled live — F55; never a recorded copy) — ANPR with crops and timestamps, vehicle and person detection, an intrusion or line-crossing event — then the exported detection report opened on screen. Several takes; keep the best; upload unlisted.
 *Acceptance:* both files ≤ 3 min, play from a private window via the unlisted links, no credential visible in any frame (check the address bar and every terminal).
 
-### S5.5 — Submission checklist walk-through, credential sweep, tag `[ ]`
+### S5.5 — Submission checklist walk-through, credential sweep, tag `[~]`
 *Read first:* `docs/submission-checklist.md` (its editor's note maps the old pointers).
 *Build:* **rewrite the top of `README.md` for a judge** (what it is, what it needs, `python launch.py start`, signing in, the demo walkthrough, the disclosed limitations — seeded geography, the labelled demo vehicle, the tiered active set — and a short troubleshooting list), moving the session instructions under `docs/`; **verify the hosted URL and the evaluator credentials from a private window on another network** and record both in the submission form (never in the repo); then tick every box against an observation; sweep for credentials across the history, the deliverables and `data/screens`, **and watch S0.5's insurance recording for anything that shows a credential (address bar, terminal) — v2.4, Adi's call** (`git log -p | grep -E "(rtsp|https?)://[^<{/ ]+:[^<{/ *]+@"` must print only the S1.1 example if anything); every document exported to PDF; numbers labelled; the 30-vs-50 note present; `frontend/dist` zipped to `deliverables/frontend-dist.zip` (decision F30 — `dist/` itself stays ignored); `git tag -a v2.0-submission` on `main`.
 *Acceptance:* `docs/submission-checklist.md` fully ticked with a date; the tag exists on `main`; the sweep prints nothing unexpected.

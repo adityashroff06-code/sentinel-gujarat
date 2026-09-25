@@ -2,13 +2,18 @@
 
 pandoc (Anaconda) converts GFM to an HTML body; this script wraps it with
 print CSS and prints it with Playwright's Chromium (project venv).
-Usage: .venv/Scripts/python scripts/render_hld.py [<repo root> [<scratch dir>]]
-(defaults: this repo, and a temporary directory for the intermediate HTML).
+Usage: .venv/Scripts/python scripts/render_hld.py [<repo root> [<scratch dir> [<doc>]]]
+(defaults: this repo, a temporary directory for the intermediate HTML, and
+HLD.md). <doc> is any Markdown file in deliverables/ - S5.5 renders
+departmental-systems-unaffected.md the same way; the PDF takes the doc's
+stem and the footer its first "# " heading. SENTINEL_PANDOC overrides the
+pandoc path (default: Anaconda's).
 Written by the S5.1 session on 25 Sep; committed so a re-render after an
 HLD edit needs nothing outside the repo.
 """
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -19,7 +24,8 @@ import tempfile
 
 ROOT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parents[1]
 SCRATCH = Path(sys.argv[2]) if len(sys.argv) > 2 else Path(tempfile.mkdtemp(prefix="hld-"))
-PANDOC = r"D:\Anaconda\Library\bin\pandoc.exe"
+DOC = sys.argv[3] if len(sys.argv) > 3 else "HLD.md"
+PANDOC = os.environ.get("SENTINEL_PANDOC", r"D:\Anaconda\Library\bin\pandoc.exe")
 
 CSS = """
 @page { size: A4; margin: 16mm 15mm 18mm 15mm; }
@@ -62,26 +68,40 @@ FOOTER = (
     '<div style="width:100%;font-size:7.5pt;color:#6b7785;'
     'font-family:Segoe UI,Arial,sans-serif;padding:0 15mm;display:flex;'
     'justify-content:space-between;">'
-    '<span>Sentinel - Technical Proposal (HLD), revised 25 Sep 2026</span>'
+    '<span>{label}, revised 25 Sep 2026</span>'
     '<span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>'
     "</div>"
 )
 
 
+def doc_title(md_text: str) -> str:
+    """The first ``# `` heading, for the HTML title and the footer.
+    Returns "Sentinel - Technical Proposal (HLD)" for the HLD (its footer
+    wording since S5.1), else "Sentinel - <heading>"; never raises."""
+    for line in md_text.splitlines():
+        if line.startswith("# "):
+            heading = line[2:].strip().replace("Sentinel: ", "")
+            if heading.startswith("Technical Proposal"):
+                return "Sentinel - Technical Proposal (HLD)"
+            return f"Sentinel - {heading}"
+    return "Sentinel"
+
+
 def main() -> None:
-    md = ROOT / "deliverables" / "HLD.md"
+    md = ROOT / "deliverables" / DOC
+    label = doc_title(md.read_text(encoding="utf-8"))
     body = subprocess.run(
         [PANDOC, "-f", "gfm", "-t", "html5", str(md)],
         check=True, capture_output=True, text=True, encoding="utf-8",
     ).stdout
     html = (
         "<!doctype html><html lang='en'><head><meta charset='utf-8'>"
-        "<title>Sentinel: Technical Proposal (HLD)</title>"
+        f"<title>{label}</title>"
         f"<style>{CSS}</style></head><body>{body}</body></html>"
     )
-    out_html = SCRATCH / "HLD.html"
+    out_html = SCRATCH / f"{md.stem}.html"
     out_html.write_text(html, encoding="utf-8")
-    out_pdf = ROOT / "deliverables" / "HLD.pdf"
+    out_pdf = ROOT / "deliverables" / f"{md.stem}.pdf"
     with sync_playwright() as p:
         browser = p.chromium.launch()
         try:
@@ -90,7 +110,8 @@ def main() -> None:
             page.pdf(
                 path=str(out_pdf), format="A4", print_background=True,
                 display_header_footer=True, header_template="<div></div>",
-                footer_template=FOOTER, prefer_css_page_size=True,
+                footer_template=FOOTER.format(label=label),
+                prefer_css_page_size=True,
             )
         finally:
             browser.close()

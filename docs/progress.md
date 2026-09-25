@@ -4,7 +4,21 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 
 ---
 
-## Current state (25 Sep 2026, ~21:15 IST — Phase 4 closed; demo fixes, review gate and S5.1–S5.3 done)
+## Current state (25 Sep 2026, ~23:35 IST — S3.6 closed (F70); S5.4 and S5.5 done to the limit of the cloud)
+
+- **Done tonight (cloud session, branch `claude/gallant-cerf-bm3204`, draft PR adityashroff06-code/sentinel-gujarat#5):** S3.6 closed by Adi's decision F70 (stock feeds are the local demo footage; the route stays the labelled demo vehicle). **S5.5 [~]:** README rewritten for the judges (session instructions moved to `docs/sessions.md`); credential sweep **clean** (full history, deliverable text incl. PDF/PPTX, all 15 tracked images, tracked `data/`); `docs/submission-checklist.md` walked — **42/60 ticked** against observations, 18 open with owners; `deliverables/frontend-dist.zip` built (15 files, no source maps); HLD §7.3 now names the **NVDEC** ceiling and §7.5 adds **backup**; Part D re-walked and four stale "own footage" rows amended to F70; deck slide 18 takes its links from `SENTINEL_DECK_VIDEO1/_VIDEO2/_URL`; `scripts/render_hld.py` renders any deliverable Markdown. **S5.4 [~]:** run sheets v2.6 in `docs/demo-script.md` (video 1: a stock clip onboarded on camera and published once for a real hit; video 2 unchanged in substance).
+- **Laptop queue, in order (merge PR #5 into `main` first):**
+  1. `.venv\Scripts\python scripts\render_hld.py` (HLD.pdf after tonight's two edits) and `.venv\Scripts\python scripts\render_hld.py . %TEMP% departmental-systems-unaffected.md` (the Model 2 note's first PDF). Not rendered in the cloud: no Segoe UI there, so the fonts would differ.
+  2. Once the sandbox is steady: `.venv\Scripts\python scripts\export_deliverables.py` (without `--gap-note`) — the gap report was captured during the 25 Sep outage.
+  3. **Decide on `local01`'s old live reads.** "Most read live" counts every `provenance='live'` read on any camera; `MH02EZ1785` (12 reads, 1 camera, on the Command screenshot) is in stock clip 13270133 = `local01`, so those are almost certainly repeated loop passes from the 24 Sep walkthrough, before F67. Check `SELECT camera_id, COUNT(*) FROM sightings WHERE provenance='live' AND camera_id LIKE 'local%' GROUP BY 1`; keep them (the README now discloses them) or delete them after a snapshot.
+  4. **S5.4 video 1 dry run** (a laptop Claude session: 1080p `own01.mp4` with a 30 s black pre-roll, `SENTINEL_ACTIVE_CAMERAS=6`, onboard, publish once on port 8556, confirm a watchlist hit) — none of it has run yet. Then Adi records both videos in **Chrome** at `http://127.0.0.1:8000/` (the hosted URL is not needed) and uploads them unlisted.
+  4b. **README screenshots, live:** with the platform up and cam06 READING, `.venv\\Scripts\\python scripts\\capture_readme.py --user <admin>` (headed Chrome; prompts for the password) captures every screen but Zones into `docs/readme/`, two live GIFs (Command, Live Wall), and regenerates the README hero and gallery. It reports any screen captured with fewer playing tiles than wanted. Untested live: the `--gallery-only` path ran in the cloud.
+  5. After S3.5 and the uploads: `set SENTINEL_DECK_VIDEO1=… & set SENTINEL_DECK_VIDEO2=… & set SENTINEL_DECK_URL=…` → `node deliverables\deck\build_deck.js` → PDF via PowerPoint; tick the remaining boxes; `git tag -a v2.0-submission` on `main`.
+- **[Adi] queue:** ① **S3.5 go-live** (runbook §0; laptop never sleeps on AC). ② S5.4 recording + upload. ③ Watch S0.5's insurance recording for credentials (the last open part of the sweep). ④ The S2.2 20 s Wi-Fi pull.
+- **Next Claude task:** the video-1 dry run on the laptop (item 4), then **S6.1** soak Saturday; S6.1b's code half (backups, watchdog, uptime) can run in the cloud meanwhile.
+- **Blockers:** none on our side; the tag waits on S3.5's URL and S5.4's links (it marks the submitted commit).
+
+## Previous state (25 Sep 2026, ~21:15 IST — Phase 4 closed; demo fixes, review gate and S5.1–S5.3 done)
 
 - **Phase 4 is closed.** S4.1 DONE on the laptop: 10-minute live window, 5/5 cameras, 0 restarts, **GATE B PASS**, the six `[measured]` rows filled (VRAM 119 MiB on the GTX 1650, RAM peak 1749 MB, fps 0.6–1.5/cam, plate-read 0.062), and the **first zone event ever on a live feed** (cam06 crossing line: 53 `line_cross`). S4.2/S4.3 stay cut (F54).
 - **Adi's demo asks (25 Sep) are built, merged and verified on the real platform** (decisions F60–F69): every camera plays on the Live Wall through the relay — analysed cameras from their tee, the other 25 sandbox cameras from the organisers' CDN recording (**proven end to end at 20:34 IST**: cam01 played 1920 px, +4.02 s, badge CDN RECORDING), the 28 archive.zip stock clips from our mediamtx (`local01…local28`, seeded Ahmedabad/Gandhinagar coordinates, disclosed, **view-only** on the platform DB); a GIS console (Esri/OSM basemaps, department layers, FOV sectors, activity, cluster hulls, gaps, legend, record panel); **ANPR search** (exact / OCR-ambiguity / fuzzy, plates stored in coerced form — 129 live rows backfilled — DEMO-marked rendered crops, plates to try). Root causes of "no map" and "no cams": the CSP blocked every tile and every hls.js MediaSource, and the relay refused the CDN for all RTSP cameras.
@@ -1851,4 +1865,92 @@ Surprise:  None. git: origin/main = 042524e, so the Current state's
 Next:      S5.5; video 1 (S5.4) uses the labelled demo vehicle for the
            route beats (demo-script.md beats 6-7) and discloses the local
            feeds as stock footage with seeded coordinates.
+```
+
+```
+## S5.5 — PARTIAL (everything the cloud can observe is done; the laptop
+##        renders, the gap re-run and the URL/video-dependent boxes remain)
+When:      2026-09-25T18:05Z (23:35 IST), cloud session.
+Observed:  Credential sweep: `git log -p --all | grep -E
+           "(rtsp|https?)://[^<{/ ]+:[^<{/ *]+@"` prints 7 distinct URLs,
+           all test placeholders (example.com, sandbox.example,
+           1.2.3.4, 127.0.0.1, 10.0.0.5, "not-a-real-secret") - the S1.1
+           example among them; no .env ever committed; .env.example holds
+           you@example.com and empty secrets; Adi's gmail only in commit
+           author lines; literal-secret patterns (password=, Bearer,
+           private keys, ghp_, sk-, AKIA) match only FAKE_PASSWORD and a
+           token_urlsafe() call in tests. Deliverable text extracted
+           (HLD.pdf 19 pp, deck PDF 18 pp, diagram PDF 1 p, PPTX XML,
+           md/html/csv/json): no credential shape. All 15 tracked images
+           viewed: no address bar, no terminal, no secret ("API key
+           VIEWER/ADMIN" in the header is a role label).
+           Checklist: 42 of 60 ticked, each with its evidence; 18 open,
+           each naming S3.5 / S5.4 / S6.3 / a laptop step.
+           Two HLD gaps against the checklist fixed in HLD.md (PDF on
+           the laptop): NVDEC was never named (the decode ceiling was)
+           and backup was never mentioned (replication was).
+           architecture.md Part D rows on Model 1, Model 2 (two systems),
+           the route and the sandbox route still promised filmed own
+           footage - amended to F70.
+           frontend-dist.zip: npm ci + vite build of HEAD, 15 files,
+           347 KB, 0 source maps, no credential strings.
+           Deck: build_deck.js with SENTINEL_DECK_VIDEO1 set put the link
+           and its hyperlink rel on slide 18; a URL with userinfo is
+           refused; the committed pptx was restored (not rebuilt here).
+           render_hld.py generalised and run here on both documents with
+           a pip pandoc: HLD 19 pp, footer unchanged; the note 2 pp -
+           Liberation fonts in place of Segoe UI, so not committed.
+Surprise:  "Most read live" counts reads from any camera, so MH02EZ1785
+           (12 reads, 1 camera) is very likely local01 repeating a looped
+           stock clip during the 24 Sep walkthrough (the plate is in clip
+           13270133 at ~9 s). Disclosed in the README; the keep-or-delete
+           decision needs the laptop DB (Current state, item 3).
+Next:      Current state -> laptop queue.
+```
+
+```
+## S5.4 — PARTIAL (run sheets written; the dry run and the recording
+##        are the laptop's and Adi's)
+When:      2026-09-25T18:05Z (23:35 IST), cloud session.
+Observed:  docs/demo-script.md v2.6 on top of v2.3 (layered, like v2.3
+           on the 15 Sep sheet). Video 1 per F70: stock clip 13270133
+           (57 s; offline-scored plates through to the end, MH02EX1995 at
+           ~41 s conf 0.90) as a 1080p once-through feed `own01` with a
+           30 s black pre-roll, onboarded on camera through Add camera
+           (admin, transport rtsp, tier active, SENTINEL_ACTIVE_CAMERAS=6),
+           published by `replay_publish.py --many own01=... --port 8556
+           --hls-port 0` (a second mediamtx with every protocol but RTSP
+           off, so no clash with the wall's 8554/8888). The route beat is
+           the labelled demo vehicle. Checked against code: form fields,
+           transports, the supervisor's 10 s hot-add of active rows and
+           its catalogue-first cap, replay_publish flags. Nothing of it
+           has run.
+Surprise:  The wall's local feeds are 720p (F67: registered = 720p), too
+           small for the clip's ~45 px plates - hence the 1080p copy.
+Next:      laptop Claude session: dry-run video 1; Adi records in Chrome.
+```
+
+```
+## README for the judges, in the previous build's style (Adi's ask) —
+##        DONE in the cloud; the live recapture is the laptop's
+When:      2026-09-26T00:30 IST (cloud session).
+Observed:  Read github.com/adityashroff06-code/Sentinel_Repo's README (390
+           lines: centred hero + badges, governing rule, architecture,
+           screens, quickstart, API, analytics, layout, design decisions,
+           licensing, what it does not do, security, deliverables) and
+           rebuilt ours on that skeleton with this build's facts: 58
+           cameras / 5 departments / 5 analysed live, the S4.1 measured
+           table, the three relay sources, RBAC and audit, the review
+           gate, 360/92/31 tests, 84 decisions. Every claim was checked
+           against code or docs before it went in (4 corrected: camera
+           filters, the stream endpoint, the decision count, "independent").
+           scripts/capture_readme.py: live capture in headed Chrome (the
+           H.265 cameras), a screen per page except Zones, GIFs of live
+           video, and the README hero/gallery regenerated between markers
+           so the README never links a missing image. `--gallery-only` ran
+           here: 10 images from the deck's 25 Sep live captures; Login,
+           Cameras, Watchlist left out until captured. Rendered with
+           pandoc + Chromium at GitHub width: 0 broken images.
+           detection.jpg is the previous build's and is not used.
+Next:      laptop: capture_readme.py (Current state, item 4b).
 ```
