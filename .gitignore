@@ -58,3 +58,6 @@ Thumbs.db
 # Consistent DB snapshots (backend/CLAUDE.md "back up before it changes"); local only
 /data/backup/
 /data/.req_hash
+
+# Claude Code workflow worktrees (per-lane checkouts; never part of the build)
+.claude/worktrees/
