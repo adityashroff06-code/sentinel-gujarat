@@ -260,6 +260,10 @@ class PlateSuggestionOut(BaseModel):
     last_seen: str | None = None
     provenance: str | None = None
     on_watchlist: bool
+    #: which cameras read it — filled for ``top_live`` (so a caller can say
+    #: where a live read came from: the organisers' feed or a stock clip);
+    #: empty for ``demo`` and ``watchlist``
+    camera_ids: list[str] = []
 
 
 class PlateSuggestOut(BaseModel):

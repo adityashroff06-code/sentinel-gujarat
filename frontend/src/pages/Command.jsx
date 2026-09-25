@@ -33,7 +33,7 @@ const classLabel = (cls) => CLASS_LABELS[cls] || `${cls}s`
 const fetchCameras = () => api.cameras()
 const fetchLatest = () => api.sightings({ limit: 50 })
 const fetchSummary = () => api.eventsSummary(60)
-const fetchSuggest = () => api.plateSuggest(3)
+const fetchSuggest = () => api.plateSuggest(8)
 
 export default function Command() {
   const stats = usePolled('stats', api.stats, 5000)?.data
@@ -70,8 +70,25 @@ export default function Command() {
   }, [cams])
   // a real plate to try, from the live reads themselves (never hard-coded:
   // the 24 Sep suggestion named a plate this database did not hold)
+  // Prefer a plate read on an organisers' camera: a read of a looped stock
+  // clip is a real pipeline read, but not the sandbox's live traffic, and
+  // the panel names the camera either way (rule 12's spirit).
   const suggestPolled = usePolled('plates-suggest', fetchSuggest, 60000)
-  const topLive = suggestPolled?.data?.top_live?.[0] ?? null
+  const topLive = useMemo(() => {
+    const items = suggestPolled?.data?.top_live ?? []
+    const isStock = (id) => /^local/i.test(String(id))
+    const pick =
+      items.find((g) => (g.camera_ids ?? []).some((id) => !isStock(id))) ?? items[0] ?? null
+    if (!pick) return null
+    const cams = pick.camera_ids ?? []
+    const sandbox = cams.filter((id) => !isStock(id))
+    return {
+      ...pick,
+      where: sandbox.length
+        ? `on ${sandbox.join(', ')} — the organisers' live feed`
+        : `on ${cams.join(', ') || 'a local feed'} — a stock-footage feed`,
+    }
+  }, [suggestPolled])
   const pts = useMemo(
     () => cams.filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lon)),
     [cams]
@@ -141,8 +158,7 @@ export default function Command() {
                 <Link className="plate" to={`/search?plate=${encodeURIComponent(topLive.plate)}`}>
                   {topLive.plate}
                 </Link>{' '}
-                ({topLive.reads} {topLive.reads === 1 ? 'read' : 'reads'} from the live
-                pipeline)
+                ({topLive.reads} {topLive.reads === 1 ? 'read' : 'reads'} {topLive.where})
               </>
             ) : (
               ', or run an ANPR search for any full or partial plate'

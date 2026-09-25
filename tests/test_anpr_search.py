@@ -155,7 +155,7 @@ def test_suggest_lists_demo_watchlist_and_live_plates(client) -> None:
     assert len(demo) == 3
     assert demo[0] == {"plate": "GJ01AB1234", "reads": 3, "cameras": 3,
                        "last_seen": "2026-09-23T10:15:00+00:00", "provenance": "demo",
-                       "on_watchlist": True}
+                       "on_watchlist": True, "camera_ids": []}
     assert demo[1]["plate"] == "GJ01A81234" and demo[1]["on_watchlist"] is True
     assert demo[2]["on_watchlist"] is False and demo[2]["provenance"] == "demo"
     wl = body["watchlist"]
@@ -171,7 +171,8 @@ def test_suggest_lists_demo_watchlist_and_live_plates(client) -> None:
     top = client.get("/api/plates/suggest", headers=VIEWER).json()["top_live"]
     assert top == [{"plate": "GJ23H1548", "reads": 3, "cameras": 2,
                     "last_seen": (t + timedelta(minutes=9)).isoformat(),
-                    "provenance": "live", "on_watchlist": False}]
+                    "provenance": "live", "on_watchlist": False,
+                    "camera_ids": ["cam06", "cam10"]}]
 
 
 def test_plate_queries_are_audited_with_the_plate(client) -> None:

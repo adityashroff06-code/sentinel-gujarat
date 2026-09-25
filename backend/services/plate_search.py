@@ -265,13 +265,16 @@ def suggest(con: sqlite3.Connection, limit: int) -> dict[str, list[dict[str, Any
         item["last_seen"] = max(filter(None, (item["last_seen"], last_seen)), default=None)
     top_live = []
     for item in live.values():
-        item["cameras"] = len(item.pop("_cams"))
+        cams = item.pop("_cams")
+        item["cameras"] = len(cams)
+        item["camera_ids"] = sorted(cams)
         top_live.append(item)
     top_live.sort(key=lambda g: (-g["reads"], -g["cameras"], _desc(g["last_seen"]), g["plate"]))
 
     def clean(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        return [{k: g[k] for k in ("plate", "reads", "cameras", "last_seen",
-                                   "provenance", "on_watchlist")} for g in items[:limit]]
+        return [{**{k: g[k] for k in ("plate", "reads", "cameras", "last_seen",
+                                      "provenance", "on_watchlist")},
+                 "camera_ids": g.get("camera_ids", [])} for g in items[:limit]]
 
     return {"demo": clean(demo), "watchlist": clean(wl_items), "top_live": clean(top_live)}
 
