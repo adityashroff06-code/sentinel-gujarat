@@ -136,6 +136,29 @@ def test_two_agreeing_reads_commit_once_then_ocr_stops() -> None:
     assert ocr.calls == 2
 
 
+def test_committed_read_stores_coerced_plate_6J23H1548() -> None:
+    """Regression (live DB, 25 Sep): the OCR text 6J23H1548 was stored as a
+    plate beside GJ23H1548. A full read now commits its coerced form; the
+    OCR text stays in plate_raw."""
+    pipe, det, ocr = _pipeline()
+    det.boxes = [_vehicle()]
+    ocr.queue = [[PlateRead(text="6J23H1548", raw="6J 23 H 1548", conf=0.9,
+                            bbox=(0, 0, 10, 10), kind="full")]] * 2
+    pipe.process(_tick(0.0))
+    result = pipe.process(_tick(1600.0))
+    assert [(c.plate, c.plate_raw, c.kind) for c in result.committed] == [
+        ("GJ23H1548", "6J 23 H 1548", "full")]
+
+
+def test_committed_partial_read_is_stored_as_read() -> None:
+    pipe, det, ocr = _pipeline()
+    det.boxes = [_vehicle()]
+    ocr.queue = [[_read("GJ05JB432")], [_read("GJ05JB432")]]
+    pipe.process(_tick(0.0))
+    result = pipe.process(_tick(1600.0))
+    assert [(c.plate, c.kind) for c in result.committed] == [("GJ05JB432", "partial")]
+
+
 def test_ocr_budget_respects_min_gap_and_two_crops_per_frame() -> None:
     pipe, det, ocr = _pipeline()
     det.boxes = [_vehicle(0, 60), _vehicle(200, 120), _vehicle(400, 90)]

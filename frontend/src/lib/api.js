@@ -155,7 +155,9 @@ export const api = {
   streamInfo: (id) => request(`/cameras/${encodeURIComponent(id)}/stream`),
 
   // analytics
+  // params.match: contains (server default) | exact | anpr (docs/api.md §7)
   sightings: (params = {}) => request('/sightings' + qs(params)),
+  plateSuggest: (limit = 8) => request(`/plates/suggest${qs({ limit })}`),
   route: (plate) => request(`/plates/${encodeURIComponent(plate)}/route`),
   events: (params = {}) => request('/events' + qs(params)),
   eventsSummary: (minutes = 60) => request(`/events/summary${qs({ minutes })}`),

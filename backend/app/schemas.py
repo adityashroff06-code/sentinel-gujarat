@@ -223,12 +223,47 @@ class SightingOut(BaseModel):
     department: str | None = None
     location_name: str | None = None
     crop_url: str | None = None
+    # how this row matched the plate query (null without one): exact |
+    # ambiguity | fuzzy | contains; distance 0 for exact/ambiguity, the
+    # confusion-weighted distance for fuzzy, null for contains (§6)
+    match_type: Literal["exact", "ambiguity", "fuzzy", "contains"] | None = None
+    match_distance: float | None = None
+
+
+SightingMatch = Literal["contains", "exact", "anpr"]
+
+
+class SightingQueryOut(BaseModel):
+    """How the plate grammar read the query (docs/api.md §6)."""
+
+    plate: str
+    normalised: str
+    canonical: str
+    kind: Literal["full", "partial"] | None = None
+    coerced: str | None = None
 
 
 class SightingListOut(BaseModel):
     total: int
     count: int
     sightings: list[SightingOut]
+    match: SightingMatch = "contains"
+    query: SightingQueryOut | None = None
+
+
+class PlateSuggestionOut(BaseModel):
+    plate: str
+    reads: int
+    cameras: int
+    last_seen: str | None = None
+    provenance: str | None = None
+    on_watchlist: bool
+
+
+class PlateSuggestOut(BaseModel):
+    demo: list[PlateSuggestionOut]
+    watchlist: list[PlateSuggestionOut]
+    top_live: list[PlateSuggestionOut]
 
 
 class RouteStopOut(BaseModel):

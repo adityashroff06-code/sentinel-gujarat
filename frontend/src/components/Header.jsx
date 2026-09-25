@@ -12,7 +12,7 @@ const TITLES = {
   '/command': 'Command',
   '/map': 'GIS Map',
   '/wall': 'Live Wall',
-  '/search': 'Vehicle Search',
+  '/search': 'ANPR Search',
   '/alerts': 'Live Alerts',
   '/cameras': 'Camera Registry',
   '/watchlist': 'Watchlist',

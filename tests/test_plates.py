@@ -59,6 +59,53 @@ def test_is_partial():
     assert not plates.is_partial("GJ01AB1234")
 
 
+# --- coerce: the stored form of a full read (ANPR lane, 25 Sep) ------------
+# Observed on the live DB on 25 Sep: the OCR confusion and the clean read of
+# one registration were stored as two plates, so search and dedupe saw two.
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("6J23H1548", "GJ23H1548"),      # observed: 6 where the state letter G belongs
+        ("GJ1157924", "GJ11S7924"),      # observed: 5 where the series letter S belongs
+        ("GJO3XH0407", "GJ03XH0407"),    # observed: O where the district digit 0 belongs
+    ],
+    ids=["observed_6J23H1548", "observed_GJ1157924", "observed_GJO3XH0407"],
+)
+def test_coerce_resolves_observed_ocr_confusions(raw, expected):
+    assert plates.coerce(raw) == expected
+    # the stored form is one plate with its OCR twin: canonical never moves
+    assert plates.canonical(expected) == plates.canonical(raw)
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("GJ01AB1234", "GJ01AB1234"),    # already valid: unchanged
+        ("gj 01 ab 1234", "GJ01AB1234"), # normalised first
+        ("22BH1234AA", "22BH1234AA"),    # BH-series, valid
+        ("228H06418", "22BH0641B"),      # BH-series, 8->B in the literal and the letter
+        ("GJ01AB12O4", "GJ01AB1204"),    # O->0 in the number
+        ("GJ05JB432", None),             # partial (F40): never coerced to a registration
+        ("GJ01", None),                  # partial prefix
+        ("OADFIX2FR", None),             # rejected
+        ("", None),
+    ],
+)
+def test_coerce_table(raw, expected):
+    assert plates.coerce(raw) == expected
+
+
+def test_coerce_never_changes_canonical():
+    for raw in ("6J23H1548", "GJ1157924", "GJO3XH0407", "MHO1DE2432", "6J118R8190",
+                "228H06418", "GJ01A81234", "6J03P02863", "GJ01AB1234"):
+        coerced = plates.coerce(raw)
+        assert coerced is not None, raw
+        assert plates.canonical(coerced) == plates.canonical(raw), raw
+        assert plates.plate_like(coerced) == "full"
+        assert plates.coerce(coerced) == coerced          # idempotent
+
+
 @pytest.mark.parametrize(
     ("a", "b", "matched", "distance", "rule"),
     [

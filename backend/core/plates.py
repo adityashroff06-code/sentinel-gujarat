@@ -2,8 +2,11 @@
 (docs/api.md §6; decision F21). No other module may duplicate these rules.
 
 All functions accept raw or normalised input; they normalise first, so the
-grammar has a single entry point. The ambiguity map is applied only during
-canonicalisation and matching, never to the stored `plate`/`plate_raw`.
+grammar has a single entry point. The ambiguity map is applied during
+canonicalisation and matching, and — through :func:`coerce` — to the
+stored ``plate`` of a structurally full OCR read (the pipeline stores the
+coerced form so ``6J23H1548`` and ``GJ23H1548`` are one plate); it is never
+applied to ``plate_raw``, which keeps exactly what OCR returned.
 """
 
 from __future__ import annotations
@@ -64,16 +67,26 @@ def _coerce(s: str, shape: str) -> str | None:
     return "".join(out)
 
 
-def _is_full(s: str, coerce: bool) -> bool:
+def _full_form(s: str, coerce: bool) -> str | None:
+    """The full registration *s* parses as (coerced when *coerce*), or None.
+
+    At most one shape can match: shapes of one family differ in length,
+    and a same-length standard/BH pair differs at position 3 (a digit
+    versus the literal ``H``, which no ambiguity class reaches).
+    """
     for shape in _STD_SHAPES:
         candidate = _coerce(s, shape) if coerce else (s if len(s) == len(shape) else None)
         if candidate and _STD_RE.fullmatch(candidate) and candidate[:2] in STATE_CODES:
-            return True
+            return candidate
     for shape in _BH_SHAPES:
         candidate = _coerce(s, shape) if coerce else (s if len(s) == len(shape) else None)
         if candidate and _BH_RE.fullmatch(candidate):
-            return True
-    return False
+            return candidate
+    return None
+
+
+def _is_full(s: str, coerce: bool) -> bool:
+    return _full_form(s, coerce) is not None
 
 
 def plate_like(s: str) -> str | None:
@@ -95,6 +108,25 @@ def plate_like(s: str) -> str | None:
     if _is_full(s, coerce=True):
         return "full"
     return None
+
+
+def coerce(plate: str) -> str | None:
+    """The structurally coerced registration of a ``full`` read, or None.
+
+    The same position-aware coercion :func:`plate_like` performs (a digit
+    where a letter is expected becomes the letter, and the reverse), so
+    ``6J23H1548 → GJ23H1548``, ``GJ1157924 → GJ11S7924`` and
+    ``GJO3XH0407 → GJ03XH0407``. A read that is already a valid
+    registration comes back unchanged. Returns None whenever
+    ``plate_like(plate) != "full"`` — a partial read (decision F40:
+    ``GJ05JB432``) is never coerced into a different registration.
+    ``canonical(coerce(p)) == canonical(p)`` for every full *p*: coercion
+    only moves characters inside their ambiguity class.
+    """
+    s = normalise(plate)
+    if plate_like(s) != "full":
+        return None
+    return _full_form(s, coerce=False) or _full_form(s, coerce=True)
 
 
 def _matches_prefix(s: str, shape: str) -> bool:

@@ -75,7 +75,8 @@ CREATE INDEX idx_cameras_tier   ON cameras(fps_tier);
 ```sql
 CREATE TABLE sightings (
     sighting_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-    plate            TEXT NOT NULL,          -- normalised (§6)
+    plate            TEXT NOT NULL,          -- normalised (§6); a structurally full OCR read is
+                                             -- stored in its coerced form, coerce() (25 Sep)
     plate_raw        TEXT NOT NULL,          -- exactly what OCR returned; never overwritten
     plate_canonical  TEXT NOT NULL,          -- ambiguity-folded at write time (§6)
     confidence       REAL NOT NULL,          -- 0.0-1.0
@@ -89,7 +90,9 @@ CREATE TABLE sightings (
                                              -- internal xyxy is converted when the row is written)
     vehicle_class    TEXT,                   -- car | truck | bus | motorcycle | auto | unknown
                                              -- (the COCO detector emits the first four or unknown)
-    crop_path        TEXT,                   -- plate crop on disk (~2 KB)
+    crop_path        TEXT,                   -- plate crop on disk (~2 KB), forward slashes;
+                                             -- demo rows: a rendered DEMO-marked plate image,
+                                             -- data/crops/demo/<sighting_id>.jpg (25 Sep)
     frame_path       TEXT,                   -- full frame — ONLY for watchlist hits
     track_id         TEXT,                   -- within-camera tracker id
     created_at       TEXT NOT NULL
@@ -208,11 +211,12 @@ Indian plate formats: standard `SS DD L(LL) NNNN` — two-letter state, two-digi
 - `normalise(raw)`: uppercase, strip everything that is not `A-Z0-9`. Stored alongside `plate_raw`, never overwriting it.
 - `canonical(plate)`: the ambiguity map folded to one form (`O→0, I→1, S→5, B→8, Z→2, G→6, Q→0`), stored as `plate_canonical` and indexed on `sightings`, `watchlist` and `alerts`.
 - `plate_like(s)` → `full` when, after **position-aware ambiguity coercion** (where a letter is expected `0→O, 1→I, 5→S, 8→B, 2→Z, 6→G`; where a digit is expected the reverse), `s` matches the standard form `^[A-Z]{2}[0-9]{2}[A-Z]{1,3}[0-9]{4}$` with a state code in `AN AP AR AS BR CG CH DD DL DN GA GJ HP HR JH JK KA KL LA LD MH ML MN MP MZ NL OD OR PB PY RJ SK TN TR TS UK UP WB`, **or** the BH-series form `^[0-9]{2}BH[0-9]{4}[A-Z]{1,2}$`; `partial` when `s` (uncoerced) is a structural prefix of either form with length ≥ 4 and not full; otherwise `None` (rejected — e.g. burned-in captions).
+- `coerce(s)` → the registration a `full` read parses as, after that same position-aware coercion (`6J23H1548 → GJ23H1548`, `GJ1157924 → GJ11S7924`, `GJO3XH0407 → GJ03XH0407`; an already-valid plate comes back unchanged), or `None` whenever `plate_like(s) != "full"` — a partial read is never coerced into a registration (F40). Coercion moves characters only inside their ambiguity class, so `canonical(coerce(s)) == canonical(s)`. **The ANPR pipeline stores `plate = coerce(read)` for a full read** (25 Sep: the live DB held `6J23H1548` beside `GJ23H1548`, so search and dedupe saw two plates); `plate_raw` keeps the OCR text. Rows written before that are re-stored by `python -m backend.tools.renormalise_plates` (dry run by default; `--apply` snapshots with `VACUUM INTO` first; live/harvest rows only — never demo or test; `plate_canonical` asserted unchanged; a watchlist alert's `plate` copy follows its sighting). The demo seeder writes its scripted plates as given (the `GJ01A81234` near-miss is deliberate).
 - `is_partial(s)`: a read is **partial** when `plate_like(s) != "full"`. Partial reads are stored with their confidence, may appear on a route as low-confidence candidates clearly labelled, and **never fire an alert and never fuzzy-match**.
 - `plate_match(a, b)` → `(matched, distance, rule)`: `exact` (distance 0) → `ambiguity` (same length, differs only inside ambiguity classes; distance 0) → `fuzzy` (both sides `full`; **confusion-weighted edit distance** where a substitution inside an ambiguity class costs 0.25 and any other substitution or indel costs 1.0; matched when ≤ 1.0) → `none`.
 - **Alert policy (decision F21):** alerts fire on `exact` and `ambiguity`; on `fuzzy` only when `SENTINEL_ALERT_ON_FUZZY=true`. Fuzzy candidates are always shown on a route, flagged.
 
-The ambiguity map is applied only during canonicalisation and matching, never during storage of `plate`/`plate_raw`.
+The ambiguity map is applied during canonicalisation and matching, and to the stored `plate` of a full OCR read only through `coerce()`; never to `plate_raw`.
 
 ---
 
@@ -235,7 +239,8 @@ The ambiguity map is applied only during canonicalisation and matching, never du
 | POST | `/cameras` | manual onboarding (Model 1 deliverable) |
 | PATCH | `/cameras/{camera_id}` | edit metadata, ROI, zones, tier |
 | GET | `/cameras/{camera_id}/stream` | `{"hls": "/api/hls/{camera_id}/live.m3u8"}` — only backend-relayed paths, never an upstream URL |
-| GET | `/sightings` | filters `plate`, `camera_id`, `from`, `to`, `min_confidence`, `provenance`, `vehicle_class`; returns `{"total", "count", "sightings"}` with `limit` (≤ 2000) and `offset`; `total` reuses the row query's WHERE |
+| GET | `/sightings` | **ANPR search.** Filters `plate` (≤ 64 chars), `match`, `camera_id`, `from`, `to`, `min_confidence`, `provenance`, `vehicle_class`; returns `{"total", "count", "sightings", "match", "query"}` with `limit` (≤ 2000) and `offset`; `total` reuses the row query's WHERE. `match` = `contains` (default, unchanged: `plate LIKE %q%`, newest first) \| `exact` (`plate = q`) \| `anpr` — OCR-tolerant, ranked **exact → ambiguity** (`plate_canonical` equality) **→ fuzzy** (`plate_match` over the plates sharing the first 4 canonical characters, both sides `full`, weighted distance ≤ 1.0), then newest first; a **partial** `anpr` query never fuzzy-matches (§6) and instead matches as an OCR-tolerant fragment (`plate_canonical LIKE %canonical(q)%`). Every row adds `match_type` (`exact \| ambiguity \| fuzzy \| contains`, null without a plate) and `match_distance` (0 for exact/ambiguity, the confusion-weighted distance for fuzzy, null for contains); `query` = `{plate, normalised, canonical, kind, coerced}` (null without a plate). A plate query's audit row names the plate (`entity='plate_search'`, `entity_id` = the normalised plate, `after_json` = `{match, camera_id, provenance, total}`) — B12 |
+| GET | `/plates/suggest` | `?limit=` (1–50, default 8) → `{demo, watchlist, top_live}`, items `{plate, reads, cameras, last_seen, provenance, on_watchlist}` — the "plates to try" for Search: `demo` = the labelled demo plates (watchlisted first, then reads); `watchlist` = active unexpired entries (seen first, reads over every provenance joined on the canonical fold, `provenance` of the latest read, null if never seen; then severity); `top_live` = the most-read structurally full `live` plates, grouped by their coerced form. `cameras` is a count. Audited like every `/plates/*` query (B12) |
 | GET | `/plates/{plate}/route` | **the scored endpoint** — see below |
 | GET | `/watchlist` · POST · DELETE `/{id}` | watchlist CRUD (POST takes `plate, category, severity, description?, source_ref?`) |
 | GET | `/alerts` | recent alerts, filters `severity`, `acknowledged`, `kind`, `limit` |

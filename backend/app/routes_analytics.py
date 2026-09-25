@@ -33,6 +33,7 @@ from backend.app.auth import RateLimiter, require_auth, require_evaluator
 from backend.core import config, plates
 from backend.core import db as dbmod
 from backend.core.logging_setup import setup
+from backend.services import plate_search
 from backend.services.route import crop_url, reconstruct_route
 
 log = setup("api-analytics")
@@ -83,9 +84,11 @@ def _alert_dict(row: sqlite3.Row) -> dict[str, Any]:
 
 @router.get("/sightings", response_model=schemas.SightingListOut)
 def list_sightings(
+    request: Request,
     con: sqlite3.Connection = Depends(get_db),
     _: str = Depends(require_auth),
-    plate: str | None = None,
+    plate: str | None = Query(default=None, max_length=64),
+    match: schemas.SightingMatch = "contains",
     camera_id: str | None = Query(default=None, pattern=schemas.CAMERA_ID_PATTERN),
     from_: str | None = Query(default=None, alias="from"),
     to: str | None = None,
@@ -95,44 +98,43 @@ def list_sightings(
     limit: int = Query(default=200, ge=1, le=2000),
     offset: int = Query(default=0, ge=0),
 ):
-    """Search sightings with filters; paginated, newest first; ``total``
-    is computed with the same WHERE as the rows (B11)."""
-    where, params = ["s.confidence >= ?"], [min_confidence]
-    if vehicle_class:
-        where.append("s.vehicle_class = ?")
-        params.append(vehicle_class)
-    if plate:
-        where.append("s.plate LIKE ?")
-        params.append(f"%{plates.normalise(plate)}%")
-    if camera_id:
-        where.append("s.camera_id = ?")
-        params.append(camera_id)
-    if from_:
-        where.append("s.seen_at >= ?")
-        params.append(_canonical_ts(from_, "from"))
-    if to:
-        where.append("s.seen_at <= ?")
-        params.append(_canonical_ts(to, "to"))
-    if provenance:
-        where.append("s.provenance = ?")
-        params.append(provenance)
-    base = (
-        " FROM sightings s JOIN cameras c ON c.camera_id = s.camera_id WHERE "
-        + " AND ".join(where)
+    """ANPR search over sightings with filters; paginated; ``total`` is
+    computed with the same WHERE as the rows (B11).
+
+    ``match``: ``contains`` (default — newest first, unchanged), ``exact``,
+    or ``anpr`` — OCR-tolerant, ranked exact → ambiguity (canonical
+    equality) → fuzzy (the canonical-prefix bucket, both sides full,
+    weighted distance ≤ 1.0), then newest first; a partial ``anpr`` query
+    matches as an OCR-tolerant fragment. Rows carry ``match_type`` and
+    ``match_distance``; ``query`` echoes how the grammar read the plate.
+    A plate query is audited with the plate searched (B12)."""
+    body = plate_search.search_sightings(
+        con, plate=plate, match=match, camera_id=camera_id,
+        from_iso=_canonical_ts(from_, "from") if from_ else None,
+        to_iso=_canonical_ts(to, "to") if to else None,
+        min_confidence=min_confidence, provenance=provenance,
+        vehicle_class=vehicle_class, limit=limit, offset=offset,
     )
-    rows = [
-        dict(r)
-        for r in con.execute(
-            "SELECT s.*, c.department, c.location_name"
-            + base
-            + " ORDER BY s.seen_at DESC, s.sighting_id DESC LIMIT ? OFFSET ?",
-            [*params, limit, offset],
-        )
-    ]
-    total = con.execute("SELECT COUNT(*)" + base, params).fetchone()[0]
-    for r in rows:
-        r["crop_url"] = crop_url(r.get("crop_path"))
-    return {"total": total, "count": len(rows), "sightings": rows}
+    if plate:
+        # the middleware logs the path; the plate lives in the query string,
+        # so the handler names it — the ANPR-misuse audit trail (B12)
+        set_audit(request, entity="plate_search", entity_id=plates.normalise(plate),
+                  after={"match": match, "camera_id": camera_id,
+                         "provenance": provenance, "total": body["total"]})
+    return body
+
+
+@router.get("/plates/suggest", response_model=schemas.PlateSuggestOut)
+def plate_suggest(
+    con: sqlite3.Connection = Depends(get_db),
+    _: str = Depends(require_auth),
+    limit: int = Query(default=8, ge=1, le=50),
+):
+    """Plates worth typing into Search: ``demo`` (labelled demo plates,
+    watchlisted first), ``watchlist`` (active entries, seen first) and
+    ``top_live`` (most-read full live plates). Audited by the middleware
+    like every ``/api/plates/*`` query (B12)."""
+    return plate_search.suggest(con, limit)
 
 
 @router.get("/plates/{plate}/route", response_model=schemas.RouteOut)

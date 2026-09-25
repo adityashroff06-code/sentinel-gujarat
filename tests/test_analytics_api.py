@@ -37,6 +37,12 @@ CAMERAS = [
 ]
 
 
+@pytest.fixture(autouse=True)
+def _demo_crops_in_tmp(tmp_path, monkeypatch):
+    """The seeder's rendered crops go to a per-test directory."""
+    monkeypatch.setattr(demo_seed, "CROPS_ROOT", tmp_path / "crops")
+
+
 @pytest.fixture()
 def client(tmp_path, monkeypatch):
     """A migrated per-test DB with the demo cluster's geography, and a

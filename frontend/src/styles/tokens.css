@@ -58,6 +58,17 @@
   --prov-demo: #e0912f;
   --prov-test: #8a97a6;
 
+  /* ---- the number-plate look (ANPR search input; mirrors the rendered
+     demo crops, backend/tools/demo_crops.py) ---- */
+  --plate-bg: #f6f6f0;
+  --plate-ink: #111111;
+  --plate-ink-muted: #5a5a55;
+  --plate-rim: #3a3a36;
+  --plate-ind: #1e4ca0;
+  --plate-ind-ink: #ffffff;
+  --mark-fix: rgba(224, 145, 47, 0.32); /* a character the grammar corrected */
+  --fs-plate: 34px;
+
   /* ---- health ---- */
   --health-online: #39a56a;
   --health-degraded: #e0912f;
