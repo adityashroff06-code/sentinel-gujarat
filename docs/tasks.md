@@ -84,8 +84,8 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S4.2 | HLS VOD reader + harvest for a real multi-camera route | Thu 24 | 3 h | [-] cut v2.5 (F54): own footage supplies the real route; GATE C moved to S3.6 |
 | S4.3 | Pipeline 3 evidence clips | Fri 25 pm | 3 h | [-] cut v2.5 (F54): Pipeline 3 is described and validated separately, not built |
 | S5.1 | HLD corrections + PDF | Fri 25 | 2 h | [x] done Fri 25 (HLD lane): every Part C/D row fixed or retained; 6 [measured] = 6 S4.1 rows; §8 cost [model]; PDF 19 pp |
-| S5.2 | Deck with live screenshots, links, PDF; diagram PNG | Fri 25 | 2 h | |
-| S5.3 | Reports, `registry-api.json`, sample dataset, notes regenerated | Fri 25 | 1 h | |
+| S5.2 | Deck with live screenshots, links, PDF; diagram PNG | Fri 25 | 2 h | [x] done Fri 25: 18 slides from live captures, claims per the corrected HLD, PDF via PowerPoint; slide 18 URL/videos pending S3.5/S5.4 |
+| S5.3 | Reports, `registry-api.json`, sample dataset, notes regenerated | Fri 25 | 1 h | [x] done Fri 25: reports/OpenAPI (35 paths)/dataset/Model-2 note from the live DB; gap report to re-run once the sandbox is back |
 | S5.4 | [Adi + Claude] Demo video 1 (own feed) and video 2 (government feed) | Fri 25 | 2 h | |
 | S5.5 | Submission checklist walk-through, credential sweep, tag `v2.0-submission` | Fri 25 | 1 h | |
 | S6.1 | Soak + fault injection; fix blockers only (the 60 s network pull is Adi's step) | Sat 26 | 3 h | |
@@ -440,12 +440,12 @@ git rev-parse --short main origin/main
 **Added in v2.3:** a short **deployment section for the demo itself** — the platform as an edge node published over an outbound-only tunnel with TLS terminated on the device, which is the same shape as the department-side collector §2.2 already describes; **login, roles and the audit trail described as built** (F41), replacing the API-key-only wording; **§8 gains an actual estimated implementation and operating cost** (a per-node bill of materials, the pilot and the statewide figure), because the portal asks for estimated costs and §8 currently argues savings only; **every §8 figure labelled `[model]`** (₹4 crore, 0.69 TB/day, the 1,600-GPU fleet carry no label today, though line 350 claims every figure is labelled); and **ffmpeg disclosed as a GPL binary invoked as a separate process**, since the licensing paragraph says Apache/MIT/BSD throughout while the laptop runs BtbN's `win64-gpl` build. Render to `deliverables/HLD.pdf` (any clean markdown→PDF renderer; check the ASCII diagram survives).
 *Acceptance:* every row of Part C is either fixed or explicitly retained with a reason, and every row of Part D matches the HLD's wording; `grep -c "\[measured\]" deliverables/HLD.md` equals the number of measured rows in progress.md; the PDF opens and the diagram is intact.
 
-### S5.2 — Deck with live screenshots, links, PDF; diagram PNG `[ ]`
+### S5.2 — Deck with live screenshots, links, PDF; diagram PNG `[x]`
 *Read first:* `docs/reference/old-build/STATUS.md` entry "P6.5"; `deliverables/deck/build_deck.js`.
 *Build:* replace `deliverables/deck/img/{dashboard,map,route,alerts,search,zones,reports}.png` with captures from the running fresh build (`data/screens/` from S3.2/S3.3 plus a live Command with playing tiles); fill slide 18's links; rewrite every caption that says "dev capture" / "development capture" / "test scenario"; correct any slide that states tracker/auth/relay claims per S5.1; `node deliverables/deck/build_deck.js` → pptx; export PDF; export `deliverables/Sentinel-Workflow-Integration-Diagram.png` from the SVG and add the image to the root `README.md`.
 *Acceptance:* pptx opens; PDF opens; `grep -niE "dev capture|development capture|test scenario" deliverables/deck/build_deck.js` prints nothing; every image on slides 4, 6, 9, 10, 11 is from the fresh build; no credential visible in any capture.
 
-### S5.3 — Reports, API doc, sample dataset, notes regenerated `[ ]`
+### S5.3 — Reports, API doc, sample dataset, notes regenerated `[x]`
 *Build:* with the live DB (after S4.1, demo rows present and labelled): `deliverables/detection-report.{csv,html}` (provenance column present), `deliverables/route-GJ01AB1234.{csv,html}`, `deliverables/gap-analysis-report.html`, `deliverables/registry-api.json` (re-export; no stale endpoints), `deliverables/sample-camera-dataset.csv` (registry export with the disclosure line), and a one-page `deliverables/departmental-systems-unaffected.md` (read-only pull, no writes, no control-API calls — Model 2 deliverable; HLD §2.5 is the source).
 *Acceptance:* each file opens; the detection CSV has ≥ 1 `live` row and the demo rows labelled `demo`; `registry-api.json` lists no `snapshot.jpg`.
 

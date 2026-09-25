@@ -1657,3 +1657,88 @@ Observed:  deliverables/HLD.md rewritten against every S5.1 bullet and the
            CARTO, which the GIS no longer uses - corrected (58a8566).
 Next:      re-render the PDF if later tasks change what the HLD describes.
 ```
+
+```
+## S5.3 — DONE (reports, OpenAPI, sample dataset, Model 2 note regenerated
+##          from the live DB) [commit dd18db2]
+When:      2026-09-25T11:45Z (17:15 IST), deliverables agent; checked and
+           committed by the orchestrator.
+Observed:  scripts/export_deliverables.py (new; one command) wrote, from
+           data/sentinel.db read-only through the platform's own report
+           services: detection-report.{csv,html} 263 rows (239 live/rtsp-
+           live: cam06 115 + local01 124; 24 demo), route-GJ01AB1234.
+           {csv,html} 4 stops (3 exact cam06/cam10/cam09 + the ambiguity
+           near-miss), gap-analysis-report.html (58 cameras, 9 isolated),
+           registry-api.json (OpenAPI 3.1, 35 paths / 41 operations incl.
+           /api/hls/{cam}/source, /mtx/{name}, /api/cameras/activity,
+           /api/plates/suggest, sightings match=; no snapshot.jpg),
+           sample-camera-dataset.csv (58 rows with a first-line disclosure),
+           departmental-systems-unaffected.md (722 words). Credential sweep
+           of every output: no userinfo URL, no sandbox IP or CDN host.
+Surprise:  the organisers' sandbox went down mid-generation (CDN 521 from
+           16:44 IST; RTSP 401 on all five cameras 16:59-17:14 IST), so the
+           gap report shows 28 online / 30 offline-or-degraded and carries
+           a note saying why. Re-run `.venv/Scripts/python
+           scripts/export_deliverables.py` (without --gap-note) once the
+           sandbox is back for a clean snapshot.
+```
+
+```
+## S5.2 — DONE (deck rebuilt from live captures; PDF via PowerPoint)
+##          [commit 8bc9ca8]
+When:      2026-09-25T12:10Z (17:40 IST), deliverables agent; checked and
+           committed by the orchestrator.
+Observed:  Fresh 1920x1080 captures of the running platform (viewer via the
+           X-API-Key script path routed to 127.0.0.1:8000 only; admin key
+           for the Zones/Reports page views only; H.265 walls in headless
+           Chrome, the rest in Edge): Command with four playing tiles
+           (cam09/27/28 over RTSP + local01), GIS default + zoom-15 record
+           panel with FOV sectors, Local-feeds wall, Analysed wall, ANPR
+           search (top live plate, GJ11S7924 on cam06, the GJ01A81234 typo
+           finding the hero), Route, Alerts, Reports, Cameras, Zones.
+           build_deck.js: captions describe live captures (the dev-capture
+           grep prints nothing); claims follow the corrected HLD (IoU
+           tracker; login/roles/audit built; relay not recorded; Pipeline 3
+           not built; every camera on the relay wall; GIS; ANPR search; 28
+           disclosed stock feeds; WAN ~23 Mbps [model]; [measured] only for
+           S4.1). Slide 18: repo link; hosted URL and video links "to be
+           added at submission". pptxgenjs 4.0.1 installed locally under
+           deliverables/deck (node_modules ignored). 18 slides; pptx
+           10.4 MB; PDF 18 pp exported through PowerPoint (LibreOffice is
+           not on this laptop). The workflow diagram SVG text was corrected
+           to the HLD (it still said NOTHING SAVED, RT-DETR, Levenshtein,
+           2.1 Mbps/3,750x) and exported to PNG, shown in README.md.
+Next:      when S3.5 gives the hosted URL and S5.4 the videos, fill slide 18
+           and rebuild (node deliverables/deck/build_deck.js).
+```
+
+```
+## Review gate F53 over the day's diff — 19 findings, 17 confirmed, 2
+##          refuted; the critical one fixed at once [commit 69b2e4b]
+When:      2026-09-25T12:15Z-14:30Z, workflow: three finders (security /
+           backend / frontend) over d94c97b..HEAD, one skeptic per finding
+           told to refute by default.
+Observed:  CRITICAL (pre-existing since S3.1b, found by two finders
+           independently): GET /api/hls/%2E%2E/local/sentinel.db returned
+           the database - raw session ids included - to any viewer
+           credential (_SAFE_NAME admitted '..', uvicorn percent-decodes,
+           local_segment never looked the camera up). Reproduced by the
+           verifier on TestClient and a real uvicorn. Fixed: camera id must
+           match CAMERA_ID_PATTERN and exist, name must be a .ts segment,
+           the resolved path must stay inside the tee folder; regression
+           test fails on the old code, passes on the new (31 relay tests).
+           The platform is bound to 127.0.0.1 and not yet published (S3.5),
+           so no exposure beyond this laptop.
+           The other 16 (one a duplicate of the above): relay - CDN segments
+           not limited to the served window (rule 6), redirects bypassing
+           the origin guard, pacing waits while the breaker is open, re-
+           login not single-flight; backend - health filled the sandbox
+           credentials into ANY template host (an evaluator-registered
+           camera could harvest them), activity counted demo alerts as live,
+           launcher trusted a stale replay pid; frontend - 8 low/medium UI
+           defects. Refuted: seed_registry overwriting admin edits of the
+           register rows (by design: the register is the source of truth
+           for local feeds), a hull tooltip reappearing.
+Next:      the 15 fixes run in three worktree lanes (relay, backend,
+           frontend), each with a regression test.
+```
