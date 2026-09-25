@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, Tooltip } from 'react-leaflet'
+import { CircleMarker, LayersControl, MapContainer, Polyline, Popup, Tooltip } from 'react-leaflet'
 import { MatchChip, ProvenanceBadge } from '../components/Badges.jsx'
 import FitBounds from '../components/FitBounds.jsx'
+import BaseLayers from '../components/map/BaseLayers.jsx'
 import { api, deptColor, ROUTE_COLORS } from '../lib/api.js'
+import { useTileHealth } from '../lib/basemaps.js'
 import { formatTs } from '../lib/time.js'
 
 // Route — THE scored view: a registration number in, the vehicle's
@@ -32,7 +34,7 @@ export default function RoutePage() {
   const navigate = useNavigate()
   const [plate, setPlate] = useState(plateParam || '')
   const [state, setState] = useState({ status: plateParam ? 'loading' : 'idle', route: null, error: null })
-  const [tilesFailed, setTilesFailed] = useState(false)
+  const tiles = useTileHealth()
 
   const run = useCallback(async (p) => {
     if (!p) return
@@ -108,20 +110,41 @@ export default function RoutePage() {
       <div className="route-map">
         {located.length > 0 ? (
           <MapContainer center={[located[0].lat, located[0].lon]} zoom={11} scrollWheelZoom>
-            <FitBounds points={located.map((s) => [s.lat, s.lon])} />
-            <TileLayer
-              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution="&copy; OpenStreetMap contributors"
-              eventHandlers={{ tileerror: () => setTilesFailed(true) }}
-            />
+            {/* frame the route itself — a city-scale route at the old
+                zoom-12 cap sat small in the middle of the map */}
+            <FitBounds points={located.map((s) => [s.lat, s.lon])} maxZoom={15} padding={72} />
+            {/* the platform's shared basemaps (GIS lane): same look as Map */}
+            <LayersControl position="topright" collapsed>
+              <BaseLayers tileHandlers={tiles.handlers} />
+            </LayersControl>
+            {/* a dark casing under each leg keeps the route line readable
+                on every basemap, satellite and light included */}
+            {/* className is a top-level prop: Leaflet reads it only when it
+                first draws the path (pathOptions go through setStyle) */}
             {legs.map((leg) => (
               <Polyline
-                key={leg.key}
+                key={`${leg.key}-casing`}
                 positions={leg.positions}
+                interactive={false}
+                className="route-casing"
+                pathOptions={{
+                  color: ROUTE_COLORS.gap,
+                  weight: 8,
+                  opacity: 0.85,
+                  lineCap: 'round',
+                }}
+              />
+            ))}
+            {legs.map((leg) => (
+              <Polyline
+                key={`${leg.key}-${leg.dashed}`}
+                positions={leg.positions}
+                className={`route-line${leg.dashed ? ' is-gap' : ''}`}
                 pathOptions={{
                   color: leg.dashed ? ROUTE_COLORS.gap : ROUTE_COLORS.line,
-                  weight: 3,
+                  weight: 4,
                   dashArray: leg.dashed ? '6 8' : null,
+                  lineCap: 'round',
                 }}
               />
             ))}
@@ -155,7 +178,7 @@ export default function RoutePage() {
               : 'Enter a registration number to trace its route across the camera network.'}
           </div>
         )}
-        {located.length > 0 && tilesFailed && (
+        {located.length > 0 && tiles.status === 'failed' && (
           <div className="map-note" role="note">
             Basemap tiles need internet — pins, route and timeline still work.
           </div>

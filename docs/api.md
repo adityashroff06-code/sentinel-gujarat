@@ -229,6 +229,7 @@ The ambiguity map is applied only during canonicalisation and matching, never du
 | DELETE | `/session` | clears the cookie — behind auth like every non-open path (schema v2) |
 | GET | `/cameras` | list; filters `department`, `health`, `tier`, `q` |
 | GET | `/cameras/gap-analysis` | uncovered areas + ageing/offline cameras (Model 1 deliverable) — registered **before** `/{camera_id}` |
+| GET | `/cameras/activity` | `?hours=` (1–168, default 24) — the GIS Activity layer: `[{camera_id, sightings, plates, alerts, last_seen, by_provenance{live\|harvest\|demo\|test: count}}]`, one row per camera with any read or alert whose `seen_at` / `fired_at` is at or after the server's wall clock minus `hours`; idle cameras are omitted; `plates` counts distinct plates; `by_provenance` splits `sightings` so a demo read never passes as a live one (root rule 12); sorted by reads, then alerts — registered **before** `/{camera_id}` |
 | POST | `/cameras/import` | CSV bulk onboarding; per-row `accepted[] / rejected[]{row, reason}`, one transaction, no partial commit — registered **before** `/{camera_id}` |
 | GET | `/cameras/{camera_id}` | one camera, full record |
 | POST | `/cameras` | manual onboarding (Model 1 deliverable) |

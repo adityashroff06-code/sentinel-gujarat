@@ -1,7 +1,7 @@
 """Camera registry routes (docs/api.md §1, §7).
 
-Route-order trap: ``/gap-analysis`` and ``/import`` are registered
-**before** ``/{camera_id}`` so FastAPI never swallows them as ids.
+Route-order trap: ``/gap-analysis``, ``/activity`` and ``/import`` are
+registered **before** ``/{camera_id}`` so FastAPI never swallows them as ids.
 """
 
 from __future__ import annotations
@@ -9,7 +9,8 @@ from __future__ import annotations
 import csv
 import io
 import sqlite3
-from typing import Iterator
+from datetime import datetime, timedelta, timezone
+from typing import Any, Iterator
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile
 from pydantic import ValidationError
@@ -84,6 +85,47 @@ def gap_analysis(
     from backend.services import gap_analysis as service
 
     return service.generate(con)
+
+
+@router.get("/activity", response_model=list[schemas.CameraActivityOut])
+def camera_activity(
+    con: sqlite3.Connection = Depends(get_db),
+    _: str = Depends(require_auth),
+    hours: int = Query(default=24, ge=1, le=168),
+):
+    """Plate reads, distinct plates and alerts per camera over the last
+    *hours*, anchored at the server's wall clock (``seen_at`` / ``fired_at``
+    at or after now − hours). Cameras with no activity in the window are
+    omitted; ``sightings`` is split by provenance in ``by_provenance``.
+    Registered before ``/{camera_id}`` so it is never read as an id."""
+    since = dbmod.iso(datetime.now(timezone.utc) - timedelta(hours=hours))
+    out: dict[str, dict[str, Any]] = {}
+
+    def entry(camera_id: str) -> dict[str, Any]:
+        return out.setdefault(camera_id, {
+            "camera_id": camera_id, "sightings": 0, "plates": 0, "alerts": 0,
+            "last_seen": None, "by_provenance": {},
+        })
+
+    for camera_id, n, plates, last in con.execute(
+        "SELECT camera_id, COUNT(*), COUNT(DISTINCT plate), MAX(seen_at)"
+        " FROM sightings WHERE seen_at >= ? GROUP BY camera_id",
+        (since,),
+    ):
+        e = entry(camera_id)
+        e.update(sightings=n, plates=plates, last_seen=last)
+    for camera_id, provenance, n in con.execute(
+        "SELECT camera_id, provenance, COUNT(*) FROM sightings"
+        " WHERE seen_at >= ? GROUP BY camera_id, provenance",
+        (since,),
+    ):
+        entry(camera_id)["by_provenance"][provenance] = n
+    for camera_id, n in con.execute(
+        "SELECT camera_id, COUNT(*) FROM alerts WHERE fired_at >= ? GROUP BY camera_id",
+        (since,),
+    ):
+        entry(camera_id)["alerts"] = n
+    return sorted(out.values(), key=lambda e: (-e["sightings"], -e["alerts"], e["camera_id"]))
 
 
 @router.post("/import", response_model=schemas.ImportOut)

@@ -141,6 +141,9 @@ export const api = {
   cameras: (params = {}) => request('/cameras' + qs(params)),
   camera: (id) => request(`/cameras/${encodeURIComponent(id)}`),
   gapAnalysis: () => request('/cameras/gap-analysis'),
+  // GIS Activity layer: [{camera_id, sightings, plates, alerts, last_seen,
+  // by_provenance}] over the last `hours` (idle cameras omitted)
+  cameraActivity: (hours = 24) => request('/cameras/activity' + qs({ hours })),
   createCamera: (body) => request('/cameras', { method: 'POST', body }),
   patchCamera: (id, body) =>
     request(`/cameras/${encodeURIComponent(id)}`, { method: 'PATCH', body }),

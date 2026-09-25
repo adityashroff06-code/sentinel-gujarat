@@ -74,6 +74,7 @@
   --s-8: 48px;
 
   /* ---- radii ---- */
+  --r-xs: 2px;
   --r-sm: 6px;
   --r-md: 10px;
   --r-lg: 14px;
@@ -96,6 +97,27 @@
   /* ---- shadows ---- */
   --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-2: 0 6px 24px rgba(0, 0, 0, 0.5);
+
+  /* ---- GIS (Map page, Command mini-map, Route map). Leaflet paints SVG
+     presentation attributes, where var() does not resolve — so every
+     overlay path carries a className and these tokens colour it through
+     CSS, which outranks the attribute. ---- */
+  --map-bg: #0e1117;                         /* behind tiles while they load */
+  --map-panel: rgba(17, 24, 35, 0.94);       /* floating map chrome */
+  --map-panel-border: rgba(90, 116, 150, 0.35);
+  --map-halo: rgba(10, 14, 20, 0.85);        /* dark outline round pins/labels */
+  --map-halo-light: rgba(230, 237, 245, 0.92);
+  --activity: #2bc4d8;                       /* reads-in-24 h bubbles */
+  --activity-soft: rgba(43, 196, 216, 0.22);
+  --cluster-line: #9fb3cc;                   /* cluster hull outline */
+  --cluster-fill: rgba(159, 179, 204, 0.07);
+  --gap-offline: #ff5d7a;                    /* offline / degraded halo */
+  --gap-isolated: #f0b545;                   /* isolated-coverage radius */
+  --tier-ring: #f4f7fb;                      /* analysed (active tier) ring */
+  --route-casing: rgba(10, 14, 20, 0.8);     /* halo under the route line */
+  --pin-size: 14px;
+  --pin-size-local: 12px;
+  --bubble-min: 34px;
 
   /* ---- motion (a new element animates once, never loops — F53) ---- */
   --t-fast: 120ms;
