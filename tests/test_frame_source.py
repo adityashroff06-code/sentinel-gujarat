@@ -67,7 +67,7 @@ def rtsp_url_local(clip):
     rp = _load_replay_publish()
     if not rp.mediamtx_exe().exists():
         pytest.skip("mediamtx not fetched: python scripts/replay_publish.py --fetch")
-    server = rp.start_mediamtx()
+    server = rp.start_mediamtx(hls_port=0)  # RTSP only, as before HLS existed
     publisher = None
     try:
         publisher = rp.publish(clip, "test")

@@ -26,18 +26,36 @@ Two jobs, one file:
         --many default - the F58 feeds are pre-transcoded to a <= 2 s
         GOP - and --reencode opts back into libx264.
 
+    python scripts/replay_publish.py --register [--port P] [--hls-port H]
+        The wall's stock feeds (F58): every data/local_feeds.csv row whose
+        SENTINEL_FOOTAGE_DIR/feeds/<camera_id>.mp4 exists is published at
+        stream/<camera_id> on ONE mediamtx - copy mode, LOOPED (explicit
+        loop is legal for wall/demo feeds, F56; these are looped stock
+        clips, disclosed in each registry row), a dead publisher respawned
+        with jittered backoff. Missing files are skipped with a line.
+        Continuous publishing, not mediamtx runOnDemand: all 28 measured
+        25 Sep at 507 MB working set (133 MB unique) + 51 MB mediamtx.
+
+Every mode except --fetch also serves HLS from mediamtx on
+127.0.0.1:<SENTINEL_MEDIAMTX_HLS_PORT> (default 8888; --hls-port, 0 = off)
+- MPEG-TS, 2 s segments, muxed only while someone reads - the relay's
+local source for the wall tiles (http://127.0.0.1:8888/stream/<id>/index.m3u8).
+
 Importable by tests (by path, like scripts/doctor.py) for the S2.2
 harness fixture: ``start_mediamtx()`` / ``publish()`` return the Popen
 handles and the caller owns their lifetime. Reused by S3.4's launcher
 for the second-system demo feeds (``launch.py replay-start`` runs the
---many mode detached).
+--many mode detached, or --register with no clip arguments; ``launch.py
+start`` runs --register when the register and a feed file exist).
 """
 
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
+import random
 import re
 import shutil
 import socket
@@ -176,24 +194,19 @@ def _wait_port(port: int, timeout_s: float = 10.0,
     raise SystemExit(f"mediamtx did not open 127.0.0.1:{port} within {timeout_s:.0f}s")
 
 
-def start_mediamtx(port: int = DEFAULT_PORT) -> subprocess.Popen:
-    """Verify the checksum, then start mediamtx on 127.0.0.1:<port> only.
+def mediamtx_env(port: int, hls_port: int = 0) -> dict[str, str]:
+    """The MTX_* overrides start_mediamtx() applies (split out so a test
+    can assert them; every key checked against the bundled v1.21.1
+    mediamtx.yml).
 
-    Everything but RTSP is disabled through mediamtx's MTX_* environment
-    overrides, so no config file of ours to drift; the bundled default
-    mediamtx.yml supplies the rest. Caller owns the returned handle.
+    RTSP on 127.0.0.1:<port>, TCP only. ``hls_port`` > 0 also enables the
+    HLS server on 127.0.0.1:<hls_port> - MPEG-TS segments of >= 2 s (the
+    feeds carry a keyframe every 2 s, so segments are 2 s), 7 kept, the
+    muxer built only when a reader asks (no remux cost for a feed nobody
+    watches). ``hls_port`` 0 leaves HLS off. Everything else is off.
+    Nothing binds anything but loopback (root rule 11).
     """
-    verify_zip()
-    exe = mediamtx_exe()
-    if not exe.exists():
-        raise SystemExit(f"{exe} missing although the zip verified - refetch")
-    log_dir = config.log_dir()
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log = open(log_dir / "mediamtx.log", "ab")
-    import os
-
     env = {
-        **os.environ,
         "MTX_RTSPADDRESS": f"127.0.0.1:{port}",
         "MTX_RTSPTRANSPORTS": "tcp",  # env lists are comma-separated, no brackets
         # A `-re`-paced publisher can stall past the 10 s default under load
@@ -207,12 +220,50 @@ def start_mediamtx(port: int = DEFAULT_PORT) -> subprocess.Popen:
         # made Windows Firewall prompt; nothing leaves loopback (rule 11).
         "MTX_MOQ": "no",
     }
+    if hls_port:
+        env.update({
+            "MTX_HLS": "yes",
+            "MTX_HLSADDRESS": f"127.0.0.1:{hls_port}",
+            "MTX_HLSVARIANT": "mpegts",
+            "MTX_HLSSEGMENTDURATION": "2s",
+            "MTX_HLSSEGMENTCOUNT": "7",
+            "MTX_HLSALWAYSREMUX": "no",
+        })
+    return env
+
+
+def start_mediamtx(port: int = DEFAULT_PORT,
+                   hls_port: int | None = None) -> subprocess.Popen:
+    """Verify the checksum, then start mediamtx on 127.0.0.1:<port> only.
+
+    ``hls_port`` None = ``config.mediamtx_hls_port()`` (the relay's local
+    HLS source for the wall tiles); 0 = HLS off (the S2.2 test harness).
+    Everything else is disabled through mediamtx's MTX_* environment
+    overrides (:func:`mediamtx_env`), so no config file of ours to drift;
+    the bundled default mediamtx.yml supplies the rest. Returns the Popen
+    handle, which the caller owns; raises SystemExit when a port does not
+    open (held by another process, usually).
+    """
+    verify_zip()
+    exe = mediamtx_exe()
+    if not exe.exists():
+        raise SystemExit(f"{exe} missing although the zip verified - refetch")
+    if hls_port is None:
+        hls_port = config.mediamtx_hls_port()
+    log_dir = config.log_dir()
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log = open(log_dir / "mediamtx.log", "ab")
+    import os
+
+    env = {**os.environ, **mediamtx_env(port, hls_port)}
     proc = subprocess.Popen(
         [str(exe), str(TOOLS_DIR / "mediamtx.yml")],
         cwd=str(TOOLS_DIR), env=env, stdout=log, stderr=log,
     )
     try:
         _wait_port(port, proc=proc)
+        if hls_port:
+            _wait_port(hls_port, proc=proc)
     except SystemExit:
         proc.kill()
         raise
@@ -340,35 +391,52 @@ def _many_plan(pairs: list[tuple[str, Path]],
     return plan
 
 
+def restart_delay_s(attempt: int, rand: float) -> float:
+    """Root rule 7's backoff for a dead register publisher: base 2 s,
+    doubling per consecutive failure, capped at 30 s, times *rand*
+    (drawn from ``random.uniform(0.5, 1.5)`` by the caller)."""
+    return min(2.0 * 2 ** max(0, attempt - 1), 30.0) * rand
+
+
 def run_many(pairs: list[tuple[str, Path]], offsets: dict[str, float],
              port: int = DEFAULT_PORT, copy: bool = True,
-             loop: bool = False) -> int:
+             loop: bool = False, restart: bool = False,
+             hls_port: int | None = None) -> int:
     """Start mediamtx once, then each publisher at its offset.
 
     Once-through (default): a publisher exiting 0 is a finished clip;
     when all have finished, mediamtx stays up for readers until Ctrl+C
     (or the launcher's replay-stop). With ``--loop`` any publisher exit
-    is a failure, as in the single-file mode.
+    is a failure, as in the single-file mode — unless ``restart`` (the
+    ``--register`` wall feeds): then a dead publisher is respawned after
+    :func:`restart_delay_s` and the other feeds keep playing. Returns 0
+    on Ctrl+C; raises SystemExit when mediamtx dies.
     """
     for _, path in pairs:
         if not path.exists():
             raise SystemExit(f"{path}: no such file")
-    if loop:
+    if loop and not restart:
         print("WARNING: --loop repeats every clip - wall/soak tests on a"
               " TEST DB only (F56/F58); a route-feeding run publishes once"
               " with real offsets", flush=True)
     plan = _many_plan(pairs, offsets, port, copy=copy, loop=loop)
-    server = start_mediamtx(port)
+    cmds = {name: cmd for name, _, cmd in plan}
+    server = start_mediamtx(port, hls_port)
     publishers: dict[str, subprocess.Popen] = {}
+    born: dict[str, float] = {}
+    failures: dict[str, int] = {}
+    respawn_at: dict[str, float] = {}
     pending = list(plan)
     all_done_said = False
     t0 = time.monotonic()
     try:
         while True:
-            elapsed = time.monotonic() - t0
+            now = time.monotonic()
+            elapsed = now - t0
             while pending and pending[0][1] <= elapsed:
                 name, offset, cmd = pending.pop(0)
                 publishers[name] = _spawn_publisher(cmd)
+                born[name] = now
                 suffix = f" (offset {offset:.0f}s)" if offset else ""
                 print(f"publishing {name} at rtsp://127.0.0.1:{port}/stream/"
                       f"{name}{suffix}", flush=True)
@@ -377,6 +445,23 @@ def run_many(pairs: list[tuple[str, Path]], offsets: dict[str, float],
                                  " - see data/logs/mediamtx.log")
             for name, proc in publishers.items():
                 rc = proc.poll()
+                if rc is not None and restart:
+                    if name not in respawn_at:
+                        # a publisher that ran >= 60 s was healthy: reset
+                        if now - born[name] >= 60:
+                            failures[name] = 0
+                        failures[name] = failures.get(name, 0) + 1
+                        delay = restart_delay_s(failures[name],
+                                                random.uniform(0.5, 1.5))
+                        respawn_at[name] = now + delay
+                        print(f"publisher {name} exited rc={rc}; restart"
+                              f" {failures[name]} in {delay:.1f} s", flush=True)
+                    elif now >= respawn_at[name]:
+                        del respawn_at[name]
+                        publishers[name] = _spawn_publisher(cmds[name])
+                        born[name] = now
+                        print(f"publisher {name} respawned", flush=True)
+                    continue
                 if rc is not None and (loop or rc != 0):
                     raise SystemExit(f"publisher {name} exited rc={rc}"
                                      " - see data/logs/replay_publish.log")
@@ -396,6 +481,65 @@ def run_many(pairs: list[tuple[str, Path]], offsets: dict[str, float],
                 proc.wait(timeout=5)
             except Exception:  # noqa: BLE001 - best-effort teardown
                 pass
+
+
+# --- the --register mode: the committed stock-feed register on the wall ----
+
+REGISTER = REPO_ROOT / "data" / "local_feeds.csv"
+
+
+def load_register(path: Path | None = None) -> list[dict[str, str]]:
+    """The rows of ``data/local_feeds.csv`` (decision F58) as dicts."""
+    with open(path or REGISTER, encoding="utf-8", newline="") as fh:
+        return list(csv.DictReader(fh))
+
+
+def register_pairs(rows: list[dict[str, str]], feeds_dir: Path
+                   ) -> tuple[list[tuple[str, Path]], list[str]]:
+    """``(camera_id, feeds/<camera_id>.mp4)`` for every register row whose
+    transcoded feed exists, and the ids whose file is missing (printed and
+    skipped by the caller: partial coverage beats none, root section 9).
+    Ids are checked like ``--many`` names (docs/api.md B11)."""
+    pairs: list[tuple[str, Path]] = []
+    missing: list[str] = []
+    for row in rows:
+        name = row["camera_id"]
+        if not _NAME_RE.fullmatch(name):
+            raise SystemExit(f"register: camera_id '{name}' must match"
+                             " [A-Za-z0-9_-]{1,64} (docs/api.md B11)")
+        path = feeds_dir / f"{name}.mp4"
+        if path.is_file():
+            pairs.append((name, path))
+        else:
+            missing.append(name)
+    return pairs, missing
+
+
+def run_register(port: int = DEFAULT_PORT, hls_port: int | None = None,
+                 register: Path | None = None,
+                 feeds_dir: Path | None = None) -> int:
+    """Publish every register feed that exists on one mediamtx: path
+    ``stream/<camera_id>``, copy mode, LOOPED, a dead publisher respawned.
+
+    These are looped stock clips (F56 permits an explicit loop for wall and
+    demo feeds; F58): their location_name in the registry says "stock
+    footage, seeded coordinates", and a looped clip is never a filmed
+    route. Returns run_many's code; raises SystemExit when no feed exists.
+    """
+    rows = load_register(register)
+    feeds_dir = feeds_dir or (config.footage_dir() / "feeds")
+    pairs, missing = register_pairs(rows, feeds_dir)
+    for name in missing:
+        print(f"skip {name}: {feeds_dir / (name + '.mp4')} missing"
+              " (scripts/prepare_feeds.py makes it)", flush=True)
+    if not pairs:
+        raise SystemExit(f"no register feed found under {feeds_dir}"
+                         " - run scripts/prepare_feeds.py")
+    print(f"register: {len(pairs)}/{len(rows)} feeds - LOOPED STOCK CLIPS"
+          " (F56/F58: wall and demo feeds, stock footage with seeded"
+          " coordinates; never a filmed route)", flush=True)
+    return run_many(pairs, {}, port, copy=True, loop=True, restart=True,
+                    hls_port=hls_port)
 
 
 def main() -> int:
@@ -419,11 +563,28 @@ def main() -> int:
     parser.add_argument("--reencode", action="store_true",
                         help="--many only: libx264 re-encode instead of the"
                              " copy-mode default")
+    parser.add_argument("--register", action="store_true",
+                        help="publish every data/local_feeds.csv feed found"
+                             " under SENTINEL_FOOTAGE_DIR/feeds, looped, copy"
+                             " mode, one path each (the wall's stock feeds)")
+    parser.add_argument("--hls-port", type=int, default=None,
+                        help="mediamtx HLS port on 127.0.0.1 (default"
+                             " SENTINEL_MEDIAMTX_HLS_PORT; 0 = HLS off)")
     args = parser.parse_args()
 
     if args.fetch:
         fetch()
         return 0
+
+    if args.register:
+        if args.many:
+            parser.error("--register and --many conflict")
+        for flag, given in (("--offsets", args.offsets), ("--loop", args.loop),
+                            ("--reencode", args.reencode)):
+            if given:
+                parser.error(f"{flag} does not apply to --register (always"
+                             " looped, copy mode)")
+        return run_register(args.port, args.hls_port)
 
     if args.many:
         if args.copy and args.reencode:
@@ -431,7 +592,8 @@ def main() -> int:
         pairs = _parse_many(args.many)
         offsets = _parse_offsets(args.offsets, [name for name, _ in pairs])
         return run_many(pairs, offsets, args.port,
-                        copy=not args.reencode, loop=args.loop)
+                        copy=not args.reencode, loop=args.loop,
+                        hls_port=args.hls_port)
     for flag, given in (("--offsets", args.offsets), ("--loop", args.loop),
                         ("--reencode", args.reencode)):
         if given:
@@ -440,7 +602,7 @@ def main() -> int:
 
     if not Path(args.file).exists():
         raise SystemExit(f"{args.file}: no such file")
-    server = start_mediamtx(args.port)
+    server = start_mediamtx(args.port, args.hls_port)
     publisher = None
     try:
         publisher = publish(args.file, args.name, args.port, copy=args.copy)
