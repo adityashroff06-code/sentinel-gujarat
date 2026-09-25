@@ -470,11 +470,20 @@ const LIVE = "Captured from the running platform on 25 September 2026 (1920x1080
     { text: lbl, options: { bullet: true, color: C.text } },
     { text: t, options: { color: C.muted, breakLine: !last } },
   ];
+  // The links exist only at submission (S5.4 videos, S3.5 URL): set
+  // SENTINEL_DECK_VIDEO1 / _VIDEO2 / _URL and rebuild. Unset = placeholder.
+  // Never a credential: the evaluator password goes on the form only.
+  const late = (lbl, env, placeholder) => {
+    const url = (process.env[env] || "").trim();
+    if (!url) return plain(lbl, placeholder);
+    if (!/^https:\/\/[^\s@]+$/.test(url)) throw new Error(`${env} must be an https URL without credentials`);
+    return link(lbl, url, url.replace(/^https:\/\//, ""));
+  };
   s.addText([
     ...link("Source repository: ", REPO_URL, "github.com/adityashroff06-code/sentinel-gujarat"),
-    ...plain("Demo video 1 (unlisted): ", "to be added at submission"),
-    ...plain("Demo video 2 (unlisted): ", "to be added at submission"),
-    ...plain("Hosted platform: ", "to be added at submission; evaluator credentials go on the submission form only"),
+    ...late("Demo video 1 (unlisted): ", "SENTINEL_DECK_VIDEO1", "to be added at submission"),
+    ...late("Demo video 2 (unlisted): ", "SENTINEL_DECK_VIDEO2", "to be added at submission"),
+    ...late("Hosted platform: ", "SENTINEL_DECK_URL", "to be added at submission; evaluator credentials go on the submission form only"),
     ...plain("HLD (PDF): ", "deliverables/HLD.pdf in the repository", true),
   ], { x: 7.05, y: 2.05, w: 5.5, h: 2.7, fontFace: FONT, fontSize: 12, isTextBox: true, valign: "top", margin: 2, paraSpaceAfter: 6 });
   s.addText("Every link is opened from a private window before submission. The repository, its history, the videos and the screenshots are swept for credentials before submission.",

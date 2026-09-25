@@ -434,7 +434,7 @@ That is a reduction of roughly 10,000 times in WAN load [model], and it is why M
 
 The gap between the naive and the tuned figure is 6.7 times, or about 2,270 GPUs [model]. Fleet size is a consequence of engineering choices rather than a fixed cost. The measured run adds one lesson: on the laptop the binding stage was OCR on the CPU, so a production node budgets OCR on the accelerator as well as detection.
 
-**Decode usually binds before inference does.** Every stream has to be H.264 or H.265 decoded before any model sees it, and a GPU's decode engines cap out at roughly 20 to 40 concurrent 1080p30 sessions [estimate]:
+**Decode usually binds before inference does.** Every stream has to be H.264 or H.265 decoded before any model sees it, and a GPU's hardware decode engines (NVDEC on NVIDIA accelerators) cap out at roughly 20 to 40 concurrent 1080p30 sessions [estimate]. This is the NVDEC ceiling:
 
 | Decode sessions per GPU | GPUs for **decode alone** [model] |
 |---|---|
@@ -461,6 +461,7 @@ Retention honours each department's own policy for its video, which varies from 
 - **The alert path is the real single point of failure.** Detections are persisted before any alerting logic runs, so if alerting is down, events queue and replay; the demonstrated system already persists before it alerts and broadcasts from the table. End-to-end synthetic testing injects a known plate on a schedule and alarms if no alert comes back.
 - **Evidence-loss window.** Waiting 30 seconds after the event to close a promoted clip means a recovery point objective of about 30 seconds on node failure [model]. This is mitigated by writing the pre-event portion immediately and by replicating promoted clips across regions. The RPO is stated rather than left implicit.
 - **Loss of a regional data centre.** Cross-region replication for the search index and the databases. Edge nodes keep detecting and buffer their metadata for the duration of the outage.
+- **Backup, which replication is not.** Replication copies a bad write or a deletion to every replica within seconds. The registry, the watchlist, the audit log and the sighting databases are therefore also backed up as consistent point-in-time snapshots, kept off-site in the second region under the retention in section 6.2, and a restore is rehearsed on a schedule, because a backup that has never been restored is an assumption.
 
 ### 7.6 Day-2 operations
 
