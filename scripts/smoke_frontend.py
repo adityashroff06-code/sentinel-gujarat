@@ -114,6 +114,12 @@ os.environ.update(
         "SENTINEL_API_KEY_VIEWER": secrets.token_urlsafe(32),
         "SENTINEL_HEALTH_INTERVAL_S": "0",  # no background probing here
         "SENTINEL_PUBLIC_HOST": "",  # local run: cookie must not be Secure
+        # sandbox tiles now fall to the CDN relay: a smoke must never send
+        # traffic to the organisers' CDN, so empty credentials beat .env
+        # (override=False) and the origin is a closed local port
+        "SENTINEL_EMAIL": "",
+        "SENTINEL_PASSWORD": "",
+        "SENTINEL_CDN": "http://127.0.0.1:9",
     }
 )
 
@@ -603,7 +609,7 @@ def main() -> int:
             while time.monotonic() < deadline:
                 if len([u for u in hls_log if playlist_re.search(u)]) >= 4:
                     break
-                time.sleep(0.1)
+                page.wait_for_timeout(100)  # pumps request events (time.sleep does not)
             first_playlists = [playlist_re.search(u).group(1) for u in hls_log if playlist_re.search(u)]
             check(
                 len(first_playlists) == 4 and len(set(first_playlists)) == 4,
@@ -619,14 +625,14 @@ def main() -> int:
                 }
                 if len(new_cams) >= 4:
                     break
-                time.sleep(0.1)
+                page.wait_for_timeout(100)
             check(
                 len(new_cams) == 4 and new_cams.isdisjoint(first4),
                 f"paging mounted 4 new players ({sorted(new_cams)})",
             )
-            time.sleep(0.7)  # let anything already in flight settle
+            page.wait_for_timeout(700)  # let anything already in flight settle
             baseline = len([u for u in hls_log if (m := hls_re.search(u)) and m.group(1) in first4])
-            time.sleep(4.5)  # a leaked player's jittered retry would fire here
+            page.wait_for_timeout(4500)  # a leaked player's jittered retry would fire here
             after = len([u for u in hls_log if (m := hls_re.search(u)) and m.group(1) in first4])
             check(
                 after == baseline,

@@ -11,6 +11,7 @@ Every log line is masked (root rule 1).
 from __future__ import annotations
 
 import random
+import threading
 import time
 
 import httpx
@@ -24,7 +25,17 @@ _UA = (
 
 
 class CdnError(RuntimeError):
-    """The CDN refused us after retries (rate limit, auth, or outage)."""
+    """The CDN refused us after retries (rate limit, auth, or outage).
+
+    ``status`` is the last HTTP status seen (``"timeout"`` when no response
+    came back, ``"login"`` for a refused or unconfigured login, ``None`` for
+    the origin guard) so callers can tell a missing recording (404) from a
+    rate-limit ban or an outage without parsing the message.
+    """
+
+    def __init__(self, message: str, status: int | str | None = None) -> None:
+        super().__init__(message)
+        self.status = status
 
 
 def backoff_delay(attempt: int) -> tuple[float, float]:
@@ -46,6 +57,9 @@ class CdnSession:
             follow_redirects=True,
         )
         self._logged_in = False
+        # The HLS relay shares one session across request threads: only one
+        # of them logs in when the session is fresh (no login burst).
+        self._login_lock = threading.Lock()
 
     def close(self) -> None:
         self._client.close()
@@ -59,13 +73,19 @@ class CdnSession:
     def login(self) -> None:
         """POST the login form; the CDN sets the session cookie."""
         if not config.email() or not config.password():
-            raise CdnError("SENTINEL_EMAIL / SENTINEL_PASSWORD are not set (.env is Adi's)")
-        response = self._client.post(
-            f"{config.cdn()}/auth/login",
-            data={"email": config.email(), "password": config.password()},
-        )
+            raise CdnError("SENTINEL_EMAIL / SENTINEL_PASSWORD are not set (.env is Adi's)",
+                           status="login")
+        try:
+            response = self._client.post(
+                f"{config.cdn()}/auth/login",
+                data={"email": config.email(), "password": config.password()},
+            )
+        except httpx.HTTPError as exc:
+            # An unreachable CDN is a refusal like any other (callers catch
+            # CdnError); the exception text carries no credential.
+            raise CdnError(f"login unreachable: {type(exc).__name__}", status="login") from exc
         if response.status_code >= 400:
-            raise CdnError(f"login refused: HTTP {response.status_code}")
+            raise CdnError(f"login refused: HTTP {response.status_code}", status="login")
         self._logged_in = True
         self.log.info("cdn login ok (%s)", config.cdn())
 
@@ -80,8 +100,11 @@ class CdnSession:
         if url != origin and not url.startswith(origin + "/"):
             raise CdnError(f"refusing non-CDN fetch: {config.masked(url)}")
         if not self._logged_in:
-            self.login()
+            with self._login_lock:
+                if not self._logged_in:
+                    self.login()
         relogged = False
+        status: int | str = "timeout"
         for attempt in range(max_attempts):
             try:
                 response = self._client.get(url)
@@ -104,4 +127,5 @@ class CdnSession:
             )
             if attempt < max_attempts - 1:
                 time.sleep(delay)
-        raise CdnError(f"gave up after {max_attempts} attempts: {config.masked(url)}")
+        raise CdnError(f"gave up after {max_attempts} attempts: {config.masked(url)}",
+                       status=status)
