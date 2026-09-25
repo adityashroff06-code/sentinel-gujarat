@@ -102,7 +102,6 @@ export default function MapPage() {
   const byId = useMemo(() => new Map(cams.map((c) => [c.camera_id, c])), [cams])
   const located = useMemo(() => cams.filter(isLocated), [cams])
   const clusters = useMemo(() => clusterCameras(located), [located])
-  const hulls = useMemo(() => clusterHullShapes(clusters, HULL_BUFFER_KM), [clusters])
   const multiClusters = useMemo(() => clusters.filter((cl) => cl.members.length > 1), [clusters])
 
   const activity = useMemo(() => {
@@ -120,6 +119,19 @@ export default function MapPage() {
     () => located.filter((c) => on[deptKey(c.department)]),
     [located, on]
   )
+
+  // Hull outlines and their "N cameras · M departments" labels follow the
+  // department toggles exactly as the bubbles under them do: each cluster
+  // keeps only its visible members (clusterHullShapes drops any left with
+  // fewer than 2), and departments are counted by deptKey like a bubble's.
+  const hulls = useMemo(() => {
+    const shown = new Set(visible.map((c) => c.camera_id))
+    const visClusters = clusters.map((cl) => {
+      const members = cl.members.filter((c) => shown.has(c.camera_id))
+      return { ...cl, members, departments: [...new Set(members.map((c) => deptKey(c.department)))] }
+    })
+    return clusterHullShapes(visClusters, HULL_BUFFER_KM)
+  }, [clusters, visible])
 
   // Low zoom: a cluster with 2+ visible cameras becomes one count bubble;
   // a lone visible camera stays a pin. From BUBBLE_ZOOM in: all pins.
@@ -149,11 +161,17 @@ export default function MapPage() {
     return m
   }, [pinCams])
 
-  // activity circles follow what is on screen: per pin, or summed per bubble
+  // activity circles follow what is on screen: per pin, or summed per bubble.
+  // Reads and alerts add up across a bubble's cameras; distinct plates do
+  // not (a plate read on two cameras is one plate, not two), and the API
+  // gives distinct counts per camera only — so a bubble shows no
+  // distinct-plate figure rather than an overstated one (rule 8).
   const activityItems = useMemo(() => {
     const item = (key, center, label, rows) => {
       const byProv = {}
       let lastSeen = null
+      // exact only while one camera holds every read (an alerts-only row has none)
+      const reading = rows.filter((a) => a.sightings > 0)
       for (const a of rows) {
         for (const [p, n] of Object.entries(a.by_provenance || {})) byProv[p] = (byProv[p] || 0) + n
         if (a.last_seen && (!lastSeen || a.last_seen > lastSeen)) lastSeen = a.last_seen
@@ -163,7 +181,7 @@ export default function MapPage() {
         center,
         label,
         sightings: rows.reduce((s, a) => s + a.sightings, 0),
-        plates: rows.reduce((s, a) => s + a.plates, 0),
+        plates: reading.length > 1 ? null : (reading[0]?.plates ?? 0),
         alerts: rows.reduce((s, a) => s + a.alerts, 0),
         byProv,
         lastSeen,

@@ -79,6 +79,14 @@ hero's reads with match badges and loaded DEMO crops, Plates to try
 offers the hero badged DEMO, ?camera= deep-links a filter, and
 data/screens/anpr-search.png is saved at 1920x1080.
 
+Review fixes (25 Sep; regressions, one per browser-visible defect): a
+non-normalised ?plate=gj01ab1234 deep link shows GJ01AB1234 and a match-
+mode click re-runs the search; on /map no cluster bubble whose reads span
+2+ cameras claims a summed distinct-plate total, tooltip read totals equal
+the API's, and the hull labels' camera counts follow the department
+toggles (Police unticked); a wall tile whose stubbed relay says 'tee' but
+503s keeps its LIVE · RTSP badge without the pulsing live dot.
+
 The throwaway API keys and account passwords are generated per run and
 never printed (root CLAUDE.md rule 1). Exits 0 on success.
 """
@@ -414,6 +422,28 @@ def check_anpr_search(page) -> None:
         f"ANPR: ?camera=cam09 deep link filters to cam09 ({rows} rows, {cams})",
     )
 
+    # regression (review fixes, 25 Sep): a hand-typed, non-normalised
+    # ?plate= deep link. The match-mode radio compared the normalised
+    # input with the RAW URL plate, so clicking Exact only moved the radio
+    # and the ANPR results stayed on screen until Search was pressed.
+    page.goto(f"{BASE}/search?plate=gj01ab1234&match=anpr")
+    anpr_rows = count_when_stable(page.locator(".search-table tbody tr"), 4)
+    typed = page.input_value("#s-plate")
+    page.click('.segmented [data-mode="exact"]')
+    try:
+        page.wait_for_url(re.compile(r"/search\?plate=GJ01AB1234&match=exact"), timeout=10000)
+        rerun = True
+    except Exception:  # noqa: BLE001 - playwright TimeoutError: reported by check() below
+        rerun = False
+    exact_rows = count_when_stable(page.locator(".search-table tbody tr"), 3) if rerun else -1
+    exact_chips = page.locator(".search-table tbody .match-chip.match-exact").count()
+    check(
+        anpr_rows == 4 and typed == "GJ01AB1234" and rerun and exact_rows == 3 and exact_chips == 3,
+        "ANPR: from ?plate=gj01ab1234 (not normalised) the input shows GJ01AB1234 and a click on"
+        f" Exact re-runs the search ({anpr_rows} ANPR rows -> re-run {rerun}, {exact_rows} rows,"
+        f" {exact_chips} exact)",
+    )
+
     page.set_viewport_size({"width": 1920, "height": 1080})
     page.goto(f"{BASE}/search?plate=GJ01A81234&match=anpr")
     page.wait_for_selector(".plate-group", timeout=15000)
@@ -483,6 +513,127 @@ def cameras_on_map_when_stable(page, expected: int, timeout_s: float = 15.0) -> 
             return n
         time.sleep(0.25)
     return n
+
+
+#: every activity circle's tooltip text, opened one at a time by a
+#: synthetic mouseover on its SVG path (Leaflet dispatches DOM events from
+#: the map container to the layer that owns the target). A real hover
+#: would land on the cluster-bubble marker drawn over a bubble's circle.
+_ACTIVITY_TIPS_JS = """async () => {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const tipSel = '.gis-map .leaflet-tooltip.gis-tip';
+    const out = [];
+    for (const p of document.querySelectorAll('.gis-map path.gis-activity')) {
+        p.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
+        let text = '';
+        for (let i = 0; i < 40 && !text; i += 1) {
+            await sleep(25);
+            const tip = document.querySelector(tipSel);
+            text = tip ? tip.innerText.replace(/\\s+/g, ' ').trim() : '';
+        }
+        out.push(text);
+        p.dispatchEvent(new MouseEvent('mouseout', {bubbles: true}));
+        for (let i = 0; i < 40 && document.querySelector(tipSel); i += 1) await sleep(25);
+    }
+    return out;
+}"""
+
+#: plate reads per located camera from the API — the figure the tooltips
+#: must add up to (reads ARE additive across cameras)
+_ACTIVITY_READS_JS = """async () => {
+    const get = async (u) => (await fetch(u, {credentials: 'same-origin'})).json();
+    const cams = (await get('/api/cameras')).cameras;
+    const located = new Set(cams.filter((c) => c.lat != null && c.lon != null).map((c) => c.camera_id));
+    const rows = await get('/api/cameras/activity?hours=24');
+    return rows.filter((a) => located.has(a.camera_id)).reduce((s, a) => s + a.sightings, 0);
+}"""
+
+#: cluster hull labels ("<place> · N cameras · M departments") against the
+#: count bubbles drawn under them
+_HULLS_VS_BUBBLES_JS = """() => {
+    const hulls = [...document.querySelectorAll('.gis-map .leaflet-tooltip.gis-hull-label')]
+        .map((t) => { const m = t.textContent.match(/(\\d+) cameras?\\b/); return m ? Number(m[1]) : 0; });
+    const bubbles = [...document.querySelectorAll('.gis-map .cl-bubble')]
+        .map((b) => Number(b.dataset.count || 0));
+    const sum = (a) => a.reduce((s, n) => s + n, 0);
+    return {hulls: hulls.length, hullCams: sum(hulls), bubbles: bubbles.length, bubbleCams: sum(bubbles)};
+}"""
+
+
+def _gis_zoom(page) -> int:
+    """The Map page's zoom, as its status bar prints it (-1 if absent)."""
+    return int(page.evaluate(
+        "() => { const s = [...document.querySelectorAll('.gis-statusbar span')]"
+        ".find((e) => e.textContent.trim().startsWith('Zoom'));"
+        " return s ? Number(s.querySelector('b').textContent) : -1; }"
+    ))
+
+
+def check_gis_clusters(page) -> None:
+    """Review fixes (25 Sep), on /map with the demo seed injected, at a
+    zoom where count bubbles AND hull labels both show (7 <= zoom < 9):
+
+    - cluster activity tooltip: the demo hero GJ01AB1234 is read on cam06,
+      cam10 and cam09, one Junagadh cluster. Its bubble used to add the
+      three cameras' distinct-plate counts and call the sum "distinct
+      plates" (the hero counted three times). No bubble whose reads span
+      2+ cameras may claim a distinct-plate total now, and the plate-read
+      totals across every tooltip must equal the API's reads (additive).
+    - hull labels follow the department toggles: with Police unticked,
+      the "N cameras" on the hull labels must add up to the bubble counts
+      under them (they used to keep counting the hidden Police cameras).
+    """
+    page.click("#gis-fit-all")
+    page.wait_for_timeout(2500)
+    for _ in range(4):
+        z = _gis_zoom(page)
+        if z >= 9:
+            page.click(".gis-map .leaflet-control-zoom-out")
+        elif z < 7:
+            page.click(".gis-map .leaflet-control-zoom-in")
+        else:
+            break
+        page.wait_for_timeout(1200)
+    z = _gis_zoom(page)
+    check(7 <= z < 9, f"GIS: a zoom showing both count bubbles and hull labels (zoom {z})")
+
+    tips = page.evaluate(_ACTIVITY_TIPS_JS)
+    expected_reads = page.evaluate(_ACTIVITY_READS_JS)
+    shown_reads = sum(
+        int(m.group(1)) for t in tips if (m := re.search(r"(\d+) plate reads?\b", t))
+    )
+    spans = [t for t in tips if (m := re.search(r"\((\d+) active cameras\)", t)) and int(m.group(1)) >= 2]
+    summed = [t for t in spans if "distinct plate" in t]
+    check(
+        bool(spans) and not summed and shown_reads == expected_reads,
+        f"GIS: cluster activity tooltips — {len(spans)} bubble(s) spanning 2+ cameras, none claims a"
+        f" summed distinct-plate total ({summed[:1]}), plate reads add up to the API's"
+        f" ({shown_reads} == {expected_reads})",
+    )
+
+    before = page.evaluate(_HULLS_VS_BUBBLES_JS)
+    police = page.locator(".leaflet-control-layers-overlays label", has_text="Police").locator("input")
+    police.uncheck()
+    deadline = time.monotonic() + 8
+    after = before
+    while time.monotonic() < deadline:
+        after = page.evaluate(_HULLS_VS_BUBBLES_JS)
+        if after["bubbleCams"] < before["bubbleCams"]:
+            break
+        page.wait_for_timeout(100)
+    page.wait_for_timeout(600)  # let the hull labels re-render too
+    after = page.evaluate(_HULLS_VS_BUBBLES_JS)
+    police.check()
+    page.wait_for_timeout(1000)
+    check(
+        before["hulls"] == before["bubbles"] > 0
+        and before["hullCams"] == before["bubbleCams"]
+        and after["bubbleCams"] < before["bubbleCams"]
+        and after["hulls"] == after["bubbles"]
+        and after["hullCams"] == after["bubbleCams"],
+        f"GIS: hull labels follow the department toggles — all on {before};"
+        f" Police unticked {after}",
+    )
 
 
 def check_gis(page) -> None:
@@ -587,6 +738,10 @@ def check_gis(page) -> None:
             )
             check(no_hscroll(page), f"GIS: no horizontal scroll at {width}x{height}")
             page.screenshot(path=str(SCREENS / f"gis-map-{width}x{height}.png"))
+
+        # --- review fixes (25 Sep): cluster tooltips and hull labels -----
+        page.set_viewport_size({"width": 1920, "height": 1080})
+        check_gis_clusters(page)
 
         # --- zoomed into the largest cluster: one pin per camera ---------
         page.set_viewport_size({"width": 1920, "height": 1080})
@@ -936,6 +1091,40 @@ def main() -> int:
             )
             page.remove_listener("request", on_request)
             page.screenshot(path=str(SCREENS / "s33-wall.png"))
+
+            # regression (review fixes, 25 Sep): the pulsing LIVE dot shows
+            # only on a tile that is playing. One camera's relay answers are
+            # stubbed in the browser: /source says 'tee' (the worker's RTSP
+            # copy) and the playlist 503s. The badge still names the path;
+            # the animated live dot used to stay on over the error overlay.
+            dot_cam = "cam01"
+            dot_tile = f'.tile[data-camera-id="{dot_cam}"]'
+            stubs = {
+                f"**/api/hls/{dot_cam}/source": (
+                    200, f'{{"camera_id": "{dot_cam}", "source": "tee", "detail": "smoke stub"}}'),
+                f"**/api/hls/{dot_cam}/live.m3u8": (503, '{"detail": "smoke stub: tee not ready"}'),
+            }
+            def answer(status: int, body: str):
+                return lambda route: route.fulfill(
+                    status=status, content_type="application/json", body=body)
+
+            for pattern, (status, body) in stubs.items():
+                page.route(pattern, answer(status, body))
+            try:
+                page.goto(f"{BASE}/wall?cam={dot_cam}")
+                page.wait_for_selector(
+                    f"{dot_tile} .tile-state.error, {dot_tile} .tile-state.blocked", timeout=20000)
+                live_badges = page.locator(f"{dot_tile} .src-badge.src-live").count()
+                live_dots = page.locator(f"{dot_tile} .src-badge .dot").count()
+                said = page.locator(f"{dot_tile} .tile-state").inner_text()
+            finally:
+                for pattern in stubs:
+                    page.unroute(pattern)
+            check(
+                live_badges == 1 and live_dots == 0,
+                f"a tee tile that is not playing keeps its LIVE · RTSP badge but no pulsing live dot"
+                f" ({said!r}; badge {live_badges}, dot {live_dots})",
+            )
 
             # --- Zones (admin) ------------------------------------------
             page.goto(f"{BASE}/zones")
