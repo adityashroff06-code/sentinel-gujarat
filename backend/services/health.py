@@ -73,26 +73,8 @@ def tee_age_s(camera_id: str) -> float | None:
         return None
 
 
-def _is_sandbox_gateway(template: str) -> bool:
-    """True when *template* is an ``rtsp://`` URL on the configured sandbox
-    gateway (``config.stream_ip()`` : ``config.rtsp_port()``, 554 when the
-    template names no port) — the only host the organisers' credentials may
-    ever be sent to (root rule 1). A template with whitespace, control
-    characters or a backslash is refused outright, so no parser disagreement
-    between this check and ffprobe can move the credentials elsewhere."""
-    if "\\" in template or any(ord(c) <= 0x20 or ord(c) == 0x7F for c in template):
-        return False
-    try:
-        parts = urllib.parse.urlsplit(template)
-        port = parts.port if parts.port is not None else 554
-    except ValueError:
-        return False
-    gateway = config.stream_ip().strip().strip("[]").lower()
-    return (
-        parts.scheme.lower() == "rtsp"
-        and (parts.hostname or "") == gateway
-        and port == config.rtsp_port()
-    )
+#: The gateway check lives in backend.core.config (shared with the worker).
+_is_sandbox_gateway = config.is_sandbox_gateway
 
 
 def _resolve_rtsp_url(camera_id: str, template: str | None) -> str:

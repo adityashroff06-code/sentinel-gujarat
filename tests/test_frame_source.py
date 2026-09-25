@@ -290,11 +290,33 @@ def test_resolve_url_encodes_credentials_and_honours_templates(monkeypatch):
         "/stream/cam01"
     )
     assert resolve_url("cam01", None) == expected_default
-    assert resolve_url(
-        "cam01", "rtsp://<email>:<password>@10.0.0.5:8554/stream/cam01"
-    ) == "rtsp://a%40b.c:p%20w%2Bx@10.0.0.5:8554/stream/cam01"
+    gateway = f"rtsp://<email>:<password>@{config.stream_ip()}:{config.rtsp_port()}/stream/cam01"
+    assert resolve_url("cam01", gateway) == expected_default
     plain = "rtsp://127.0.0.1:8554/stream/local01"     # local URL: as-is
     assert resolve_url("local01", plain) == plain
+
+
+def test_worker_never_sends_sandbox_credentials_to_a_non_gateway_host(monkeypatch):
+    """Regression (25 Sep review gate): resolve_url filled <email>/<password>
+    into ANY template host, so a registered camera pointing at a host of
+    its choosing would receive the organisers' credentials from the worker
+    (root rule 1). Only the configured sandbox gateway gets them now; any
+    other host - another IP, another port, a userinfo trick - is returned
+    as-is, placeholders and all."""
+    monkeypatch.setenv("SENTINEL_EMAIL", "a@b.c")
+    monkeypatch.setenv("SENTINEL_PASSWORD", "secret")
+    gw, port = config.stream_ip(), config.rtsp_port()
+    for tpl in (
+        "rtsp://<email>:<password>@10.0.0.5:8554/stream/cam01",
+        f"rtsp://<email>:<password>@{gw}:9999/stream/cam01",
+        f"rtsp://<email>:<password>@evil.example/{gw}:{port}/stream/cam01",
+        f"rtsp://<email>:<password>@{gw}.evil.example:{port}/x",
+        f"rtsp://<email>:<password>@{gw}:{port} @evil.example/x",
+        "http://<email>:<password>@evil.example/x",
+    ):
+        out = resolve_url("cam77", tpl)
+        assert "secret" not in out and "a%40b.c" not in out, tpl
+        assert out == tpl
 
 
 def test_for_camera_dispatches_on_transport(clip):

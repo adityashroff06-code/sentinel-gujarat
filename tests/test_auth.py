@@ -532,3 +532,24 @@ def test_route_report_lookup_writes_an_audit_row(app):
     c.get("/api/reports/route/GJ01AB1234?format=csv")
     actions = [r["action"] for r in _audit_rows()]
     assert any(a.startswith("GET /api/reports/route/GJ01AB1234") for a in actions), actions
+
+
+def test_evaluator_cannot_onboard_an_active_or_catalogue_camera(app):
+    """Regression (25 Sep review gate): POST /api/cameras let an evaluator
+    set fps_tier='active' and source='catalogue' - the worker picks those
+    first - bypassing PATCH's admin-only tier rule. An evaluator now gets a
+    403 for either; a registered manual camera still onboards; an admin may
+    still create an active camera (the S3.6 own-footage path)."""
+    eva = _login_as(app, "eva")
+    for extra in ({"fps_tier": "active"}, {"source": "catalogue"},
+                  {"fps_tier": "active", "source": "catalogue"}):
+        body = {"camera_id": "cam91", "department": "Police", **extra}
+        r = eva.post("/api/cameras", json=body, headers=ORIGIN)
+        assert r.status_code == 403, (extra, r.status_code)
+    ok = eva.post("/api/cameras", json={"camera_id": "cam91", "department": "Police"},
+                  headers=ORIGIN)
+    assert ok.status_code == 201 and ok.json()["fps_tier"] == "registered"
+    ada = _login_as(app, "ada")
+    r = ada.post("/api/cameras", json={"camera_id": "cam92", "department": "Police",
+                                       "fps_tier": "active"}, headers=ORIGIN)
+    assert r.status_code == 201 and r.json()["fps_tier"] == "active"

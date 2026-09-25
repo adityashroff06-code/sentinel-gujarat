@@ -218,9 +218,23 @@ def create_camera(
     request: Request,
     cam: schemas.CameraIn,
     con: sqlite3.Connection = Depends(get_db),
-    _: str = Depends(require_evaluator),
+    role: str = Depends(require_evaluator),
 ):
-    """Manual camera onboarding (Model 1 deliverable); 409 on a duplicate id."""
+    """Manual camera onboarding (Model 1 deliverable); 409 on a duplicate id.
+
+    An evaluator onboards a camera as a registered, non-catalogue row; only
+    an admin may create one straight into the analysed tier or as a
+    catalogue camera (403 otherwise). 25 Sep review gate: the form let an
+    evaluator set ``fps_tier='active'`` + ``source='catalogue'``, which the
+    worker picks first — bypassing the admin-only tier rule of PATCH and,
+    before the gateway check, steering the sandbox credentials (rule 1).
+    """
+    if role != "admin" and (cam.fps_tier != "registered" or cam.source == "catalogue"):
+        raise HTTPException(
+            status_code=403,
+            detail="only an admin may onboard a camera into the analysed tier"
+                   " or as a catalogue camera",
+        )
     try:
         _insert_camera(con, cam)
         con.commit()

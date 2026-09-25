@@ -51,14 +51,26 @@ def resolve_url(camera_id: str, template: str | None) -> str:
     """The camera's RTSP URL, built in memory only (feed-rules behaviour 2).
 
     A stored template may carry ``<email>``/``<password>`` placeholders
-    (filled from the environment, percent-encoded) or be a plain local URL
-    used as-is (docs/api.md section 1). With no template, the sandbox
+    (filled from the environment, percent-encoded, and ONLY when the
+    template's host is the sandbox gateway - ``config.is_sandbox_gateway``)
+    or be a plain local URL used as-is (docs/api.md section 1). With no template, the sandbox
     pattern applies: ``rtsp://<email>:<password>@<ip>:<port>/stream/<id>``.
     Never log or store the result unmasked.
     """
     email = urllib.parse.quote(config.email(), safe="")
     password = urllib.parse.quote(config.password(), safe="")
     if template:
+        if "<email>" not in template and "<password>" not in template:
+            return template  # a plain local URL, used as-is
+        if not config.is_sandbox_gateway(template):
+            # 25 Sep review gate: a registered camera whose template names
+            # another host must never receive the organisers' credentials
+            # (root rule 1) - it is pulled as-is and fails auth, visibly.
+            setup(f"ingest.{camera_id}").warning(
+                "%s: credential placeholders on a host that is not the"
+                " sandbox gateway - pulled without credentials (rule 1)",
+                camera_id)
+            return template
         return template.replace("<email>", email).replace("<password>", password)
     return (
         f"rtsp://{email}:{password}@{config.stream_ip()}:{config.rtsp_port()}"

@@ -105,6 +105,30 @@ def session_ttl_h() -> float: return float(get("SENTINEL_SESSION_TTL_H"))
 def public_host() -> str: return get("SENTINEL_PUBLIC_HOST").strip()
 
 
+def is_sandbox_gateway(url: str) -> bool:
+    """True when *url* is an ``rtsp://`` URL on the configured sandbox
+    gateway (``stream_ip()`` : ``rtsp_port()``, 554 when the URL names no
+    port) — the ONLY host the organisers' credentials may ever be sent to
+    (root rule 1). A URL with whitespace, control characters or a backslash
+    is refused outright, so no parser disagreement between this check and
+    ffmpeg/ffprobe can move the credentials elsewhere. Shared by the API's
+    health probe and the worker's RTSP source (25 Sep review gate: both
+    filled ``<email>``/``<password>`` into any registered template host)."""
+    if "\\" in url or any(ord(ch) <= 0x20 or ord(ch) == 0x7F for ch in url):
+        return False
+    try:
+        parts = urllib.parse.urlsplit(url)
+        port = parts.port if parts.port is not None else 554
+    except ValueError:
+        return False
+    gateway = stream_ip().strip().strip("[]").lower()
+    return (
+        parts.scheme.lower() == "rtsp"
+        and (parts.hostname or "") == gateway
+        and port == rtsp_port()
+    )
+
+
 def alert_on_fuzzy() -> bool:
     return get("SENTINEL_ALERT_ON_FUZZY").strip().lower() in ("1", "true", "yes", "on")
 
