@@ -3,7 +3,8 @@
 Run from the repo root as ``.venv/Scripts/python scripts/smoke_frontend.py``.
 
 Starts the API itself (``python -m backend.app``) against a FRESH temp
-test database — seeded by ``backend.tools.seed_registry`` (30 cameras)
+test database — seeded by ``backend.tools.seed_registry`` (the 30-camera
+catalogue plus every ``data/local_feeds.csv`` stock feed)
 with a viewer and an admin account created directly through
 ``backend.core.passwords`` — and drives the BUILT frontend served by the
 API (``npm --prefix frontend run build`` first) through headless
@@ -13,8 +14,8 @@ Chromium. The SSE assertion runs through the real port, never TestClient
 S3.2 (foundation — all kept green):
 - visiting /map signed out lands on /login;
 - signing in as the viewer works and shows the role in the header;
-- /map renders one pin per camera (pins == camera count == 30);
-- /cameras shows 30 rows; the onboarding form and CSV import are HIDDEN
+- /map renders one pin per camera (pins == camera count == 30 + feeds);
+- /cameras shows every seeded row; the onboarding form and CSV import are HIDDEN
   for the viewer;
 - /watchlist hides add/remove for the viewer AND the API refuses the
   mutation (403 — hidden, then refused);
@@ -85,6 +86,7 @@ never printed (root CLAUDE.md rule 1). Exits 0 on success.
 from __future__ import annotations
 
 import base64
+import csv
 import os
 import re
 import secrets
@@ -645,7 +647,14 @@ def main() -> int:
     SCREENS.mkdir(parents=True, exist_ok=True)
 
     camera_count = seed_database()
-    check(camera_count == 30, f"fresh registry seeded with 30 cameras (got {camera_count})")
+    # seed_registry seeds the organisers' 30-camera catalogue AND, since
+    # 25 Sep, every stock feed in data/local_feeds.csv (view-only tiles)
+    with open(REPO / "data" / "local_feeds.csv", encoding="utf-8", newline="") as f:
+        n_feeds = sum(1 for _ in csv.DictReader(f))
+    expected = 30 + n_feeds
+    check(camera_count == expected,
+          f"fresh registry seeded with 30 catalogue cameras + {n_feeds} stock feeds"
+          f" (got {camera_count} of {expected})")
 
     api_proc = start_api()
     try:
@@ -678,13 +687,14 @@ def main() -> int:
             )
             page.screenshot(path=str(SCREENS / "s32-map.png"))
 
-            # /cameras: 30 rows; onboarding + import hidden for the viewer
+            # /cameras: every seeded row; onboarding + import hidden for the viewer
             page.goto(f"{BASE}/cameras")
             page.wait_for_selector(".cameras-table tbody tr", timeout=15000)
             rows = count_when_stable(
                 page.locator(".cameras-table tbody tr"), camera_count
             )
-            check(rows == 30, f"cameras table has 30 rows (got {rows})")
+            check(rows == camera_count,
+                  f"cameras table has {camera_count} rows (got {rows})")
             check(
                 page.locator("#add-camera").count() == 0
                 and page.locator("#import-csv").count() == 0,
