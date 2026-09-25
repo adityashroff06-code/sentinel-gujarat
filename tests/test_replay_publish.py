@@ -67,3 +67,66 @@ def test_publish_command_reencodes_by_default_and_copies_on_request(rp):
     i = copied.index("-c:v")
     assert copied[i + 1] == "copy" and "libx264" not in copied
     assert copied[-1] == "rtsp://127.0.0.1:8554/stream/local01"
+
+
+# --- the --many mode (task S3.4; F56/F58) — command-builder tests only, ----
+# --- nothing here binds a port or spawns a process -------------------------
+
+def test_publish_command_loops_by_default_and_once_through_on_request(rp):
+    looped = rp._publish_cmd("clip.mp4", "local01", 8554)
+    assert "-stream_loop" in looped                # S2.2 harness behaviour kept
+
+    once = rp._publish_cmd("clip.mp4", "local01", 8554, loop=False)
+    assert "-stream_loop" not in once              # F56: publish once through
+    assert once[-1] == "rtsp://127.0.0.1:8554/stream/local01"
+
+
+def test_parse_many_pairs_and_refusals(rp):
+    pairs = rp._parse_many(["local01=a.mp4", "local02=feeds/b.mp4"])
+    assert [name for name, _ in pairs] == ["local01", "local02"]
+    assert str(pairs[1][1]).endswith("b.mp4")
+
+    with pytest.raises(SystemExit, match="NAME=PATH"):
+        rp._parse_many(["local01"])                # missing '='
+    with pytest.raises(SystemExit, match="duplicate"):
+        rp._parse_many(["a=x.mp4", "a=y.mp4"])
+    with pytest.raises(SystemExit, match="B11"):
+        rp._parse_many(["bad/name=x.mp4"])         # registry would refuse it
+
+
+def test_parse_offsets_maps_real_gaps_and_refuses_junk(rp):
+    offsets = rp._parse_offsets("local02=12.5,local03=40",
+                                ["local01", "local02", "local03"])
+    assert offsets == {"local02": 12.5, "local03": 40.0}
+    assert rp._parse_offsets("", ["a"]) == {}
+
+    with pytest.raises(SystemExit, match="not a --many feed"):
+        rp._parse_offsets("nope=3", ["a"])
+    with pytest.raises(SystemExit, match="negative"):
+        rp._parse_offsets("a=-1", ["a"])
+    with pytest.raises(SystemExit, match="NAME=SECONDS"):
+        rp._parse_offsets("a", ["a"])
+    with pytest.raises(SystemExit, match="not a number"):
+        rp._parse_offsets("a=soon", ["a"])
+
+
+def test_many_plan_defaults_copy_mode_once_through_offset_sorted(rp):
+    pairs = [("local02", Path("b.mp4")), ("local01", Path("a.mp4"))]
+    plan = rp._many_plan(pairs, {"local02": 30.0}, port=8554)
+
+    assert [(name, off) for name, off, _ in plan] == [
+        ("local01", 0.0), ("local02", 30.0)]       # started in offset order
+    for _, _, cmd in plan:
+        i = cmd.index("-c:v")
+        assert cmd[i + 1] == "copy"                # F58: copy mode default
+        assert "-stream_loop" not in cmd           # F56: once through default
+    assert plan[1][2][-1] == "rtsp://127.0.0.1:8554/stream/local02"
+
+
+def test_many_plan_reencode_and_loop_are_explicit_opt_ins(rp):
+    plan = rp._many_plan([("wall", Path("w.mp4"))], copy=False, loop=True)
+    cmd = plan[0][2]
+    assert "libx264" in cmd and "-stream_loop" in cmd
+
+    with pytest.raises(SystemExit, match="unknown feed"):
+        rp._many_plan([("a", Path("a.mp4"))], {"b": 5.0})
