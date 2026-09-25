@@ -175,10 +175,16 @@ To add one (say `local29`):
      the organisers'; the seeder never touches a catalogue row anyway).
    - `lat`/`lon` inside Gujarat; `bearing_deg` 0–359 (0 = north),
      `fov_deg`, `range_m` for the GIS cone.
-   - `fps_tier`: `registered` (a view-only wall tile — the default) or
-     `active` (an ANPR worker; the worker takes catalogue cameras first,
-     then local feeds by id, up to `SENTINEL_ACTIVE_CAMERAS` — every
-     active stock feed costs worker fps).
+   - `fps_tier`: **always `registered`** on the platform database — a
+     view-only wall tile (decision of 25 Sep). A looped stock clip
+     analysed there would store the same plates again on every loop as
+     `provenance='live'` reads (root rule 12, F58); analysing a stock clip
+     belongs on a test database (`SENTINEL_DB=data/footage.db`, tier
+     `active` there). Own footage filmed for S3.6 is different — it is
+     published once with its real gaps (F56) and onboarded through the
+     add-camera form with tier `active`; the worker takes catalogue
+     cameras first, then active manual cameras by id, up to
+     `SENTINEL_ACTIVE_CAMERAS`.
    - **The disclosure is mandatory**: `location_name` must end with
      `(stock footage, seeded coordinates)` — it is how rule 12 reaches
      every screen, export and map popup that shows the name.

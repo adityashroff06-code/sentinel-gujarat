@@ -57,9 +57,11 @@ def test_register_has_28_unique_disclosed_rows_inside_gujarat():
         assert r["fps_tier"] in {"active", "registered"}
         assert 0 <= float(r["bearing_deg"]) < 360
         assert float(r["fov_deg"]) > 0 and float(r["range_m"]) > 0
-    # the worker budget: the four ANPR feeds, the rest view-only wall tiles
-    assert [r["camera_id"] for r in rows if r["fps_tier"] == "active"] == [
-        "local01", "local02", "local03", "local04"]
+    # Every stock feed is view-only on the platform database (25 Sep
+    # decision): a looped clip analysed there would store the same plates
+    # again each loop as provenance='live' reads (root rule 12, F58).
+    # Analysing a stock clip is a test-DB activity (--tier active there).
+    assert not [r["camera_id"] for r in rows if r["fps_tier"] == "active"]
 
 
 def test_every_reader_of_the_register_sees_the_same_rows():
@@ -120,11 +122,11 @@ def test_upsert_local_feeds_is_idempotent_and_keeps_ownership(con):
 
 def test_upsert_local_feeds_restores_a_drifted_local_row(con):
     seed_registry.upsert_local_feeds(con)
-    con.execute("UPDATE cameras SET fps_tier = 'registered', lat = 0, lon = 0,"
+    con.execute("UPDATE cameras SET fps_tier = 'active', lat = 0, lon = 0,"
                 " rtsp_url_template = 'rtsp://elsewhere/x' WHERE camera_id = 'local01'")
     seed_registry.upsert_local_feeds(con)
     row = con.execute("SELECT * FROM cameras WHERE camera_id = 'local01'").fetchone()
-    assert row["fps_tier"] == "active" and row["lat"] == pytest.approx(23.2156)
+    assert row["fps_tier"] == "registered" and row["lat"] == pytest.approx(23.2156)
     assert row["rtsp_url_template"] == "rtsp://127.0.0.1:8554/stream/local01"
 
 
@@ -143,7 +145,7 @@ def test_upsert_local_feeds_never_touches_sandbox_rows(con):
     con.commit()
     assert _snapshot(con, "camera_id LIKE 'cam%'") == before
     total, active, departments, ok = seed_registry.summarise(con)
-    assert (total, active, ok) == (58, 9, True)  # 5 sandbox + local01..04
+    assert (total, active, ok) == (58, 5, True)  # the 5 sandbox cameras only
 
 
 def test_upsert_local_feeds_refuses_an_id_outside_b11(con):
@@ -159,9 +161,9 @@ def test_seed_registry_main_reports_the_local_feed_count(monkeypatch, capsys,
     assert seed_registry.main() == 0
     out = capsys.readouterr().out
     assert "28/28 local stock feeds" in out and "ACCEPTANCE: PASS" in out
-    assert "58 rows, 9 active" in out
+    assert "58 rows, 5 active" in out
     assert seed_registry.main() == 0  # idempotent: same line again
-    assert "58 rows, 9 active" in capsys.readouterr().out
+    assert "58 rows, 5 active" in capsys.readouterr().out
 
 
 # --- prepare_feeds.transcode_cmd --------------------------------------------
@@ -213,10 +215,11 @@ def test_active_pick_keeps_the_five_sandbox_cameras_first(con, monkeypatch):
     _seed_like_the_laptop(con)
     monkeypatch.setenv("SENTINEL_ACTIVE_CAMERAS", "5")
     assert _active_ids(con) == ["cam06", "cam09", "cam26", "cam27", "cam28"]
-    monkeypatch.setenv("SENTINEL_ACTIVE_CAMERAS", "6")
-    assert _active_ids(con)[-1] == "local01"            # cap+1 = local01
-    monkeypatch.setenv("SENTINEL_ACTIVE_CAMERAS", "9")
-    assert _active_ids(con)[5:] == ["local01", "local02", "local03", "local04"]
+    # the stock feeds are view-only: raising the cap never hands a worker
+    # to a looped clip on the platform database
+    for cap in ("6", "9", "40"):
+        monkeypatch.setenv("SENTINEL_ACTIVE_CAMERAS", cap)
+        assert _active_ids(con) == ["cam06", "cam09", "cam26", "cam27", "cam28"]
 
 
 def test_active_pick_prefers_catalogue_cameras_whatever_their_ids(con,
@@ -231,6 +234,9 @@ def test_active_pick_prefers_catalogue_cameras_whatever_their_ids(con,
             " created_at, updated_at) VALUES (?, 'rtsp', 'active', 'catalogue', ?, ?)",
             (f"road{i:02d}", now, now))
     seed_registry.upsert_local_feeds(con)
+    # the stock feeds are view-only; an operator-onboarded ACTIVE manual
+    # camera (the S3.6 own-footage path) is what competes for the slots
+    con.execute("UPDATE cameras SET fps_tier = 'active' WHERE camera_id = 'local01'")
     con.commit()
     monkeypatch.setenv("SENTINEL_ACTIVE_CAMERAS", "6")
     assert _active_ids(con) == ["road01", "road02", "road03", "road04",

@@ -1,8 +1,8 @@
 camera_id,clip,department,location_name,lat,lon,bearing_deg,fov_deg,range_m,fps_tier
-local01,13270133_3840_2160_30fps.mp4,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",23.2156,72.6369,180,70,90,active
-local02,13269027_3840_2160_30fps.mp4,Municipal,"Sample feed 2 - market junction (stock footage, seeded coordinates)",23.2225,72.6441,135,75,80,active
-local03,13172888_3840_2160_30fps.mp4,GSRTC,"Sample feed 3 - highway approach (stock footage, seeded coordinates)",23.2288,72.6512,200,60,120,active
-local04,13105330_3840_2160_30fps.mp4,Municipal,"Sample feed 4 - flyover lane (stock footage, seeded coordinates)",23.2101,72.6296,90,65,100,active
+local01,13270133_3840_2160_30fps.mp4,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",23.2156,72.6369,180,70,90,registered
+local02,13269027_3840_2160_30fps.mp4,Municipal,"Sample feed 2 - market junction (stock footage, seeded coordinates)",23.2225,72.6441,135,75,80,registered
+local03,13172888_3840_2160_30fps.mp4,GSRTC,"Sample feed 3 - highway approach (stock footage, seeded coordinates)",23.2288,72.6512,200,60,120,registered
+local04,13105330_3840_2160_30fps.mp4,Municipal,"Sample feed 4 - flyover lane (stock footage, seeded coordinates)",23.2101,72.6296,90,65,100,registered
 local05,13268898_3840_2160_30fps.mp4,Police,"Sample feed 5 - Infocity circle Gandhinagar (stock footage, seeded coordinates)",23.1936,72.6365,45,70,90,registered
 local06,13067896_3840_2160_30fps.mp4,Municipal,"Sample feed 6 - GIFT City main gate (stock footage, seeded coordinates)",23.1606,72.6843,300,75,90,registered
 local07,12937197_3840_2160_30fps.mp4,Police,"Sample feed 7 - Sargasan cross roads (stock footage, seeded coordinates)",23.1917,72.6208,10,70,100,registered

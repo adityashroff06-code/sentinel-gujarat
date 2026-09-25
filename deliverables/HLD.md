@@ -171,7 +171,7 @@ The Map screen is the registry's GIS console. It shows every camera as a pin col
 
 A pin opens the camera's full record. The Leaflet styles are bundled with the application, so pins, sectors and routes still render when no basemap tiles can be fetched.
 
-**Map tiles are a licensing question as well as a technical one.** For the demonstration, the basemaps come from OpenStreetMap's public tile server, CARTO and Esri World Imagery, each used under its provider's terms with attribution shown on the map; OpenStreetMap's public tiles in particular are for light use and may not be bulk-downloaded or pre-seeded. None of them is a production dependency. Production serves tiles from a self-hosted tile server in the state data centre (OpenStreetMap data under the ODbL, rendered in-house) or from ISRO's Bhuvan, so the map works without the public internet and no camera location leaves the State's network inside a tile request.
+**Map tiles are a licensing question as well as a technical one.** For the demonstration, the basemaps come from OpenStreetMap's public tile server and Esri's keyless Canvas (dark and light grey) and World Imagery services, each used under its provider's terms with attribution shown on the map; OpenStreetMap's public tiles in particular are for light use and may not be bulk-downloaded or pre-seeded. None of them is a production dependency. Production serves tiles from a self-hosted tile server in the state data centre (OpenStreetMap data under the ODbL, rendered in-house) or from ISRO's Bhuvan, so the map works without the public internet and no camera location leaves the State's network inside a tile request.
 
 ### 2.3 The connector ladder: direct pull (Model 2) and federation (Model 3)
 

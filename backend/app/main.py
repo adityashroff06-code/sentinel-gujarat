@@ -53,7 +53,7 @@ _CSV_NEWLINE_SLACK = 20
 _CSP = (
     "default-src 'self'; "
     "img-src 'self' data: blob: https://tile.openstreetmap.org "
-    "https://*.basemaps.cartocdn.com https://server.arcgisonline.com; "
+    "https://server.arcgisonline.com; "
     "media-src 'self' blob:; "
     "worker-src 'self' blob:; "
     "style-src 'self' 'unsafe-inline'; "
