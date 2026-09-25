@@ -14,7 +14,7 @@ before and around the venv; everything it spawns runs as
     python launch.py demo-clear    # remove only the demo rows (demo_seed purge)
     python launch.py replay-start  # second system (F9/F19/F58): mediamtx + local feeds
     python launch.py replay-stop   # stop the replay publisher tree
-    python launch.py measure       # stub - built in S4.1
+    python launch.py measure       # S4.1/F18 window sampler (--minutes 10)
     python launch.py harvest       # stub - cut in v2.5 (F54)
 
 Ported from ``D:\\projects\\Sentinel_Repo\\launch.py`` (decision F52): the
@@ -90,7 +90,9 @@ modes:
   demo-clear    remove only the demo rows (backend.tools.demo_seed purge)
   replay-start  second system (F9/F19/F58): scripts/replay_publish.py --many, detached
   replay-stop   stop the replay publisher tree (recorded PID only)
-  measure       stub - built in S4.1
+  measure       S4.1/F18 window sampler against the RUNNING platform
+                (start first, warm up >= 10 min): --minutes 10 --sample-s 5;
+                writes data/measurements/<timestamp>.{json,md} (committed)
   harvest       stub - cut in v2.5 (F54)
 """
 
@@ -792,9 +794,23 @@ def demo(extra: list[str], clear: bool = False) -> int:
     return 0
 
 
-def measure() -> int:
-    say("measure: built in S4.1 - the 10-minute measured run is not implemented yet (F18)")
-    return 0
+def _measure_cmd(vp: Path, extra: list[str]) -> list[str]:
+    """The argv measure spawns (split out so a test can assert it)."""
+    return [str(vp), "-m", "ml.tools.measure_run", *extra]
+
+
+def measure(extra: list[str]) -> int:
+    """S4.1's F18 window sampler, in the foreground (its countdown and
+    the final table are the product). Run it against a platform that
+    `launch.py start` brought up >= 10 min ago (the warm-up); pass
+    `--minutes N`, `--sample-s N` or `--allow-cold` through."""
+    vp = venv_python()
+    if vp is None:
+        die("no .venv yet - run `python launch.py start` once first")
+    if not PIDFILE.exists():
+        die("no running platform recorded (data/launcher_pids.txt)"
+            " - python launch.py start first, warm up >= 10 min, then measure")
+    return run(_measure_cmd(vp, extra))
 
 
 def harvest() -> int:
@@ -892,13 +908,15 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     mode, extra = argv[0].lower(), argv[1:]
     plain = {"check": check, "start": start, "stop": stop, "status": status,
-             "measure": measure, "harvest": harvest, "replay-stop": replay_stop}
+             "harvest": harvest, "replay-stop": replay_stop}
     if mode in plain:
         if extra:
             say(f"launch.py {mode} takes no arguments")
             say(USAGE)
             return 2
         return plain[mode]()
+    if mode == "measure":
+        return measure(extra)
     if mode == "demo":
         return demo(extra)
     if mode == "demo-clear":

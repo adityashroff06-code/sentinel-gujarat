@@ -4,7 +4,17 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 
 ---
 
-## Current state (25 Sep 2026, ~08:00 UTC / 13:30 IST — PHASE 3 COMPLETE except the [Adi]-physical steps)
+## Current state (25 Sep 2026 — Phase 3 validated complete; S4.1 code half done, its live run is the laptop's)
+
+- **Phase 3 stands validated** (this session re-checked the ledger, the gate table, the tree and the suite): S3.0, S3.7, S3.1a, S3.1b, S3.2, S3.3, S3.3b, S3.4 all `[x]` with acceptance runs and commits; **GATE C PASS** (labelled demo vehicle); the only open Phase 3 items are physically Adi's — **S3.5 go-live** (runbook §0: Funnel trial, accounts, `SENTINEL_PUBLIC_HOST`, ~15 min) and **S3.6 filming**. Neither blocks Phase 4/5.
+- **S4.1 is PARTIAL — the build half is done and tested** (this cloud session, branch `claude/sentinel-progress-check-rrtp9n`, draft PR): `python launch.py measure --minutes 10` now runs the F18 window sampler ported from the old build (`ml/tools/measure_run.py`), the worker counts `ocr_attempts` / `full_reads` / `vehicle_tracks` for the plate-read rate, `GET /api/workers` documents them, and 13 new tests cover it. **The run half is the laptop's**: probe → `launch.py start` (demo tier, F55) → ≥ 10 min warm-up → `launch.py measure --minutes 10` → paste the printed table into "Key measurements" → zone check → fill **GATE B**. Steps are in the S4.1 Log block below.
+- **Suites:** this container **240 passed, 5 skipped, 0 failed** (the 5 are Windows-only mediamtx/PATHEXT; parity with the laptop's 232). After merging, the laptop should show **245 passed, 0 skipped**.
+- **Git:** merge the S4.1 PR into `main` before the laptop run. The evidence files the sampler writes (`data/measurements/<ts>.{json,md}`) are committed on purpose.
+- **[Adi] queue (unchanged plus one):** ① S3.5 go-live — `docs/runbook-hosting.md` §0 (~15 min). ② S3.6 — film the one-vehicle route. ③ The S2.2 20 s Wi-Fi pull. ④ `SENTINEL_ACTIVE_CAMERAS=6` in `.env`. ⑤ [Adi verify] the five hero screens in Chrome. ⑥ Merge the S4.1 PR, then run the S4.1 run half on the laptop (or hand it to a laptop Claude session).
+- **Next Claude session: S5.1** (HLD corrections — GATE D says documents start whatever the code state; nothing waits on S4.1's numbers, the HLD's `[measured]` rows are filled when the laptop run lands). The laptop lane owns the S4.1 measure run.
+- **Blockers:** none.
+
+## Previous state (25 Sep 2026, ~08:00 UTC / 13:30 IST — PHASE 3 COMPLETE except the [Adi]-physical steps)
 
 - **Phase 3 was completed in one autonomous overnight run on the laptop** (Adi's direction, 24 Sep — decisions F58, F59; the F57 lanes are collapsed, their reason gone with Phase 2 closed). Done, each with its acceptance run, its own commit and its Log block below: **S3.0** (login/roles/sessions/hardening, schema v2), **S3.7** (catalogue adapter + new-feeds runbook), **S3.1a** (analytics API + route + SSE), **S3.1b** (reports, relay, health, OpenAPI re-export), **S3.2** (frontend foundation + login hero + Playwright smoke), **S3.3** (all seven operations screens, smoke 43), **S3.3b** (design pass + the F53 review gate: /security-review 0 findings; /code-review high 7 findings — 6 fixed, 1 answered; smoke 67), **S3.4** (launcher + second system + a 26-min live end-to-end walkthrough). **S3.5 is PARTIAL** (runbook written; the Funnel trial, accounts and checks are [Adi]). **S3.6 waits on Adi's filming** (GATE C is already passed by the labelled demo vehicle — see the gate table).
 - **The sample-footage feeds are integrated** (F58): Adi's 28 stock CCTV clips were scored by the real detector+OCR (`scripts/analyze_footage.py` — 24 distinct full Indian plates), the best 4 transcoded to 1080p30 and published over mediamtx with the new copy mode as `local01..local04` (registered in `sentinel.db` with disclosed seeded coordinates). A verification run on `footage.db` produced 21 live-path sightings and **3 real alerts (2 exact + 1 ambiguity fold)**; the S3.4 walkthrough then ran **both systems in one worker set** — 5 live sandbox cameras + local01 — for 26 min: 0 restarts, 137 sightings (13 REAL reads on live cam06), clean stop, no orphans.
@@ -1405,5 +1415,80 @@ Observed:  .venv/Scripts/python -m pytest -q -> **232 passed, 0 failed
            cdn_session 3, launcher 9, replay-publish +7 incl. --many),
            including the mediamtx harness. Phase 3 closes verified.
 Next:      S4.1 (GATE B measurement); Phase 5 documents (GATE D).
+```
+
+```
+## S4.1 — PARTIAL (F18 sampler ported, wired and tested; the probe, the
+##                 live 10-minute run and the GATE B decision are laptop-only)
+When:      2026-09-25T06:45Z per this cloud container's clock — NOTE this
+           box reads ~1.5 h EARLIER than the laptop blocks above (clock
+           skew between machines); blocks stay in append order.
+Observed:  Cloud container (Linux, python 3.11.15, no GPU, no .env, no
+           sandbox reach), branch claude/sentinel-progress-check-rrtp9n.
+           Phase 3 first validated against the ledger, the gate table and
+           the tree: all eight build tasks [x] with acceptance runs and
+           commits, GATE C recorded PASS (labelled demo vehicle), S3.5
+           [~] runbook-only and S3.6 open — both [Adi]-physical; nothing
+           blocks Phase 4. S4.2/S4.3 stay cut (F54), so Phase 4 = S4.1.
+           Built (the F52 port): ml/tools/measure_run.py ported from the
+           old build's src/tools/measure_run.py (cloned the GitHub mirror
+           read-only; the D:\ path is unreachable here). Adaptations and
+           defect fixes, each named in the module docstring: samples the
+           ALREADY RUNNING platform via data/launcher_pids.txt + psutil
+           process trees (launch.py start owns spawning since S3.4; the
+           old tool spawned its own and read Windows tasklist CSV);
+           deltas over the measurement WINDOW only (the old aggregate
+           divided whole-run counters by whole-run uptime, so warm-up
+           dragged every sustained number down — F18 wants the
+           post-warm-up window); restarts from the supervisor's
+           cumulative counter delta, with per-camera counter regressions
+           flagged "restarted — unreliable" (the old per-sample uptime
+           regression missed restarts between samples). Refuses to run
+           cold (< --warmup-min, default 10 min) unless --allow-cold,
+           refuses stale stats (> 60 s), exits 2 if a process dies
+           mid-window (partial evidence still written). Writes
+           data/measurements/<ts>.json + <ts>.md (verified NOT gitignored
+           — the evidence commits) and prints the Key-measurements table
+           with [measured] tags; VRAM prints "unmeasured (nvidia-smi
+           unavailable)" when absent, never invented (rule 8).
+           Wired: launch.py measure now takes arguments (--minutes 10
+           --sample-s 5 forwarded to .venv -m ml.tools.measure_run);
+           usage text updated; _measure_cmd split out for tests.
+           New counters for the plate-read-rate denominator (S4.1
+           acceptance: full reads / vehicle tracks): worker.stats gains
+           ocr_attempts (from FrameResult), full_reads (committed
+           consensus reads with kind='full'), vehicle_tracks (unique
+           vehicle-superclass tracks via a high-water mark on track ids —
+           ids are never reused (S2.3), new tracks appear in matches on
+           their creation frame (verified in track.py update()), so each
+           counts exactly once in O(1) memory). Supervisor totals +
+           snapshot carry the three plus derived plate_read_rate;
+           docs/api.md GET /workers updated in the same commit (rule §6.7).
+           Acceptance observed here: tests/test_measure_run.py — 10 tests
+           (window maths incl. the regression clamp, markdown rows incl.
+           the unmeasured-GPU and cold-run wording, refusal paths, a real
+           sampled window against this process's own PID writing
+           json+md, exit-2 on a killed worker process, the worker-counter
+           harness through CameraWorker.run with stub source/pipeline);
+           tests/test_launch.py reworked for the argument-taking measure
+           (12 tests). Whole suite in this container: **240 passed,
+           5 skipped, 0 failed in 199.72 s** (the 5 are the known
+           Windows-only mediamtx-harness/PATHEXT skips; laptop parity
+           before this session was 227+5 here = 232 there).
+Done so far: everything above, committed. The sampler is exercised end
+           to end against a fake platform; no live number exists yet and
+           none is claimed.
+Next:      Laptop (Adi or the next laptop session), the S4.1 run half:
+           (1) .venv/Scripts/python -m backend.tools.probe — every
+           camera, health for the map; (2) python launch.py start with
+           the demo tier (F55: cam06 + up to four live sandbox cameras;
+           consider SENTINEL_ACTIVE_CAMERAS=6 so local01 joins);
+           (3) confirm real reads accumulate in Search during daylight;
+           (4) after >= 10 min warm-up: python launch.py measure
+           --minutes 10; (5) paste the printed table over the blank
+           "Key measurements" rows above, draw one zone on the busiest
+           camera and record whether it fires; (6) fill the GATE B row.
+           Phase 5 (S5.1, GATE D) does not wait on any of this — the
+           documents can start immediately from complete Phase 3.
 ```
 

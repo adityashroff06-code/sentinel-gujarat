@@ -40,16 +40,45 @@ def test_bare_invocation_prints_usage_and_exits_2(lp, capsys):
 
 
 def test_extra_arguments_on_a_plain_mode_are_a_usage_error(lp, capsys):
-    assert lp.main(["measure", "--now"]) == 2
+    assert lp.main(["status", "--now"]) == 2
     assert "takes no arguments" in capsys.readouterr().out
 
 
-def test_measure_and_harvest_stubs_exit_0(lp, capsys):
-    assert lp.main(["measure"]) == 0
-    assert "built in S4.1" in capsys.readouterr().out
-
+def test_harvest_stub_exits_0(lp, capsys):
     assert lp.main(["harvest"]) == 0
     assert "cut in v2.5 (F54)" in capsys.readouterr().out
+
+
+def test_measure_cmd_shells_ml_tools_measure_run(lp):
+    cmd = lp._measure_cmd(Path("venv-python"), ["--minutes", "10"])
+    assert cmd == ["venv-python", "-m", "ml.tools.measure_run",
+                   "--minutes", "10"]
+
+
+def test_measure_requires_a_venv_then_a_running_platform(lp, tmp_path,
+                                                         monkeypatch):
+    monkeypatch.setattr(lp, "venv_python", lambda: None)
+    with pytest.raises(SystemExit):
+        lp.measure(["--minutes", "10"])          # no .venv yet
+
+    monkeypatch.setattr(lp, "venv_python", lambda: Path("venv-python"))
+    monkeypatch.setattr(lp, "PIDFILE", tmp_path / "absent.txt")
+    with pytest.raises(SystemExit):
+        lp.measure(["--minutes", "10"])          # platform not started
+
+
+def test_measure_forwards_its_arguments_to_the_sampler(lp, tmp_path,
+                                                       monkeypatch):
+    pidfile = tmp_path / "launcher_pids.txt"
+    pidfile.write_text("api 1\nworker 2\n", encoding="utf-8")
+    monkeypatch.setattr(lp, "venv_python", lambda: Path("venv-python"))
+    monkeypatch.setattr(lp, "PIDFILE", pidfile)
+    seen: list[list[str]] = []
+    monkeypatch.setattr(lp, "run", lambda cmd, cwd=None: seen.append(cmd) or 0)
+
+    assert lp.main(["measure", "--minutes", "10", "--sample-s", "5"]) == 0
+    assert seen == [["venv-python", "-m", "ml.tools.measure_run",
+                     "--minutes", "10", "--sample-s", "5"]]
 
 
 def test_default_replay_specs_skip_missing_feeds_and_loop(lp, tmp_path,
