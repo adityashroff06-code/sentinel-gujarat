@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { api } from '../lib/api.js'
-import { SessionContext } from '../lib/session.js'
+import { roleAtLeast, SessionContext } from '../lib/session.js'
 import Header from './Header.jsx'
 import StatusStrip from './StatusStrip.jsx'
 
@@ -59,6 +59,9 @@ export default function Shell() {
   }
 
   const link = ({ isActive }) => (isActive ? 'active' : '')
+  // Actions above the role are HIDDEN, not just refused (decision F41):
+  // reports are evaluator+, zone/tier edits admin-only (docs/api.md §7).
+  const role = state.user?.role
   return (
     <SessionContext.Provider value={session}>
       <div className="app">
@@ -66,9 +69,20 @@ export default function Shell() {
           <div className="brand">
             <span className="dot" aria-hidden="true" /> SENTINEL
           </div>
+          <NavLink to="/command" className={link}>Command</NavLink>
           <NavLink to="/map" className={link}>Map</NavLink>
+          <NavLink to="/wall" className={link}>Live Wall</NavLink>
+          <NavLink to="/search" className={link}>Search</NavLink>
+          <NavLink to="/route" className={link}>Route</NavLink>
+          <NavLink to="/alerts" className={link}>Alerts</NavLink>
           <NavLink to="/cameras" className={link}>Cameras</NavLink>
           <NavLink to="/watchlist" className={link}>Watchlist</NavLink>
+          {roleAtLeast(role, 'admin') && (
+            <NavLink to="/zones" className={link}>Zones</NavLink>
+          )}
+          {roleAtLeast(role, 'evaluator') && (
+            <NavLink to="/reports" className={link}>Reports</NavLink>
+          )}
           <div className="nav-foot">
             Gujarat Police
             <br />

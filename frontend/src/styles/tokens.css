@@ -27,9 +27,12 @@
   --accent-soft: rgba(61, 127, 214, 0.16);
   --ok: #39a56a;
   --warn: #e0912f;
+  --warn-soft: rgba(224, 145, 47, 0.12);
   --danger: #d64f6a;
   --danger-soft: rgba(214, 79, 106, 0.14);
   --focus-ring: #5895e4;
+  --overlay: rgba(10, 14, 20, 0.75); /* text scrim over video */
+  --video-bg: #000;                  /* letterbox behind tiles */
 
   /* ---- the six department colours (shared palette: map pins, wall
      labels, legends — docs/api.md §1) ---- */

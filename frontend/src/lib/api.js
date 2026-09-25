@@ -153,9 +153,25 @@ export const api = {
 
   // media URLs — plain same-origin paths: the session cookie carries them
   streamUrl: (id) => `${BASE}/hls/${encodeURIComponent(id)}/live.m3u8`,
-  reportUrl: (kind, fmt = 'html') =>
-    kind === 'gap' ? `${BASE}/reports/gap-analysis` : `${BASE}/reports/detections?format=${fmt}`,
+  alertStreamUrl: `${BASE}/alerts/stream`,
+  reportUrl: (kind, fmt = 'html', filters = {}) =>
+    kind === 'gap'
+      ? `${BASE}/reports/gap-analysis`
+      : `${BASE}/reports/detections${qs({ format: fmt, ...filters })}`,
+  routeReportUrl: (plate, fmt = 'html') =>
+    `${BASE}/reports/route/${encodeURIComponent(plate)}${qs({ format: fmt })}`,
 }
+
+// clock_source -> provenance, mirroring ml/worker.PROVENANCE (decision F26):
+// alert rows carry only clock_source, so their provenance badge derives here.
+const CLOCK_PROVENANCE = {
+  'rtsp-live': 'live',
+  'hls-vod': 'harvest',
+  harvest: 'harvest',
+  replay: 'test',
+  demo: 'demo',
+}
+export const provenanceOf = (clockSource) => CLOCK_PROVENANCE[clockSource] || 'test'
 
 // ---- department palette (ported verbatim from the old api.js; the values
 // live in tokens.css — keep the two in sync) ---------------------------------
@@ -169,3 +185,13 @@ export const DEPT_COLORS = {
   Unknown: '#8a97a6',
 }
 export const deptColor = (d) => DEPT_COLORS[d] || DEPT_COLORS.Unknown
+
+// Leaflet paints SVG presentation attributes, where CSS var() does not
+// resolve — so the route line colours live here beside DEPT_COLORS, with
+// the same rule: the values mirror tokens.css (--accent, --text-muted,
+// --danger); keep the two in sync.
+export const ROUTE_COLORS = {
+  line: '#3d7fd6', // --accent
+  gap: '#8a97a6', // --text-muted (dashed across coverage gaps)
+  suspect: '#d64f6a', // --danger (implausible-speed stop ring)
+}

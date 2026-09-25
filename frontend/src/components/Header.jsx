@@ -9,9 +9,15 @@ import { useSession } from '../lib/session.js'
 // rewired off its private setInterval and onto lib/poll.js.
 
 const TITLES = {
+  '/command': 'Command',
   '/map': 'GIS Map',
+  '/wall': 'Live Wall',
+  '/search': 'Vehicle Search',
+  '/alerts': 'Live Alerts',
   '/cameras': 'Camera Registry',
   '/watchlist': 'Watchlist',
+  '/zones': 'Zone Editor',
+  '/reports': 'Reports',
 }
 
 export default function Header() {
@@ -20,7 +26,9 @@ export default function Header() {
   const polled = usePolled('stats', api.stats, 5000)
   const s = polled?.data
 
-  const title = TITLES[location.pathname] || 'Integrated CCTV Command'
+  const title =
+    TITLES[location.pathname] ||
+    (location.pathname.startsWith('/route') ? 'Route Reconstruction' : 'Integrated CCTV Command')
   return (
     <div className="header">
       <h1>{title}</h1>
