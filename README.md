@@ -4,6 +4,12 @@ Entry to the [Gujarat Police Innovation Challenge 2026](https://sentinel.gujarat
 
 **Status: fresh, structured rebuild in progress — the live state and the next task are always in `docs/progress.md` → Current state.** The plan is v2.5 (24 Sep): a login with roles, a hosted URL for the judges if the tunnel trial passes, ground truth from our own footage, working modules ported from the previous build rather than retyped, and a demo of Model 1 + Model 2 + Pipeline 1 with Pipeline 3 described, not built (`docs/architecture.md` Part D). The previous build (`D:\projects\Sentinel_Repo`, submitted 15 Sep) works as a demo and is kept as read-only reference; everything it learned is carried over in `docs/`. Deadline: 28 Sep 2026.
 
+## Architecture
+
+![Sentinel workflow and integration diagram](deliverables/Sentinel-Workflow-Integration-Diagram.png)
+
+One pull per camera feeds three pipelines over the Model 1 registry: Pipeline 1 relays live video (relayed, not recorded), Pipeline 2 runs ANPR and analytics at the node and stores text rows and plate crops, and Pipeline 3 (evidence clips on a watchlist match) is designed and validated separately, not built in the demo. Source: [`deliverables/Sentinel-Workflow-Integration-Diagram.svg`](deliverables/Sentinel-Workflow-Integration-Diagram.svg); the full design is `deliverables/HLD.md`.
+
 ## Start here
 
 1. `CLAUDE.md` — the rules, the layout, how to work.

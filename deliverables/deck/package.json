@@ -1,0 +1,11 @@
+{
+  "name": "sentinel-deck",
+  "private": true,
+  "description": "Builds ../Sentinel-Solution-Presentation.pptx (node build_deck.js)",
+  "scripts": {
+    "build": "node build_deck.js"
+  },
+  "dependencies": {
+    "pptxgenjs": "4.0.1"
+  }
+}
