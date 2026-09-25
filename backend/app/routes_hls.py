@@ -77,6 +77,7 @@ from fastapi.responses import PlainTextResponse, Response
 from pydantic import BaseModel
 
 from backend.app.auth import RateLimiter, require_auth
+from backend.app.schemas import CAMERA_ID_PATTERN
 from backend.core import config, timeline
 from backend.core import db as dbmod
 from backend.core.cdn_session import CdnError, CdnSession, backoff_delay
@@ -117,6 +118,8 @@ _MTX_SESSION_TTL_S = 120.0
 _MTX_MAX_SESSIONS = 512
 
 _SAFE_NAME = re.compile(r"^[A-Za-z0-9_.-]+$")
+#: A camera id in a relay path: docs/api.md B11, no dots (see local_segment).
+_CAMERA_ID = re.compile(CAMERA_ID_PATTERN)
 _SESSION_ID = re.compile(r"^[A-Za-z0-9-]{1,64}$")
 _MTX_PATH = re.compile(r"^[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-][A-Za-z0-9_.-]*)*$")
 _KEY_LINE = re.compile(r'#EXT-X-KEY:METHOD=AES-128,URI="([^"]+)"([^\n]*)')
@@ -879,10 +882,23 @@ def local_segment(
     _: str = Depends(require_auth),
     __: None = Depends(_limit_hls),
 ) -> Response:
-    """One segment of the worker's local live window (the RTSP tee)."""
-    if not _SAFE_NAME.match(camera_id) or not _SAFE_NAME.match(name):
+    """One segment of the worker's local live window (the RTSP tee).
+
+    Security (25 Sep review gate, CRITICAL): ``_SAFE_NAME`` admits ``..``
+    and uvicorn percent-decodes the path, so ``/api/hls/%2E%2E/local/
+    sentinel.db`` read the database beside ``data/hls`` — raw session ids
+    included — with any viewer credential. The id must now be a real
+    camera id (no dots, registered), the name a ``.ts`` segment, and the
+    resolved path must stay inside that camera's tee folder.
+    """
+    if (not _CAMERA_ID.match(camera_id) or not _SAFE_NAME.match(name)
+            or name.startswith(".") or not name.endswith(".ts")):
         raise HTTPException(status_code=400, detail="bad name")
-    path = config.hls_dir() / camera_id / name
+    _camera(camera_id)  # 404 unless it is a registered camera
+    root = (config.hls_dir() / camera_id).resolve()
+    path = (root / name).resolve()
+    if not path.is_relative_to(root):
+        raise HTTPException(status_code=400, detail="bad name")
     try:
         data = path.read_bytes()
     except OSError:

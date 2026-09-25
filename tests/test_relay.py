@@ -700,3 +700,23 @@ def test_breaker_raises_http_exception_with_retry_after() -> None:
     assert exc.value.status_code == 503 and exc.value.detail == "cdn-backoff"
     breaker.ok()
     breaker.check()
+
+
+def test_local_segment_path_traversal_cannot_read_the_database(client, tmp_path):
+    """Regression (25 Sep review gate, CRITICAL): _SAFE_NAME admitted '..'
+    and uvicorn percent-decodes the path, so /api/hls/%2E%2E/local/<file>
+    read any file beside the tee root — data/sentinel.db with its raw
+    session ids — with any viewer credential. The tee layout here is the
+    production one: relay.db sits beside the hls/ folder."""
+    assert (tmp_path / "relay.db").exists()
+    for cam in ("%2E%2E", "%2e%2e", ".."):
+        r = client.get(f"/api/hls/{cam}/local/relay.db", headers=VIEWER)
+        assert r.status_code in (400, 404), (cam, r.status_code)
+        assert not r.content.startswith(b"SQLite format 3")
+    # a real camera id with a non-segment name, or a dotted name, is refused
+    for name in ("relay.db", ".hidden.ts", "..", "index.m3u8"):
+        r = client.get(f"/api/hls/hlscam/local/{name}", headers=VIEWER)
+        assert r.status_code in (400, 404), (name, r.status_code)
+    # an unregistered camera id is a 404, never a disk read
+    assert client.get("/api/hls/nosuchcam/local/seg000001.ts",
+                      headers=VIEWER).status_code == 404
