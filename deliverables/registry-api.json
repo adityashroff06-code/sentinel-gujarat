@@ -152,7 +152,7 @@
      "cameras"
     ],
     "summary": "Create Camera",
-    "description": "Manual camera onboarding (Model 1 deliverable); 409 on a duplicate id.",
+    "description": "Manual camera onboarding (Model 1 deliverable); 409 on a duplicate id.\n\nAn evaluator onboards a camera as a registered, non-catalogue row; only\nan admin may create one straight into the analysed tier or as a\ncatalogue camera (403 otherwise). 25 Sep review gate: the form let an\nevaluator set ``fps_tier='active'`` + ``source='catalogue'``, which the\nworker picks first \u2014 bypassing the admin-only tier rule of PATCH and,\nbefore the gateway check, steering the sandbox credentials (rule 1).",
     "operationId": "create_camera_api_cameras_post",
     "requestBody": {
      "required": true,
@@ -216,7 +216,7 @@
      "cameras"
     ],
     "summary": "Camera Activity",
-    "description": "Plate reads, distinct plates and alerts per camera over the last\n*hours*, anchored at the server's wall clock (``seen_at`` / ``fired_at``\nat or after now \u2212 hours). Cameras with no activity in the window are\nomitted; ``sightings`` is split by provenance in ``by_provenance``.\nRegistered before ``/{camera_id}`` so it is never read as an id.",
+    "description": "Plate reads, distinct plates and alerts per camera over the last\n*hours*, anchored at the server's wall clock (``seen_at`` / ``fired_at``\nat or after now \u2212 hours). Cameras with no activity in the window are\nomitted; ``sightings`` is split by provenance in ``by_provenance`` and\n``alerts`` in ``alerts_by_provenance`` (root rule 12: a demo alert never\npasses as a live one). An alert's provenance is its source row's \u2014 the\nsighting (watchlist) or event (zone) \u2014 or, with neither, its own\n``clock_source`` mapped as the worker maps it (F26; unknown = ``test``,\nnever ``live``). Registered before ``/{camera_id}`` so it is never read\nas an id.",
     "operationId": "camera_activity_api_cameras_activity_get",
     "parameters": [
      {
@@ -1573,7 +1573,7 @@
      "hls"
     ],
     "summary": "Hls Key",
-    "description": "Proxy the AES-128 key named by the upstream playlist, with the\nbackend's CDN session; refused unless it is a 16-byte key from inside\nthe CDN origin. Held only in the relay's memory cache (\u2264 120 s).",
+    "description": "Proxy the AES-128 key named by the upstream playlist, with the\nbackend's CDN session; refused unless a CDN window of this camera was\njust served, and unless it is a 16-byte key from inside the CDN origin.\nHeld only in the relay's memory cache (\u2264 120 s).",
     "operationId": "hls_key_api_hls__camera_id__key_get",
     "parameters": [
      {
@@ -1620,7 +1620,7 @@
      "hls"
     ],
     "summary": "Hls Segment",
-    "description": "Proxy one media segment \u2014 **only** a name present in the fetched\nupstream playlist, resolved **only** inside the configured CDN origin\n(B11). N concurrent viewers share one upstream fetch (memory cache);\nnothing is written to disk.",
+    "description": "Proxy one media segment \u2014 **only** a name of the live window served\nfor this camera within the last minute (that window, or the one before\nit), resolved **only** inside the configured CDN origin (B11). Never\nanother name from the 12 h VOD: the relay is a live view, not a\ndownload path (root rule 6; 25 Sep review). N concurrent viewers share\none upstream fetch (memory cache); nothing is written to disk.",
     "operationId": "hls_segment_api_hls__camera_id__seg__name__get",
     "parameters": [
      {
@@ -1676,7 +1676,7 @@
      "hls"
     ],
     "summary": "Local Segment",
-    "description": "One segment of the worker's local live window (the RTSP tee).",
+    "description": "One segment of the worker's local live window (the RTSP tee).\n\nSecurity (25 Sep review gate, CRITICAL): ``_SAFE_NAME`` admits ``..``\nand uvicorn percent-decodes the path, so ``/api/hls/%2E%2E/local/\nsentinel.db`` read the database beside ``data/hls`` \u2014 raw session ids\nincluded \u2014 with any viewer credential. The id must now be a real\ncamera id (no dots, registered), the name a ``.ts`` segment, and the\nresolved path must stay inside that camera's tee folder.",
     "operationId": "local_segment_api_hls__camera_id__local__name__get",
     "parameters": [
      {
@@ -2353,6 +2353,13 @@
       },
       "type": "object",
       "title": "By Provenance"
+     },
+     "alerts_by_provenance": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "type": "object",
+      "title": "Alerts By Provenance"
      }
     },
     "type": "object",
@@ -2363,7 +2370,7 @@
      "alerts"
     ],
     "title": "CameraActivityOut",
-    "description": "One camera's read activity over a trailing window (the GIS Activity\nlayer). ``by_provenance`` splits ``sightings`` so a demo read never\npasses as a live one (root rule 12)."
+    "description": "One camera's read activity over a trailing window (the GIS Activity\nlayer). ``by_provenance`` splits ``sightings`` and\n``alerts_by_provenance`` splits ``alerts`` so a demo read or a demo\nalert never passes as a live one (root rule 12)."
    },
    "CameraEventSummaryOut": {
     "properties": {
@@ -3689,6 +3696,14 @@
      "on_watchlist": {
       "type": "boolean",
       "title": "On Watchlist"
+     },
+     "camera_ids": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Camera Ids",
+      "default": []
      }
     },
     "type": "object",

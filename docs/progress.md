@@ -1742,3 +1742,43 @@ Observed:  CRITICAL (pre-existing since S3.1b, found by two finders
 Next:      the 15 fixes run in three worktree lanes (relay, backend,
            frontend), each with a regression test.
 ```
+
+```
+## Review fixes — DONE (all 17 confirmed findings fixed, + 2 more credential
+##          paths closed) [69b2e4b; lanes 36bba23 e21087e 26d0fae merged
+##          f884be0 79c657e 22d09eb; ebb1167; dbc2f90]
+When:      2026-09-25T14:30Z-16:10Z, three worktree lanes + orchestrator.
+Observed:  relay (36bba23): CDN /seg and /key refuse anything outside the
+           window actually served to a viewer in the last 60 s (rule 6 - the
+           relay was an authenticated 12 h download proxy); CdnSession checks
+           EVERY redirect hop against the CDN origin; an open breaker never
+           queues behind the playlist pacer; CDN re-login is single-flight.
+           backend (e21087e): the health probe fills sandbox credentials only
+           for the sandbox gateway host; /cameras/activity splits alerts by
+           provenance (demo alerts never count as live); the launcher checks a
+           recorded replay pid's command line. frontend (26d0fae): honest
+           cluster tooltips (distinct plates not summed), hulls follow the
+           department toggles, Tile stall-vs-retry overlay, HEVC gating only on
+           real codec errors, the real hls.js 1.7 loadPolicy keys, no live dot
+           on a blocked tile, an iOS/iPadOS HEVC probe, Search's match-mode
+           re-run from a non-normalised ?plate= link.
+           Orchestrator, beyond the list (ebb1167): the WORKER's resolve_url
+           also filled the credentials into any template host, and POST
+           /api/cameras let an evaluator create an active catalogue camera the
+           worker picks first - together an evaluator account could steer the
+           organisers' credentials to its own server. One shared gate,
+           config.is_sandbox_gateway(); non-admins get 403 for active/catalogue
+           onboarding. The old resolve_url test ASSERTED the leak (10.0.0.5
+           filled) - it now asserts the opposite. (dbc2f90) Command's plate to
+           try named a stock clip's read as "a real live read": suggest's
+           top_live now carries camera_ids and Command prefers - and names - a
+           read on an organisers' camera.
+           Every fix has a regression test shown to fail on the old code (the
+           four frontend defects a browser can show are smoke assertions; the
+           other four are reasoned against the hls.js 1.7.3 source).
+           Final verification, platform stopped: pytest **360 passed, 0
+           failed** (392 s); smoke_frontend **92/92**; smoke_playback **28/28**
+           in real Edge; registry-api.json re-exported (35 paths, camera_ids,
+           the live-window wording).
+Next:      Current state (below); [Adi] items.
+```
