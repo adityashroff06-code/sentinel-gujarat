@@ -12,6 +12,7 @@ Append a block after **every** task, in the format at the bottom. Record what wa
   2. Once the sandbox is steady: `.venv\Scripts\python scripts\export_deliverables.py` (without `--gap-note`) — the gap report was captured during the 25 Sep outage.
   3. **Decide on `local01`'s old live reads.** "Most read live" counts every `provenance='live'` read on any camera; `MH02EZ1785` (12 reads, 1 camera, on the Command screenshot) is in stock clip 13270133 = `local01`, so those are almost certainly repeated loop passes from the 24 Sep walkthrough, before F67. Check `SELECT camera_id, COUNT(*) FROM sightings WHERE provenance='live' AND camera_id LIKE 'local%' GROUP BY 1`; keep them (the README now discloses them) or delete them after a snapshot.
   4. **S5.4 video 1 dry run** (a laptop Claude session: 1080p `own01.mp4` with a 30 s black pre-roll, `SENTINEL_ACTIVE_CAMERAS=6`, onboard, publish once on port 8556, confirm a watchlist hit) — none of it has run yet. Then Adi records both videos in **Chrome** at `http://127.0.0.1:8000/` (the hosted URL is not needed) and uploads them unlisted.
+  4b. **README screenshots, live:** with the platform up and cam06 READING, `.venv\\Scripts\\python scripts\\capture_readme.py --user <admin>` (headed Chrome; prompts for the password) captures every screen but Zones into `docs/readme/`, two live GIFs (Command, Live Wall), and regenerates the README hero and gallery. It reports any screen captured with fewer playing tiles than wanted. Untested live: the `--gallery-only` path ran in the cloud.
   5. After S3.5 and the uploads: `set SENTINEL_DECK_VIDEO1=… & set SENTINEL_DECK_VIDEO2=… & set SENTINEL_DECK_URL=…` → `node deliverables\deck\build_deck.js` → PDF via PowerPoint; tick the remaining boxes; `git tag -a v2.0-submission` on `main`.
 - **[Adi] queue:** ① **S3.5 go-live** (runbook §0; laptop never sleeps on AC). ② S5.4 recording + upload. ③ Watch S0.5's insurance recording for credentials (the last open part of the sweep). ④ The S2.2 20 s Wi-Fi pull.
 - **Next Claude task:** the video-1 dry run on the laptop (item 4), then **S6.1** soak Saturday; S6.1b's code half (backups, watchdog, uptime) can run in the cloud meanwhile.
@@ -1927,4 +1928,29 @@ Observed:  docs/demo-script.md v2.6 on top of v2.3 (layered, like v2.3
 Surprise:  The wall's local feeds are 720p (F67: registered = 720p), too
            small for the clip's ~45 px plates - hence the 1080p copy.
 Next:      laptop Claude session: dry-run video 1; Adi records in Chrome.
+```
+
+```
+## README for the judges, in the previous build's style (Adi's ask) —
+##        DONE in the cloud; the live recapture is the laptop's
+When:      2026-09-26T00:30 IST (cloud session).
+Observed:  Read github.com/adityashroff06-code/Sentinel_Repo's README (390
+           lines: centred hero + badges, governing rule, architecture,
+           screens, quickstart, API, analytics, layout, design decisions,
+           licensing, what it does not do, security, deliverables) and
+           rebuilt ours on that skeleton with this build's facts: 58
+           cameras / 5 departments / 5 analysed live, the S4.1 measured
+           table, the three relay sources, RBAC and audit, the review
+           gate, 360/92/31 tests, 84 decisions. Every claim was checked
+           against code or docs before it went in (4 corrected: camera
+           filters, the stream endpoint, the decision count, "independent").
+           scripts/capture_readme.py: live capture in headed Chrome (the
+           H.265 cameras), a screen per page except Zones, GIFs of live
+           video, and the README hero/gallery regenerated between markers
+           so the README never links a missing image. `--gallery-only` ran
+           here: 10 images from the deck's 25 Sep live captures; Login,
+           Cameras, Watchlist left out until captured. Rendered with
+           pandoc + Chromium at GitHub width: 0 broken images.
+           detection.jpg is the previous build's and is not used.
+Next:      laptop: capture_readme.py (Current state, item 4b).
 ```
