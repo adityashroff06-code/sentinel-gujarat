@@ -96,15 +96,20 @@ def camera_activity(
     """Plate reads, distinct plates and alerts per camera over the last
     *hours*, anchored at the server's wall clock (``seen_at`` / ``fired_at``
     at or after now − hours). Cameras with no activity in the window are
-    omitted; ``sightings`` is split by provenance in ``by_provenance``.
-    Registered before ``/{camera_id}`` so it is never read as an id."""
+    omitted; ``sightings`` is split by provenance in ``by_provenance`` and
+    ``alerts`` in ``alerts_by_provenance`` (root rule 12: a demo alert never
+    passes as a live one). An alert's provenance is its source row's — the
+    sighting (watchlist) or event (zone) — or, with neither, its own
+    ``clock_source`` mapped as the worker maps it (F26; unknown = ``test``,
+    never ``live``). Registered before ``/{camera_id}`` so it is never read
+    as an id."""
     since = dbmod.iso(datetime.now(timezone.utc) - timedelta(hours=hours))
     out: dict[str, dict[str, Any]] = {}
 
     def entry(camera_id: str) -> dict[str, Any]:
         return out.setdefault(camera_id, {
             "camera_id": camera_id, "sightings": 0, "plates": 0, "alerts": 0,
-            "last_seen": None, "by_provenance": {},
+            "last_seen": None, "by_provenance": {}, "alerts_by_provenance": {},
         })
 
     for camera_id, n, plates, last in con.execute(
@@ -120,11 +125,19 @@ def camera_activity(
         (since,),
     ):
         entry(camera_id)["by_provenance"][provenance] = n
-    for camera_id, n in con.execute(
-        "SELECT camera_id, COUNT(*) FROM alerts WHERE fired_at >= ? GROUP BY camera_id",
+    for camera_id, provenance, n in con.execute(
+        "SELECT a.camera_id, COALESCE(s.provenance, e.provenance,"
+        " CASE a.clock_source WHEN 'rtsp-live' THEN 'live' WHEN 'hls-vod' THEN 'harvest'"
+        " WHEN 'harvest' THEN 'harvest' WHEN 'demo' THEN 'demo' ELSE 'test' END),"
+        " COUNT(*) FROM alerts a"
+        " LEFT JOIN sightings s ON s.sighting_id = a.sighting_id"
+        " LEFT JOIN events e ON e.event_id = a.event_id"
+        " WHERE a.fired_at >= ? GROUP BY 1, 2",
         (since,),
     ):
-        entry(camera_id)["alerts"] = n
+        e = entry(camera_id)
+        e["alerts"] += n
+        e["alerts_by_provenance"][provenance] = n
     return sorted(out.values(), key=lambda e: (-e["sightings"], -e["alerts"], e["camera_id"]))
 
 

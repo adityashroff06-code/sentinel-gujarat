@@ -55,11 +55,18 @@ def _sighting(con, camera_id: str, plate: str, hours_ago: float,
     return seen
 
 
-def _alert(con, camera_id: str, hours_ago: float, seq: int) -> None:
+def _alert(con, camera_id: str, hours_ago: float, seq: int,
+           clock_source: str = "rtsp-live", sighting_id: int | None = None,
+           event_id: int | None = None) -> None:
     con.execute(
-        "INSERT INTO alerts (alert_id, kind, camera_id, severity, clock_source,"
-        " fired_at) VALUES (?, 'zone', ?, 'high', 'rtsp-live', ?)",
-        (f"ALERT-TEST-{seq:04d}", camera_id, _ago(hours_ago)))
+        "INSERT INTO alerts (alert_id, kind, sighting_id, event_id, camera_id,"
+        " severity, clock_source, fired_at) VALUES (?, ?, ?, ?, ?, 'high', ?, ?)",
+        (f"ALERT-TEST-{seq:04d}", "watchlist" if sighting_id else "zone",
+         sighting_id, event_id, camera_id, clock_source, _ago(hours_ago)))
+
+
+def _last_id(con) -> int:
+    return con.execute("SELECT last_insert_rowid()").fetchone()[0]
 
 
 def _seed(rows) -> None:
@@ -133,7 +140,50 @@ def test_activity_zone_alert_without_reads_still_listed(client):
     _seed(lambda con: _alert(con, "cam01", 1, 7))
     body = client.get("/api/cameras/activity", headers=VIEWER).json()
     assert body == [{"camera_id": "cam01", "sightings": 0, "plates": 0,
-                     "alerts": 1, "last_seen": None, "by_provenance": {}}]
+                     "alerts": 1, "last_seen": None, "by_provenance": {},
+                     "alerts_by_provenance": {"live": 1}}]
+
+
+def test_activity_demo_alert_never_counts_as_live_next_to_live_reads(client):
+    """Regression (review, 25 Sep; root rule 12): the alert count had no
+    provenance split, so on the live DB cam06 answered alerts=1 beside
+    by_provenance {demo: 8, live: 122} and the map painted a red "1 alert"
+    ring that read as coming from the live reads — the alert was a demo
+    one. Alerts are now split in alerts_by_provenance the way reads are."""
+    def rows(con):
+        _sighting(con, "cam01", "GJ01AB1111", 1, provenance="live")
+        _sighting(con, "cam01", "GJ01AB2222", 1, provenance="live")
+        _sighting(con, "cam01", "GJ01AB9999", 1, provenance="demo")
+        _alert(con, "cam01", 1, 1, clock_source="demo", sighting_id=_last_id(con))
+    _seed(rows)
+
+    cam01 = client.get("/api/cameras/activity", headers=VIEWER).json()[0]
+    assert cam01["by_provenance"] == {"live": 2, "demo": 1}
+    assert cam01["alerts"] == 1
+    assert cam01["alerts_by_provenance"] == {"demo": 1}
+
+
+def test_activity_alert_provenance_follows_its_source_row_then_its_clock(client):
+    """A watchlist alert takes its sighting's provenance, a zone alert its
+    event's; with neither, the alert's clock_source maps as F26 maps it —
+    demo stays demo and an unknown clock is test, never live."""
+    def rows(con):
+        _sighting(con, "cam02", "GJ05CD1234", 1, provenance="live")
+        _alert(con, "cam02", 1, 1, clock_source="rtsp-live", sighting_id=_last_id(con))
+        now = _ago(1)
+        con.execute(
+            "INSERT INTO events (camera_id, zone_id, event_type, occurred_at,"
+            " wall_time, clock_source, provenance) VALUES"
+            " ('cam02', 'z1', 'intrusion', ?, ?, 'demo', 'demo')", (now, now))
+        _alert(con, "cam02", 1, 2, clock_source="demo", event_id=_last_id(con))
+        _alert(con, "cam02", 1, 3, clock_source="demo")      # no source row
+        _alert(con, "cam02", 1, 4, clock_source="replay")
+        _alert(con, "cam02", 1, 5, clock_source="mystery")   # unknown clock
+    _seed(rows)
+
+    cam02 = client.get("/api/cameras/activity", headers=VIEWER).json()[0]
+    assert cam02["alerts"] == 5
+    assert cam02["alerts_by_provenance"] == {"live": 1, "demo": 2, "test": 2}
 
 
 @pytest.mark.parametrize("hours", [0, 169])

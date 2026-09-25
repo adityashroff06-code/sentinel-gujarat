@@ -1,12 +1,15 @@
 """launch.py — mode dispatch, the stubs and the replay defaults (task S3.4).
 
-Command-builder tests only: nothing here binds a port, spawns a process
-or touches the real data/ directory. Loaded by path, like doctor.py.
+Command-builder tests only: nothing here binds a port or touches the real
+data/ directory, and the only processes spawned are two sleeping pythons
+for the replay-pid guard. Loaded by path, like doctor.py.
 """
 
 from __future__ import annotations
 
 import importlib.util
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -228,6 +231,43 @@ def test_start_feeds_keeps_a_running_publisher_and_drops_a_stale_record(
     monkeypatch.setattr(sandbox, "_rtsp_publishing", lambda name: True)
     sandbox.start_feeds(Path("venv-python"))
     assert sandbox.REPLAY_PIDFILE.read_text(encoding="utf-8") == "feeds 99\n"
+
+
+def _sleeper(cwd: Path, *argv: str) -> subprocess.Popen:
+    """A python that only sleeps; *argv* lands in its command line (after
+    ``-c``, so it is never executed)."""
+    return subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)",
+                             *argv], cwd=str(cwd))
+
+
+def test_start_feeds_ignores_a_recorded_replay_pid_reused_by_another_process(
+        sandbox, monkeypatch, tmp_path, capsys):
+    """Regression (review, 25 Sep): _alive_pids asked only psutil.pid_exists,
+    so a data/replay_pids.txt left by a replay-start that died (reboot,
+    crash) whose pid Windows had handed to some other process made start
+    print "a replay publisher is already running ... - kept" and start no
+    local feeds at all. A recorded pid now counts only when its command
+    line names this repo's scripts/replay_publish.py."""
+    vp = Path(sys.executable)          # the test venv's python has psutil
+    script = str(sandbox.ROOT / "scripts" / "replay_publish.py")
+    other = _sleeper(tmp_path)
+    ours = _sleeper(tmp_path, script, "--register")
+    try:
+        assert sandbox._alive_pids(vp, [other.pid]) == []
+        assert sandbox._alive_pids(vp, [ours.pid]) == [ours.pid]
+
+        sandbox.REPLAY_PIDFILE.write_text(f"replay {other.pid}\n", encoding="utf-8")
+        monkeypatch.setattr(sandbox, "_spawn_detached", lambda a, log: _FakeProc(99))
+        monkeypatch.setattr(sandbox, "_port_busy",
+                            lambda port: sandbox.REPLAY_PIDFILE.exists())
+        monkeypatch.setattr(sandbox, "_rtsp_publishing", lambda name: True)
+        sandbox.start_feeds(vp)
+        assert sandbox.REPLAY_PIDFILE.read_text(encoding="utf-8") == "feeds 99\n"
+        assert "already running" not in capsys.readouterr().out
+    finally:
+        for proc in (other, ours):
+            proc.kill()
+            proc.wait(timeout=10)
 
 
 def test_start_feeds_forgets_a_publisher_that_dies_at_once(sandbox, monkeypatch):

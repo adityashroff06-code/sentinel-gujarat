@@ -263,6 +263,24 @@ for arg in sys.argv[2:]:
     print('stopped pid %s (+%d children)' % (arg, len(procs) - 1))
 """
 
+# Prints the recorded pids that are alive AND whose command line names this
+# repo's replay_publish.py (argv[1]; separators and case normalised). A
+# gone, reused or unreadable (another user's) pid is not a publisher.
+_PUBLISHER_PIDS_PY = """\
+import sys
+import psutil
+script = sys.argv[1].replace('\\\\', '/').lower()
+out = []
+for arg in sys.argv[2:]:
+    try:
+        cmdline = ' '.join(psutil.Process(int(arg)).cmdline())
+    except (ValueError, psutil.Error):
+        continue
+    if script in cmdline.replace('\\\\', '/').lower():
+        out.append(arg)
+print(' '.join(out))
+"""
+
 _DB_STATUS_PY = """\
 from backend.core import config, db
 p = config.db_path()
@@ -627,11 +645,17 @@ def _register_cmd(vp: Path) -> list[str]:
 
 
 def _alive_pids(vp: Path | None, pids: list[int]) -> list[int]:
-    """The subset of *pids* still running (venv psutil; no venv = assume
-    all alive, the conservative answer for 'is a publisher recorded')."""
+    """The subset of recorded replay-publisher *pids* that are still
+    running AND are this repo's ``scripts/replay_publish.py`` (a command-line
+    check, like ``_KILL_TREE_PY``'s): a pid Windows reused for some other
+    process after a reboot or crash is not a publisher, so a stale
+    data/replay_pids.txt can no longer keep start from starting the feeds.
+    No venv, or psutil failing = assume all alive, the conservative answer
+    for 'is a publisher recorded'."""
     if vp is None or not pids:
         return list(pids)
-    r = subprocess.run([str(vp), "-c", _WAIT_PIDS_PY, "0",
+    r = subprocess.run([str(vp), "-c", _PUBLISHER_PIDS_PY,
+                        str(ROOT / "scripts" / "replay_publish.py"),
                         *[str(p) for p in pids]],
                        cwd=str(ROOT), capture_output=True, text=True, check=False)
     if r.returncode != 0:
