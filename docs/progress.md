@@ -92,12 +92,14 @@ The route above is the **demo vehicle** (decision C10). What was never done: the
 | Resolution mix | 1920×1080 ×4 · 1280×960 ×2 · 1280×720 ×1 · 960×576 ×1 · 854×480 ×5 · 640×480 ×1 | P0.2 |
 | Mean bitrate (kbps) | partial: cam07 segment samples 362–745 kbps; full per-camera table pending re-measure after 403 cooldown | P0.2/measure |
 | Declared-vs-measured fps mismatch count | partial: cam24 declared 12 → measured 5.61; cam07 declared 25 → measured 25.0 (150 frames / 6 s segment); rest pending | P0.2/measure |
-| **Sustained inference fps per camera, N active** | | P2.7 |
-| **Real detection rate (vehicles/camera/min)** | | P2.7 |
-| Peak VRAM used | | P2.7 |
-| Peak RAM used | | P2.7 |
+| **Sustained inference fps per camera, N active** | **[measured]** cam06 0.67 · cam09 1.31 · cam26 0.6 · cam27 0.76 · cam28 1.47 (N=5 live sandbox cameras, 5 alive at end, 0 restarts) | S4.1 measure 20260925-084754Z (14:18–14:28 IST, daylight; 600 s window after 10 min warm-up) |
+| **Real detection rate (vehicles/camera/min)** | **[measured]** cam06 15.6 · cam09 0.1 · cam26 0.0 · cam27 3.3 · cam28 0.5 (unique vehicle tracks; raw boxes/min 125.1 · 0.2 · 0.0 · 48.8 · 33.0) | S4.1 measure 20260925-084754Z (14:18–14:28 IST, daylight; 600 s window after 10 min warm-up) |
+| Peak VRAM used | **[measured]** 119 MiB (baseline 119 MiB; YOLOX-S on DirectML). Cross-checked with Windows GPU counters: the worker holds 120 MB dedicated on the adapter that exposes the `cuda` engine (the GTX 1650, not the Vega iGPU), engine load 41 % | S4.1 measure 20260925-084754Z (14:18–14:28 IST, daylight; 600 s window after 10 min warm-up) |
+| Peak RAM used | **[measured]** 1749 MB (API tree 102 + worker tree 1672). RSS on Windows is the working set: the last ~25 s show a trim to ~220 MB by the OS memory manager, which also skews the Q1→Q4 trend (−17.2 %) | S4.1 measure 20260925-084754Z (14:18–14:28 IST, daylight; 600 s window after 10 min warm-up) |
+| Motion-skip rate per camera | **[measured]** cam06 0.0 · cam09 0.245 · cam26 0.542 · cam27 0.026 · cam28 0.0 | S4.1 measure 20260925-084754Z (14:18–14:28 IST, daylight; 600 s window after 10 min warm-up) |
+| Plate-read rate (full reads ÷ vehicle tracks) | **[measured]** 0.062 overall (12/195); cam06 0.077, the other four 0.0 | S4.1 measure 20260925-084754Z (14:18–14:28 IST, daylight; 600 s window after 10 min warm-up) |
 
-Superseded by the laptop: RTSP **is** reachable from the laptop (27/30, `data/probe_results.json`); a 61-second stats snapshot from 18 Sep gives per-camera sustained fps 0.46–1.43 and detections/min 0–67.9 with 5 active (`docs/sandbox-findings.md` §8) — **not** a 10-minute measurement, so the four blank rows stay blank.
+Superseded by the laptop: RTSP **is** reachable from the laptop (27/30, `data/probe_results.json`); a 61-second stats snapshot from 18 Sep gives per-camera sustained fps 0.46–1.43 and detections/min 0–67.9 with 5 active (`docs/sandbox-findings.md` §8). **The four previously blank rows are now filled from the formal S4.1 10-minute run on 25 Sep** (evidence committed: `data/measurements/20260925-084754Z.{json,md}`); the HLD may cite only these as `[measured]`.
 
 ## Gate decisions *(verbatim, STATUS.md)*
 
@@ -115,7 +117,7 @@ GATE A was later reversed on the laptop (RTSP primary, decision C6). GATE B's de
 | Gate | Due | Decision | When | Observed |
 |---|---|---|---|---|
 | A′ — replay soak (S2.5): 10 min, zero restarts; live RTSP frames with correct timing (S2.2) | Tue 22 | **PASS** | 2026-09-23T20:55Z | Soak: 614.9 s, 0 worker restarts, 1843 frames on each of 3 replay cameras (3.0 fps each), RSS +0.6 MB over the run, stats every 10 s, 10 wrap ticks/camera. Live RTSP timing: S2.2's cam06 smoke, 134 frames monotonic (23 Sep) |
-| B — ANPR viability on the live sandbox (S4.1): real reads with sane confidence | Thu 24 | | | |
+| B — ANPR viability on the live sandbox (S4.1): real reads with sane confidence | Thu 24 | **PASS — continue on the current tier (no model tuning)** | 2026-09-25T08:58Z | 10-minute window (20260925-084754Z): 9 sightings, 12 full consensus reads, 0 restarts; cam06 carries the plates — 55 `provenance='live'` reads with crops over the afternoon run (conf 0.78–0.99, e.g. GJ11S7924 0.96, GJ03MH7800 0.96 seen twice, GJ32AG2883 0.97); cam09/26/27/28 contribute detections, motion and zone analytics but no plate reads (small/oblique plates, quiet end of the looped recording). The cam06 crossing line fired 53 `line_cross` events on the live feed — the first zone event ever on a real feed. Late vs the Thu 24 due: the run needed the laptop and daylight, both available Fri 25 afternoon |
 | C — route across ≥ 3 cameras from a plate typed into the UI (S4.2; demo vehicle qualifies) | Thu 24 20:00 | **PASS — demo vehicle (labelled)**; own-footage upgrade pending Adi's S3.6 filming | 2026-09-25T05:35Z | The smoke types GJ01AB1234 into the real UI (headless Chromium against `python -m backend.app`): Route renders 4 timeline entries incl. the ambiguity near-miss, numbered pins on 3 cameras, 3 departments in the header — asserted on two consecutive runs (S3.3), and re-checked at both viewports in S3.3b. Late vs the Thu 20:00 due: the plan's Wed/Thu columns compressed into the overnight run (F59) |
 | D — documents start whatever the code state (S5.1) | Fri 25 09:00 | | | |
 
@@ -1492,3 +1494,51 @@ Next:      Laptop (Adi or the next laptop session), the S4.1 run half:
            documents can start immediately from complete Phase 3.
 ```
 
+
+```
+## S4.1 — DONE (the laptop run half: 10-minute live measurement, zone
+##          event on a live feed, GATE B PASS)
+When:      2026-09-25T08:38Z-08:58Z (14:08-14:28 IST), laptop, orchestrating
+           session.
+Observed:  The platform found running since 13:48 predated the S4.1 merge
+           (stats had no full_reads/vehicle_tracks), so it was restarted on
+           main (launch.py stop + start; same tier: cam06/09/26/27/28 live
+           over RTSP, SENTINEL_ACTIVE_CAMERAS=5 from .env). A crossing line
+           was PATCHed onto cam06 through the real API (admin key read by
+           config, never printed; audited): z-cam06-line, medium, points
+           [[0.12,0.55],[0.98,0.55]] across the carriageway, traffic moving
+           toward the camera (downward — the direction the engine counts).
+           After uptime >= 615 s: `python launch.py measure --minutes 10`.
+           Window 600 s, 5/5 alive, 0 restarts — the table is in "Key
+           measurements" above ([measured]); evidence committed
+           data/measurements/20260925-084754Z.{json,md}.
+           Live reads: 55 provenance='live' cam06 reads with crops between
+           08:37Z and 10:00Z (conf 0.78-0.99). Zone: 53 line_cross events,
+           provenance live, clock rtsp-live, 08:44Z-10:01Z — line crossing
+           fired on a real feed for the first time (S2.5 proved only the
+           geometry).
+           VRAM check: nvidia-smi showed 119 MiB / 2 %, which looked like
+           DirectML on the Vega iGPU; Windows GPU counters settled it — the
+           worker's 120 MB dedicated + 41 % engine load sit on the adapter
+           exposing the 'cuda' engine, i.e. the GTX 1650. YOLOX-S is simply
+           small.
+           Defect found and fixed (regression test
+           test_measure_run.py::test_plate_read_rate_is_unmeasured_when_
+           worker_predates_read_counters): against a pre-S4.1 worker the
+           window maths defaulted the missing counters to 0 and printed a
+           plate-read rate "0.0 (0/0)" — a number no code measured (rule 8).
+           Now "unmeasured (worker predates the read counters)". 11 passed.
+Surprise:  (1) Sustained fps is 0.6-1.5 per camera, well under the 3 fps
+           target: the shared OCR lock (F58 surprise 2) is the bottleneck,
+           not the GPU. (2) Stored plates keep OCR confusions that the
+           structural coercion already resolves for classification only:
+           6J23H1548 beside GJ23H1548, GJ1157924 beside GJ11S7924 — search
+           and dedupe see two plates. Folded into the ANPR-search work.
+           (3) Windows trimmed the worker's working set in the last 25 s
+           (1152 -> 187 MB) with no process change — RSS on Windows is not
+           a leak signal by itself.
+GATE B:    PASS (table above). Continue on this tier; no model tuning.
+Next:      the demo fixes Adi asked for (every camera on the relay wall,
+           GIS map, ANPR search with demo plates, 28 stock feeds), then
+           Phase 5 (S5.1 onward).
+```

@@ -59,6 +59,9 @@ STATS_STALE_S = 60.0  # supervisor writes every 10 s; older means wedged
 _COUNTERS = ("frames", "inferred", "motion_skipped", "detections",
              "sightings", "alerts", "zone_events", "restart_ticks",
              "ocr_attempts", "full_reads", "vehicle_tracks")
+# The plate-read-rate counters (S4.1); absent from a pre-S4.1 worker.
+_READ_COUNTERS = ("full_reads", "vehicle_tracks")
+_UNMEASURED_READS = "unmeasured (worker predates the read counters)"
 
 # Indirection so tests can stub waiting without touching global sleep
 # (the S2.1 lesson: patching time.sleep turns subprocess polls into spins).
@@ -129,15 +132,22 @@ def window_rows(base: dict, final: dict, window_s: float) -> dict[str, dict]:
         reliable = all(v >= 0 for v in deltas.values())
         d = {k: max(v, 0) for k, v in deltas.items()}
         gated = d["inferred"] + d["motion_skipped"]
+        # A worker started before the S4.1 counters existed writes no
+        # full_reads / vehicle_tracks at all; defaulting them to 0 would
+        # print a plate-read rate of 0.0 that no code measured (rule 8).
+        has_reads = all(k in end and k in start for k in _READ_COUNTERS)
         rows[cam] = {
             **d,
             "alive": bool(end.get("alive", False)),
             "reliable": reliable,
+            "read_counters": has_reads,
             "fps": round(d["frames"] / window_s, 2),
-            "vehicles_per_min": round(d["vehicle_tracks"] / (window_s / 60), 1),
+            "vehicles_per_min": (round(d["vehicle_tracks"] / (window_s / 60), 1)
+                                 if has_reads else None),
             "boxes_per_min": round(d["detections"] / (window_s / 60), 1),
             "motion_skip_rate": round(d["motion_skipped"] / max(1, gated), 3),
-            "plate_read_rate": round(d["full_reads"] / max(1, d["vehicle_tracks"]), 3),
+            "plate_read_rate": (round(d["full_reads"] / max(1, d["vehicle_tracks"]), 3)
+                                if has_reads else None),
         }
     return rows
 
@@ -147,7 +157,8 @@ def _fmt_per_cam(rows: dict[str, dict], key: str,
     parts = []
     for cam, row in rows.items():
         flag = "" if row["reliable"] else " (restarted — unreliable)"
-        parts.append(f"{cam} {row[key]}{suffix}{flag}")
+        value = "unmeasured" if row[key] is None else f"{row[key]}{suffix}"
+        parts.append(f"{cam} {value}{flag}")
     return " · ".join(parts) if parts else "no cameras in stats"
 
 
@@ -161,6 +172,9 @@ def render_markdown(result: dict) -> str:
     where = f"S4.1 measure {stamp} [measured]"
     n = len(rows)
     alive = sum(1 for r in rows.values() if r["alive"])
+    reads = (f"{t['plate_read_rate']} ({t['full_reads']}/{t['vehicle_tracks']}) overall; "
+             f"{_fmt_per_cam(rows, 'plate_read_rate')}"
+             if t["plate_read_rate"] is not None else _UNMEASURED_READS)
     vram = (f"{gpu['peak_mib']} MiB (baseline before window: "
             f"{gpu['baseline_mib']} MiB)" if gpu["available"]
             else "unmeasured (nvidia-smi unavailable)")
@@ -180,9 +194,7 @@ def render_markdown(result: dict) -> str:
         f"(api tree {ram['api']:.0f} + worker tree {ram['worker']:.0f}) | {where} |",
         f"| Motion-skip rate per camera | "
         f"{_fmt_per_cam(rows, 'motion_skip_rate')} | {where} |",
-        f"| Plate-read rate (full reads / vehicle tracks) | "
-        f"{t['plate_read_rate']} ({t['full_reads']}/{t['vehicle_tracks']}) overall; "
-        f"{_fmt_per_cam(rows, 'plate_read_rate')} | {where} |",
+        f"| Plate-read rate (full reads / vehicle tracks) | {reads} | {where} |",
         "",
         f"- Detection boxes/min per camera (raw): {_fmt_per_cam(rows, 'boxes_per_min')}",
         f"- Sightings in window: {t['sightings']}; zone events: {t['zone_events']}; "
@@ -323,8 +335,9 @@ def main(argv: list[str] | None = None) -> int:
               for k in ("frames", "detections", "sightings", "alerts",
                         "zone_events", "full_reads", "vehicle_tracks",
                         "ocr_attempts")}
-    totals["plate_read_rate"] = round(
-        totals["full_reads"] / max(1, totals["vehicle_tracks"]), 3)
+    totals["plate_read_rate"] = (
+        round(totals["full_reads"] / max(1, totals["vehicle_tracks"]), 3)
+        if rows and all(r["read_counters"] for r in rows.values()) else None)
     result: dict[str, Any] = {
         "measured_at": stamp,
         "planned_minutes": args.minutes,

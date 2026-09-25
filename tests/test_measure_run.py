@@ -72,6 +72,29 @@ def test_window_rows_flags_a_counter_regression_as_unreliable():
     assert cam["frames"] == 0 and cam["fps"] == 0.0    # clamped, not negative
 
 
+def test_plate_read_rate_is_unmeasured_when_worker_predates_read_counters():
+    # 25 Sep laptop: the running worker started before the merge that added
+    # full_reads/vehicle_tracks, so its stats carry neither key. The window
+    # maths used to default them to 0 and print "0.0 (0/0)" — a number no
+    # code measured (root rule 8). It must say "unmeasured" instead.
+    old = {k: v for k, v in _BASE_CAM.items()
+           if k not in ("full_reads", "vehicle_tracks", "ocr_attempts")}
+    rows = measure_run.window_rows(
+        _snap({"cam06": dict(old)}),
+        _snap({"cam06": {**old, "frames": 220, "detections": 1100}}), 600.0)
+    cam = rows["cam06"]
+    assert cam["read_counters"] is False
+    assert cam["plate_read_rate"] is None and cam["vehicles_per_min"] is None
+    assert cam["fps"] == 0.2                       # the other rows still measure
+    result = _result_dict()
+    result["cameras"] = rows
+    result["totals"]["plate_read_rate"] = None
+    md = measure_run.render_markdown(result)
+    assert "unmeasured (worker predates the read counters)" in md
+    assert "cam06 unmeasured" in md                # vehicles/camera/min row
+    assert "0.0 (0/0)" not in md
+
+
 def _result_dict(*, warmup_ok: bool = True, gpu_available: bool = False) -> dict:
     rows = measure_run.window_rows(
         _snap({"cam06": dict(_BASE_CAM)}),
