@@ -44,9 +44,18 @@ _MAX_CSV_ROWS = 5_000
 # handful of lines, so allow a small slack over rows+header.
 _CSV_NEWLINE_SLACK = 20
 
+# img-src names every basemap host the frontend's TileLayers use, exactly:
+# a CSP wildcard never matches the bare host, and "*.tile.openstreetmap.org"
+# blocked every tile from "tile.openstreetmap.org" until 25 Sep (blank grey
+# map). media-src/worker-src need blob: because hls.js attaches a
+# MediaSource blob: URL to every <video> and runs its demuxer in a blob:
+# worker — without them no Live Wall tile could play in a real browser.
 _CSP = (
     "default-src 'self'; "
-    "img-src 'self' data: https://*.tile.openstreetmap.org; "
+    "img-src 'self' data: blob: https://tile.openstreetmap.org "
+    "https://*.basemaps.cartocdn.com https://server.arcgisonline.com; "
+    "media-src 'self' blob:; "
+    "worker-src 'self' blob:; "
     "style-src 'self' 'unsafe-inline'; "
     "connect-src 'self'; "
     "frame-ancestors 'none'; object-src 'none'"
