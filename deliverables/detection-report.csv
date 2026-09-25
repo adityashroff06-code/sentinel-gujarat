@@ -1,47 +1,264 @@
-timestamp_utc,plate,plate_raw,confidence,vehicle_class,camera_id,department,location
-2026-09-14T19:10:45.018730+00:00,GJ01A81234,GJ01A81234,0.74,car,cam09,Police,New Bypass Circle Junagadh
-2026-09-14T19:10:24.709915+00:00,GJ03JR5317,GJ03JR5317,1.00,car,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T19:08:28.018730+00:00,GJ21UY7603,GJ21UY7603,0.83,truck,cam26,Panchayat,Tankal
-2026-09-14T19:06:45.018730+00:00,GJ01AB1234,GJ01AB1234,0.88,car,cam09,Police,New Bypass Circle Junagadh
-2026-09-14T19:02:45.018730+00:00,GJ01AB1234,GJ01AB1234,0.88,car,cam10,Municipal,Char Chowk Road Junagadh
-2026-09-14T19:01:24.018730+00:00,GJ23GB5202,GJ23GB5202,0.68,car,cam28,Health,Bilimora 37
-2026-09-14T19:01:13.018730+00:00,GJ08ZH5150,GJ08ZH5150,0.63,bus,cam09,Police,New Bypass Circle Junagadh
-2026-09-14T19:01:02.018730+00:00,GJ19HC4469,GJ19HC4469,0.85,bus,cam28,Health,Bilimora 37
-2026-09-14T18:58:45.018730+00:00,GJ01AB1234,GJ01AB1234,0.88,car,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T18:56:35.030695+00:00,GJ18X,GJ.18.X,0.99,truck,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T18:56:33.364028+00:00,GA18X,GA18X,0.68,truck,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T18:54:42.620803+00:00,GJ03JR1036,-GJ03JR1036,0.92,car,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T18:54:36.018730+00:00,GJ21CC5565,GJ21CC5565,0.64,motorcycle,cam26,Panchayat,Tankal
-2026-09-14T18:53:04.018730+00:00,GJ15DX6477,GJ15DX6477,0.85,car,cam28,Health,Bilimora 37
-2026-09-14T18:51:01.018730+00:00,GJ13FK1479,GJ13FK1479,0.70,bus,cam09,Police,New Bypass Circle Junagadh
-2026-09-14T18:50:45.018730+00:00,GJ27VR2129,GJ27VR2129,0.71,bus,cam26,Panchayat,Tankal
-2026-09-14T18:50:39.018730+00:00,GJ10UX2043,GJ10UX2043,0.65,motorcycle,cam09,Police,New Bypass Circle Junagadh
-2026-09-14T18:50:31.018730+00:00,GJ22EE1059,GJ22EE1059,0.76,motorcycle,cam27,Municipal,Bilimora 36
-2026-09-14T18:50:26.018730+00:00,GJ11KX3626,GJ11KX3626,0.87,car,cam28,Health,Bilimora 37
-2026-09-14T18:50:16.018730+00:00,GJ16YM5492,GJ16YM5492,0.62,bus,cam09,Police,New Bypass Circle Junagadh
-2026-09-14T18:49:35.018730+00:00,GJ22JS1295,GJ22JS1295,0.67,motorcycle,cam26,Panchayat,Tankal
-2026-09-14T18:49:10.018730+00:00,GJ05KT5910,GJ05KT5910,0.67,car,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T18:48:18.018730+00:00,GJ16TM2999,GJ16TM2999,0.90,truck,cam26,Panchayat,Tankal
-2026-09-14T18:46:12.018730+00:00,GJ04YB7656,GJ04YB7656,0.79,bus,cam09,Police,New Bypass Circle Junagadh
-2026-09-14T18:44:25.018730+00:00,GJ13CP9963,GJ13CP9963,0.60,car,cam27,Municipal,Bilimora 36
-2026-09-14T18:43:33.018730+00:00,GJ20FU1155,GJ20FU1155,0.58,motorcycle,cam27,Municipal,Bilimora 36
-2026-09-14T18:42:05.018730+00:00,GJ15EH3883,GJ15EH3883,0.74,motorcycle,cam27,Municipal,Bilimora 36
-2026-09-14T18:41:38.018730+00:00,GJ18PJ1963,GJ18PJ1963,0.74,truck,cam09,Police,New Bypass Circle Junagadh
-2026-09-14T18:39:54.018730+00:00,GJ11HD1234,GJ11HD1234,0.73,car,cam09,Police,New Bypass Circle Junagadh
-2026-09-14T18:39:27.018730+00:00,GJ05PE6079,GJ05PE6079,0.68,car,cam28,Health,Bilimora 37
-2026-09-14T18:38:12.018730+00:00,GJ11NB1210,GJ11NB1210,0.81,motorcycle,cam09,Police,New Bypass Circle Junagadh
-2026-09-14T18:35:42.018730+00:00,GJ05TA6552,GJ05TA6552,0.59,car,cam27,Municipal,Bilimora 36
-2026-09-14T18:32:33.018730+00:00,GJ27QD1877,GJ27QD1877,0.73,bus,cam28,Health,Bilimora 37
-2026-09-14T18:30:29.018730+00:00,GJ06BH3193,GJ06BH3193,0.62,car,cam27,Municipal,Bilimora 36
-2026-09-14T18:29:17.946277+00:00,GJ03KH0407,GJ03KH0407,0.89,car,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T18:29:15.612943+00:00,GJ11VY7338,GJ11VY7338,0.98,truck,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T18:29:06.946277+00:00,M100405,M100-405,0.50,motorcycle,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T18:29:00.946277+00:00,GJ03ER8216,GJ03ER8216,0.98,car,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T18:27:59.018730+00:00,GJ20GF9346,GJ20GF9346,0.81,motorcycle,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T18:27:05.090762+00:00,GJ018S5926,GJ018S5926,0.86,car,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T18:26:51.090762+00:00,GJ32K9819,GJ32 K 9819,0.98,truck,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T18:24:46.938364+00:00,GJ188R5253,GJ188R5253,0.92,car,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T18:24:33.938364+00:00,GJ11BHO117,GJ11BHO117,0.87,car,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T18:23:52.018730+00:00,GJ22DY3880,GJ22DY3880,0.92,bus,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T18:03:22.612778+00:00,GJ03JR8399,GJ03JR8399,0.95,car,cam06,GSRTC,Timbavadi Gate Junagadh
-2026-09-14T17:59:19.637692+00:00,GJ10DN2875,GJ10DN2875,0.95,car,cam06,GSRTC,Timbavadi Gate Junagadh
+seen_at_utc,plate,plate_raw,confidence,vehicle_class,camera_id,department,location,clock_source,provenance
+2026-09-25T11:27:18+00:00,GJ03IC5583,GJ03.1C5583,0.92,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:25:21+00:00,GJ11CO9625,GJ11C09625,0.95,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:24:59+00:00,GJ03EK8807,GJ03EK8807,0.83,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:24:33+00:00,GJ11S7924,GJ11S7924,0.99,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:22:36+00:00,GJ32AG2883,GJ32AG2883,0.97,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:22:19+00:00,GJ18X,GJ.18X,0.95,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:21:44+00:00,GJ11CO9625,GJ11C09625,0.96,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:20:50+00:00,GJ11S7924,'-6J11S7924,0.91,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:20:30+00:00,GJ23H1546,GJ23H1546,0.96,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:18:20+00:00,GJ11Z5132,GJ1125132,0.74,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:18:20+00:00,GJ14ZI0902,'-6J14Z10902,0.84,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:18:05+00:00,GJ11CO3384,GJ11C03384,0.82,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:17:24+00:00,GJ11CL8225,GJ11CL8225,0.96,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:17:24+00:00,GJ11BR2513,GJ11BR2513,0.99,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:17:24+00:00,GJ11BR2519,GJ118R2519,0.93,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:14:57+00:00,GJ03JL6883,GJ03JL6883,0.98,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T11:13:49+00:00,GJ01A81234,GJ01A81234,0.88,car,cam09,Police,09 new-bypass-near-by-circle-junagadh-2,demo,demo
+2026-09-25T11:07:49+00:00,GJ01AB1234,GJ01AB1234,0.96,car,cam09,Police,09 new-bypass-near-by-circle-junagadh-2,demo,demo
+2026-09-25T10:59:49+00:00,GJ01AB1234,GJ01AB1234,0.96,car,cam10,Municipal,10 char-chowk-road-2-junagadh,demo,demo
+2026-09-25T10:52:49+00:00,GJ01AB1234,GJ01AB1234,0.96,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,demo,demo
+2026-09-25T10:49:49+00:00,GJ01KT4821,GJ01KT4821,0.82,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,demo,demo
+2026-09-25T10:46:49+00:00,GJ03RV9034,GJ03RV9034,0.83,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,demo,demo
+2026-09-25T10:43:49+00:00,GJ11DN7745,GJ11DN7745,0.84,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,demo,demo
+2026-09-25T10:40:49+00:00,GJ05PW3390,GJ05PW3390,0.85,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,demo,demo
+2026-09-25T10:37:49+00:00,GJ18HM6017,GJ18HM6017,0.86,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,demo,demo
+2026-09-25T10:34:49+00:00,GJ02TR8852,GJ02TR8852,0.87,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,demo,demo
+2026-09-25T10:31:49+00:00,GJ25VK1409,GJ25VK1409,0.88,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,demo,demo
+2026-09-25T10:28:49+00:00,GJ04MN7263,GJ04MN7263,0.89,truck,cam10,Municipal,10 char-chowk-road-2-junagadh,demo,demo
+2026-09-25T10:25:49+00:00,GJ09RA5528,GJ09RA5528,0.90,car,cam10,Municipal,10 char-chowk-road-2-junagadh,demo,demo
+2026-09-25T10:22:49+00:00,GJ15KP9944,GJ15KP9944,0.91,car,cam10,Municipal,10 char-chowk-road-2-junagadh,demo,demo
+2026-09-25T10:19:49+00:00,GJ22TR4076,GJ22TR4076,0.92,motorcycle,cam10,Municipal,10 char-chowk-road-2-junagadh,demo,demo
+2026-09-25T10:16:49+00:00,GJ07DN1385,GJ07DN1385,0.93,car,cam10,Municipal,10 char-chowk-road-2-junagadh,demo,demo
+2026-09-25T10:13:49+00:00,GJ28HM7621,GJ28HM7621,0.94,bus,cam10,Municipal,10 char-chowk-road-2-junagadh,demo,demo
+2026-09-25T10:10:49+00:00,GJ10RV3849,GJ10RV3849,0.95,car,cam09,Police,09 new-bypass-near-by-circle-junagadh-2,demo,demo
+2026-09-25T10:07:49+00:00,GJ17KT6690,GJ17KT6690,0.96,car,cam09,Police,09 new-bypass-near-by-circle-junagadh-2,demo,demo
+2026-09-25T10:04:49+00:00,GJ20PW2277,GJ20PW2277,0.82,truck,cam09,Police,09 new-bypass-near-by-circle-junagadh-2,demo,demo
+2026-09-25T10:01:49+00:00,GJ25MN8104,GJ25MN8104,0.83,car,cam09,Police,09 new-bypass-near-by-circle-junagadh-2,demo,demo
+2026-09-25T10:00:31+00:00,GJ03LG9655,6J03L69655,0.81,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T10:00:16+00:00,GJ03AZ0644,GJ03AZ0644,0.97,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:58:49+00:00,GJ13RA4433,GJ13RA4433,0.84,motorcycle,cam09,Police,09 new-bypass-near-by-circle-junagadh-2,demo,demo
+2026-09-25T09:57:35+00:00,GJ32AA2864,GJ32AA2864,0.99,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:57:24+00:00,GJ03PR5082,GJ03PR5082,0.95,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:55:59+00:00,GJ03KH0407,GJ03KH0407,0.97,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:55:49+00:00,GJ06VK9752,GJ06VK9752,0.85,car,cam09,Police,09 new-bypass-near-by-circle-junagadh-2,demo,demo
+2026-09-25T09:55:49+00:00,GJ15EB2934,6J15E82934,0.88,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:55:05+00:00,GJ11OB2886,6J11082886,0.86,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:53:42+00:00,GJ25AA4345,'-GJ25AA4345,0.98,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:53:34+00:00,GJ05JF6480,6J05JF6480,0.97,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:52:49+00:00,GJ23KP5518,GJ23KP5518,0.86,car,cam09,Police,09 new-bypass-near-by-circle-junagadh-2,demo,demo
+2026-09-25T09:51:53+00:00,GJ32K9995,6J32K9995,0.78,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:50:56+00:00,GJ11G1388,6J1161388,0.87,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:50:49+00:00,GJ03JC5583,GJ03JC5583,0.96,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:50:14+00:00,GJ03JR1036,GJ03JR1036,0.91,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:49:32+00:00,GJ11CO3625,GJ11C03625,0.92,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:49:00+00:00,GJ03EX8807,GJ03EX8807,0.94,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:31:31+00:00,GJ11CO8833,GJ11C08833,0.82,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:31:00+00:00,GJ18ZT1782,GJ18ZT1782,1.00,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:30:07+00:00,GJ11BR1008,GJ11BR1008,0.96,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:29:38+00:00,GJ01KN1659,'-GJ01KN1659,0.82,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:28:29+00:00,GJ36R4094,GJ36R4094,1.00,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:26:28+00:00,GJ10DN2875,GJ10DN2875,0.99,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:25:33+00:00,GJ11VV7338,GJ11VV7338,0.96,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:25:20+00:00,GJ03ER8216,GJ03ER8216,0.99,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:24:43+00:00,GJ11DB2886,GJ11DB2886,0.99,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:23:25+00:00,GJ01BS5926,6J01855926,0.86,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:22:29+00:00,GJ11CO8889,GJ11C08889,0.82,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:22:17+00:00,GJ37AB9445,GJ37AB9445,0.95,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:18:10+00:00,GJ11S7924,GJ1157924,0.87,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:17:19+00:00,GJ32AG2883,GJ32AG2883,0.96,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:15:59+00:00,GJ03MH7800,GJ03MH7800,0.95,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:15:33+00:00,GJ01HM7952,'-6J01HM7952,0.88,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:14:26+00:00,GJ11S7924,GJ1157924,0.84,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T09:13:35+00:00,GJ11CO3525,GJ11C03525,0.82,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:56:11+00:00,GJ11CH0340,GJ11CH0340,0.98,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:53:13+00:00,GJ03XH0407,GJO3XH0407,0.89,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:52:53+00:00,GJ03ER8216,GJ03ER8216,0.98,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:51:20+00:00,GJ11BR8190,6J118R8190,0.93,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:50:42+00:00,GJ05JF6480,6.J05JF6480,0.91,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:49:06+00:00,GJ32K9985,6J32K9985,0.88,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:48:20+00:00,GJ03ME9186,GJ03ME9186,0.95,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:47:57+00:00,GJ03JC5583,GJ03JC5583,0.94,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:47:19+00:00,GJ03MH7800,GJ03MH7800,0.95,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:44:51+00:00,GJ32AG2883,GJ32AG2883,0.97,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:43:02+00:00,GJ18BR5253,GJ18BR5253,0.87,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:42:44+00:00,GJ11S9258,GJ11S9258,0.94,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:42:30+00:00,GJ11G1388,GJ11 6'1388,0.90,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:41:45+00:00,GJ03MH7800,GJ03MH7800,0.96,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:41:44+00:00,GJ03JR1036,GJ03JR1036,0.96,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:41:14+00:00,GJ01HM7952,GJ01HM7952,0.96,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:41:04+00:00,GJ11CO9625,GJ11C09625,0.93,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:41:04+00:00,GJ11CO9525,GJ11C09525,0.82,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:40:11+00:00,GJ11S7924,GJ11S7924,0.88,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:39:45+00:00,GJ23H1546,GJ23H1546,0.94,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:39:45+00:00,GJ23H1548,6J23H1548,0.78,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:37:30+00:00,GJ11S7924,GJ11S7924,0.96,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:36:15+00:00,GJ18X,GJ.18.X,0.88,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:34:38+00:00,GJ18X,GJ.18.X,0.99,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:33:18+00:00,GJ14Z0902,6J14Z0902,0.72,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:33:08+00:00,GJ11Z8182,GJ.11.Z.8182,0.93,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:32:55+00:00,GJ11CO3384,GJ11C03384,0.75,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:32:09+00:00,GJ11S4318,GJ11S4318,0.99,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:32:06+00:00,GJ11BR2513,GJ11BR2513,0.98,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:31:55+00:00,GJ11DB9063,GJ11DB9063,0.99,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:30:08+00:00,GJ03KP7434,GJ03KP7434,0.94,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:29:29+00:00,GJ03JL6883,GJ03JL6883,0.93,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:29:12+00:00,GJ03CE0033,'-GJ03CE0033,0.56,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:28:39+00:00,GJ03BY8234,GJ03BY8234,0.94,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:28:39+00:00,GJ03HR0416,GJO3HR0416,0.93,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:28:39+00:00,GJ03BY9234,GJ038Y9234,0.96,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:28:21+00:00,GJ18BL4660,GJ188L4660,0.93,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:27:14+00:00,GJ03JR8399,"""GJ03JR8399",0.98,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:26:52+00:00,GJ03LG9656,GJ03L69656,0.90,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:26:42+00:00,GJ18BH7584,GJ188H7584,0.93,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:25:27+00:00,GJ05BZ1174,GJ.05.BZ.1174,0.94,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:20:36+00:00,GJ11BR8190,6J118R8190,0.93,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:20:04+00:00,GJ03PO2863,6.J03P02863,0.88,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:19:51+00:00,GJ05JF6480,6J05JF6480,0.93,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:19:04+00:00,GJ11BH2735,GJ11BH2735,0.64,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:19:00+00:00,GJ37AB9445,GJ37AB9445,0.93,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:14:31+00:00,GJ23H1546,6J23H1546,0.95,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:12:48+00:00,GJ01HM7952,GJO1HM7952,0.95,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:12:12+00:00,GJ03FX8807,GJ03FX8807,0.91,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:11:45+00:00,GJ11S7924,6J11S7924,0.94,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:11:21+00:00,GJ23H1546,6J23H1546,0.99,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T08:09:44+00:00,GJ11S7924,GJ11S7924,0.95,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T06:05:08+00:00,MH02EZ1785,MH02E21785,0.86,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:05:08+00:00,AN46Z0518,AN 46 20518,0.68,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:05:03+00:00,MH01EN2769,MHO1EN2769,0.82,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:04:57+00:00,AN01CS6183,AN01C56183,0.76,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:04:44+00:00,MH47GL7100,MH476L7100,0.81,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:04:33+00:00,MH47O6110,MH470 6110,0.88,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:03:53+00:00,MH01DE2432,MHO1DE 2432,0.94,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:03:37+00:00,GJ32K9985,GJ32K 9985,0.96,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T06:03:37+00:00,22BH0641B,228H06418,0.86,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:03:37+00:00,MH01CR9743,MH.01.CR9743,0.79,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:03:30+00:00,MH02EZ1785,MH02E21785,0.82,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:03:05+00:00,GJ18BB5253,'-GJ18885253,0.92,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T06:03:03+00:00,MH46OS1943,MH.46.051943,0.61,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:03:03+00:00,MN02EZ1785,MN02E21785,0.80,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:03:03+00:00,MH04NM9903,MH 04 NM 9903,0.50,motorcycle,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:03:03+00:00,MH46OF1943,MH.46.0F1943,0.87,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:02:43+00:00,MH03EC8360,MH03EC8360,0.67,motorcycle,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:02:43+00:00,MH02FC0919,MH02FC0919,0.92,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:02:25+00:00,MH02FY4009,MH02FY4009,0.97,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:02:10+00:00,MH47BF5485,MH478F5485,0.89,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:02:10+00:00,MH02EZ1785,MH02E21785,0.80,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:01:51+00:00,MN03EG8360,MN03EG8360,0.83,bus,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:01:16+00:00,MN01EW2759,'-MN01EW2759,0.74,motorcycle,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:01:16+00:00,MH48OO9890,MH48009890,0.78,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:00:34+00:00,MH47O2882,MH4702882,0.97,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:00:34+00:00,MH02EZ1785,MH02E21785,0.91,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:00:27+00:00,MH02EP3623,MHOZEP3623,0.83,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:00:21+00:00,MH01DE2432,MH01DE2432,0.92,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T06:00:16+00:00,MN02FI9304,MNQ2F19304,0.81,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:59:52+00:00,GJ23H1546,GJ23H1546,1.00,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T05:59:52+00:00,22BH0641B,228H06418,0.86,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:59:48+00:00,MH02FC0319,MH02FC0319,0.86,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:59:46+00:00,MH02,MH02,0.94,motorcycle,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:59:39+00:00,MN02FI9760,MN02F19760,0.81,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:59:21+00:00,MH02CW5145,MH.O2 CWS145,0.72,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:59:16+00:00,MN48CO9890,MN48C09890,0.67,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:59:02+00:00,WB01OB6727,W801086727,0.81,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:59:02+00:00,MH47BL7100,:MH47BL7.100,0.79,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:58:51+00:00,MH02FY4009,MH02FY4009,0.90,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:58:28+00:00,MH02EZ1785,MH02E21785,0.93,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:58:12+00:00,MH02GO7137,MH02G07137,0.86,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:57:55+00:00,MH02EZ9765,MH02EZ9765,0.87,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:57:48+00:00,MH03EC8360,MH03EC8360,0.67,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:57:38+00:00,GJ01HM7952,'-6J01HM7952,0.88,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T05:57:37+00:00,MH20OO5890,MH20005890,0.62,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:57:37+00:00,MN02FI9760,MN02F19760,0.85,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:56:41+00:00,MH02FY4009,MH02FY4009,0.90,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:56:30+00:00,GJ11S7924,GJ1157924,0.87,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T05:56:25+00:00,MH46OK1963,MH.460K1963,0.87,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:56:25+00:00,MH48CO9990,MH48C09390,0.55,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:56:06+00:00,MH02FCO319,MH02FCO319,0.88,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:55:35+00:00,MH48CB4036,MH4BC84036,0.70,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:55:30+00:00,MH03CB3032,MH 03 C8 3032,0.70,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:55:30+00:00,MH46OS1943,MH.46.051943,0.89,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:55:30+00:00,MH01DE2432,MH01DE2432,0.92,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:55:30+00:00,MH01EN2769,MHO1EN2769,0.82,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:55:23+00:00,MH22FI1003,MH22F11003,0.78,bus,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:55:08+00:00,22BH0641B,228H06418,0.86,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:55:02+00:00,MH02FC0319,MH02FC0319,0.86,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:54:29+00:00,MH07EP3629,MH07EP3629,0.87,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:53:59+00:00,MH47O2882,MH4702882,0.90,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:53:35+00:00,MN02FI9304,MN02F19304,0.80,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:53:26+00:00,MH02E1995,MH02E1995,0.78,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:53:18+00:00,MH02FC0519,MHOZFCOS19,0.77,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:53:10+00:00,MH03EC8360,MH03EC8360,0.67,motorcycle,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:52:49+00:00,MH02EZ1785,MHO2E21785,0.87,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:52:23+00:00,MH02EP3629,MHO2EP3629,0.90,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:52:23+00:00,MH03OE8821,'-MHO30E8821,0.72,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:52:17+00:00,MN03EG8360,MN03EG8360,0.56,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:52:01+00:00,MH02FG0919,MH02FG0919,0.94,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:52:01+00:00,MH02FI3243,MH02F13243,0.89,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:51:44+00:00,MH02EZ1785,MHO2E21785,0.88,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:51:44+00:00,MH02GB4920,MH02G84920,0.88,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:51:44+00:00,MH03DR6727,MHO3DR6727,0.81,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:51:42+00:00,GJ03PO2863,6.J03P02863,0.88,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T05:51:37+00:00,GJ25AA4345,'-GJ25AA4345,0.98,bus,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T05:51:19+00:00,MH47BL7100,MH47BL7100,0.91,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:50:40+00:00,MH02EZ1785,MH02E21785,0.82,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:50:40+00:00,MH49CO9890,MH49C09890,0.81,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:50:12+00:00,MH02FC0319,MH02FC0319,0.86,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:49:49+00:00,MH02FI9384,MH02F19384,0.82,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:49:49+00:00,MH47BF5485,MH478F5485,0.86,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:49:40+00:00,MH07EP3629,MH07EP3629,0.87,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:49:13+00:00,GJ11BH0417,GJ118H0417,0.98,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T05:49:06+00:00,MH47O2882,MH4702882,0.95,bus,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:48:48+00:00,MN46Z0518,MN 46 2 0518,0.73,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:48:48+00:00,MN02EZ1785,MN02E21785,0.85,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:48:38+00:00,MN03EC3633,MNO3EC3633,0.75,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:48:06+00:00,MN02FI9760,MN02F19760,0.85,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:48:06+00:00,MH01EV2769,MH01EV2769,0.80,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:48:06+00:00,MH28CO9890,MH28C09890,0.59,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:48:06+00:00,MH02EP3629,MH02EP3629,0.91,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:47:03+00:00,MH28CO9390,MH28C09390,0.65,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:47:03+00:00,MH02EZ1785,MH02E21785,0.80,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:46:59+00:00,MH02FI9384,MH02F19384,0.56,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:46:44+00:00,MH02EP3629,MHO2EP3629,0.88,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:46:24+00:00,GJ11S7924,GJ11S7924,0.90,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T05:46:06+00:00,GJ23H1546,GJ23H1546,0.97,truck,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T05:46:04+00:00,MN02FI5050,MN02F15050,0.73,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:46:04+00:00,MH46OS1943,MH.46.051943,0.89,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:46:04+00:00,MN02EZ1785,MN02E21785,0.83,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:46:04+00:00,MH02EP3623,MHOZEP3623,0.50,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:45:36+00:00,MH47BL7100,MH47BL7100,0.93,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:45:24+00:00,MH02EP3629,MHO2EP3629,0.97,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:45:19+00:00,MH02EZ1785,MH02E21785,0.84,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:45:19+00:00,MN48CO9890,MN48C09890,0.48,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:44:21+00:00,MH47O2882,MH4702882,0.90,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:44:09+00:00,MH48CO9890,MH48C09890,0.69,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:44:09+00:00,MH01DE2432,MHO1DE 2432,0.90,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:44:09+00:00,MH02EZ1785,MH02E21785,0.85,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:44:09+00:00,MH02EK1995,MH02EK1995,0.88,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:44:00+00:00,22BH0621B,228H06218,0.78,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:43:32+00:00,MH03EC8360,MH03EC8360,0.67,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:43:19+00:00,GJ11CH4401,GJ11CH4401,0.87,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T05:43:01+00:00,CH01ER4753,CH01ER4753,0.71,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:43:01+00:00,MH40CO9890,MH40C09890,0.84,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:42:43+00:00,MH02EZ9765,MH0ZE29765,0.71,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:42:15+00:00,MH28CO9390,MH28C09390,0.65,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:42:15+00:00,MH01EB5916,MHO1E8S916,0.80,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:42:02+00:00,MH01DE2432,MHO1DE2432,0.91,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:41:54+00:00,MH03DR6727,MHO3DR6727,0.81,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:41:48+00:00,GJ11CH0340,'-GJ11CH0340,0.98,motorcycle,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T05:41:47+00:00,MH02EK1995,MH02EK1995,0.93,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:41:47+00:00,MH48AC6694,MH48AC6694,0.69,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:41:47+00:00,22BH0641B,228H06418,0.85,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:41:47+00:00,MH03EC8360,MH03EC8360,0.89,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:41:17+00:00,MH02EZ1785,MH02E21785,0.88,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:41:05+00:00,MH49CO9890,MH49C09890,0.81,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:41:02+00:00,MN03EC3689,MN03EC3689,0.70,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:41:02+00:00,MH22FI1003,MH22F11003,0.78,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:40:41+00:00,24BH5283O,248H52830,0.84,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:40:33+00:00,MH47O2882,MH4702882,0.89,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:40:16+00:00,GJ03PB5082,GJ03P85082,0.90,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live
+2026-09-25T05:40:16+00:00,MN46Z8518,MN 4628518,0.74,truck,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:40:16+00:00,MN02EZ1785,MNO2E2178S,0.77,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:40:03+00:00,MH01DE2432,MHO1DE 2432,0.94,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:39:51+00:00,MH47BL7100,:MH47BL7.100,0.79,car,local01,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",rtsp-live,live
+2026-09-25T05:38:28+00:00,GJ03ER8216,GJ03ER8216,0.97,car,cam06,GSRTC,06 Timbavadi gate-Junagadh,rtsp-live,live

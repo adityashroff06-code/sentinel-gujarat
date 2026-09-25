@@ -1,0 +1,5 @@
+sequence,seen_at_utc,camera_id,department,location,lat,lon,plate_raw,confidence,match_type,match_distance,suspect,elapsed_from_previous_s,implied_speed_kmh,clock_source,provenance
+1,2026-09-25T10:52:49+00:00,cam06,GSRTC,06 Timbavadi gate-Junagadh,21.4922,70.453,GJ01AB1234,0.96,exact,0.0,False,,,demo,demo
+2,2026-09-25T10:59:49+00:00,cam10,Municipal,10 char-chowk-road-2-junagadh,21.525,70.458,GJ01AB1234,0.96,exact,0.0,False,420,31.6,demo,demo
+3,2026-09-25T11:07:49+00:00,cam09,Police,09 new-bypass-near-by-circle-junagadh-2,21.548,70.489,GJ01AB1234,0.96,exact,0.0,False,480,30.8,demo,demo
+4,2026-09-25T11:13:49+00:00,cam09,Police,09 new-bypass-near-by-circle-junagadh-2,21.548,70.489,GJ01A81234,0.88,ambiguity,0.0,False,360,0.0,demo,demo

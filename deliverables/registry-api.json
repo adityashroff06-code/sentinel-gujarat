@@ -210,6 +210,56 @@
     }
    }
   },
+  "/api/cameras/activity": {
+   "get": {
+    "tags": [
+     "cameras"
+    ],
+    "summary": "Camera Activity",
+    "description": "Plate reads, distinct plates and alerts per camera over the last\n*hours*, anchored at the server's wall clock (``seen_at`` / ``fired_at``\nat or after now \u2212 hours). Cameras with no activity in the window are\nomitted; ``sightings`` is split by provenance in ``by_provenance``.\nRegistered before ``/{camera_id}`` so it is never read as an id.",
+    "operationId": "camera_activity_api_cameras_activity_get",
+    "parameters": [
+     {
+      "name": "hours",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 168,
+       "minimum": 1,
+       "default": 24,
+       "title": "Hours"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/CameraActivityOut"
+         },
+         "title": "Response Camera Activity Api Cameras Activity Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/cameras/import": {
    "post": {
     "tags": [
@@ -395,7 +445,7 @@
      "analytics"
     ],
     "summary": "List Sightings",
-    "description": "Search sightings with filters; paginated, newest first; ``total``\nis computed with the same WHERE as the rows (B11).",
+    "description": "ANPR search over sightings with filters; paginated; ``total`` is\ncomputed with the same WHERE as the rows (B11).\n\n``match``: ``contains`` (default \u2014 newest first, unchanged), ``exact``,\nor ``anpr`` \u2014 OCR-tolerant, ranked exact \u2192 ambiguity (canonical\nequality) \u2192 fuzzy (the canonical-prefix bucket, both sides full,\nweighted distance \u2264 1.0), then newest first; a partial ``anpr`` query\nmatches as an OCR-tolerant fragment. Rows carry ``match_type`` and\n``match_distance``; ``query`` echoes how the grammar read the plate.\nA plate query is audited with the plate searched (B12).",
     "operationId": "list_sightings_api_sightings_get",
     "parameters": [
      {
@@ -405,13 +455,29 @@
       "schema": {
        "anyOf": [
         {
-         "type": "string"
+         "type": "string",
+         "maxLength": 64
         },
         {
          "type": "null"
         }
        ],
        "title": "Plate"
+      }
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "contains",
+        "exact",
+        "anpr"
+       ],
+       "type": "string",
+       "default": "contains",
+       "title": "Match"
       }
      },
      {
@@ -498,6 +564,23 @@
       }
      },
      {
+      "name": "vehicle_class",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "pattern": "^[a-z_]{1,32}$"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Vehicle Class"
+      }
+     },
+     {
       "name": "limit",
       "in": "query",
       "required": false,
@@ -528,6 +611,52 @@
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/SightingListOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/plates/suggest": {
+   "get": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "Plate Suggest",
+    "description": "Plates worth typing into Search: ``demo`` (labelled demo plates,\nwatchlisted first), ``watchlist`` (active entries, seen first) and\n``top_live`` (most-read full live plates). Audited by the middleware\nlike every ``/api/plates/*`` query (B12).",
+    "operationId": "plate_suggest_api_plates_suggest_get",
+    "parameters": [
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 50,
+       "minimum": 1,
+       "default": 8,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlateSuggestOut"
         }
        }
       }
@@ -1277,13 +1406,56 @@
     }
    }
   },
+  "/api/hls/{camera_id}/source": {
+   "get": {
+    "tags": [
+     "hls"
+    ],
+    "summary": "Hls Source",
+    "description": "Which path this camera's live playlist takes right now (``tee`` |\n``stale-tee`` | ``mediamtx`` | ``cdn`` | ``none``) and why. Touches no\nupstream: the tee on disk, the registry row, a loopback port check for\nmediamtx and the relay's CDN back-off state.",
+    "operationId": "hls_source_api_hls__camera_id__source_get",
+    "parameters": [
+     {
+      "name": "camera_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Camera Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HlsSourceOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/hls/{camera_id}/live.m3u8": {
    "get": {
     "tags": [
      "hls"
     ],
     "summary": "Live Playlist",
-    "description": "A live playlist for the wall: the worker's local tee when fresh\n(< 20 s), else an RTSP camera's stale tee (never the CDN), else a\nsliding window over the CDN recording at the shared-timeline position.",
+    "description": "The wall's playlist for one camera: the worker's tee when fresh,\nelse a local feed through mediamtx, else a sandbox camera's stale tee\n(< 120 s), else a sliding window over the CDN recording. The\n``X-Sentinel-Source`` header names the path taken.",
     "operationId": "live_playlist_api_hls__camera_id__live_m3u8_get",
     "parameters": [
      {
@@ -1298,7 +1470,7 @@
     ],
     "responses": {
      "200": {
-      "description": "The rewritten HLS media playlist",
+      "description": "The rewritten HLS playlist (X-Sentinel-Source names the path taken)",
       "content": {
        "application/json": {
         "schema": {}
@@ -1323,13 +1495,85 @@
     }
    }
   },
+  "/api/hls/{camera_id}/mtx/{name}": {
+   "get": {
+    "tags": [
+     "hls"
+    ],
+    "summary": "Mtx Object",
+    "description": "A local feed's child playlist or segment from mediamtx's HLS server\n(127.0.0.1 only) \u2014 **only** a name listed in the playlist last fetched\nfor this viewer's mediamtx session. Relay only; nothing is written.",
+    "operationId": "mtx_object_api_hls__camera_id__mtx__name__get",
+    "parameters": [
+     {
+      "name": "camera_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Camera Id"
+      }
+     },
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Name"
+      }
+     },
+     {
+      "name": "session",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "maxLength": 64,
+       "default": "",
+       "title": "Session"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "A rewritten child playlist, or the proxied segment bytes",
+      "content": {
+       "application/json": {
+        "schema": {}
+       },
+       "application/vnd.apple.mpegurl": {
+        "schema": {
+         "type": "string"
+        }
+       },
+       "video/mp2t": {
+        "schema": {
+         "type": "string",
+         "format": "binary"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/hls/{camera_id}/key": {
    "get": {
     "tags": [
      "hls"
     ],
     "summary": "Hls Key",
-    "description": "Proxy the AES-128 key named by the upstream playlist, with the\nbackend's CDN session; refused unless it is a 16-byte key from inside\nthe CDN origin. Never cached.",
+    "description": "Proxy the AES-128 key named by the upstream playlist, with the\nbackend's CDN session; refused unless it is a 16-byte key from inside\nthe CDN origin. Held only in the relay's memory cache (\u2264 120 s).",
     "operationId": "hls_key_api_hls__camera_id__key_get",
     "parameters": [
      {
@@ -1376,7 +1620,7 @@
      "hls"
     ],
     "summary": "Hls Segment",
-    "description": "Proxy one media segment \u2014 **only** a name present in the fetched\nupstream playlist, resolved **only** inside the configured CDN origin\n(B11). Relay only; nothing is written to disk.",
+    "description": "Proxy one media segment \u2014 **only** a name present in the fetched\nupstream playlist, resolved **only** inside the configured CDN origin\n(B11). N concurrent viewers share one upstream fetch (memory cache);\nnothing is written to disk.",
     "operationId": "hls_segment_api_hls__camera_id__seg__name__get",
     "parameters": [
      {
@@ -2073,6 +2317,53 @@
      "file"
     ],
     "title": "Body_import_csv_api_cameras_import_post"
+   },
+   "CameraActivityOut": {
+    "properties": {
+     "camera_id": {
+      "type": "string",
+      "title": "Camera Id"
+     },
+     "sightings": {
+      "type": "integer",
+      "title": "Sightings"
+     },
+     "plates": {
+      "type": "integer",
+      "title": "Plates"
+     },
+     "alerts": {
+      "type": "integer",
+      "title": "Alerts"
+     },
+     "last_seen": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Seen"
+     },
+     "by_provenance": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "type": "object",
+      "title": "By Provenance"
+     }
+    },
+    "type": "object",
+    "required": [
+     "camera_id",
+     "sightings",
+     "plates",
+     "alerts"
+    ],
+    "title": "CameraActivityOut",
+    "description": "One camera's read activity over a trailing window (the GIS Activity\nlayer). ``by_provenance`` splits ``sightings`` so a demo read never\npasses as a live one (root rule 12)."
    },
    "CameraEventSummaryOut": {
     "properties": {
@@ -3113,6 +3404,37 @@
     ],
     "title": "HealthOut"
    },
+   "HlsSourceOut": {
+    "properties": {
+     "camera_id": {
+      "type": "string",
+      "title": "Camera Id"
+     },
+     "source": {
+      "type": "string",
+      "enum": [
+       "tee",
+       "stale-tee",
+       "mediamtx",
+       "cdn",
+       "none"
+      ],
+      "title": "Source"
+     },
+     "detail": {
+      "type": "string",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "required": [
+     "camera_id",
+     "source",
+     "detail"
+    ],
+    "title": "HlsSourceOut",
+    "description": "Which path ``/api/hls/{camera_id}/live.m3u8`` takes right now."
+   },
    "ImportOut": {
     "properties": {
      "accepted": {
@@ -3295,6 +3617,88 @@
      "camera_id"
     ],
     "title": "OfflineCameraOut"
+   },
+   "PlateSuggestOut": {
+    "properties": {
+     "demo": {
+      "items": {
+       "$ref": "#/components/schemas/PlateSuggestionOut"
+      },
+      "type": "array",
+      "title": "Demo"
+     },
+     "watchlist": {
+      "items": {
+       "$ref": "#/components/schemas/PlateSuggestionOut"
+      },
+      "type": "array",
+      "title": "Watchlist"
+     },
+     "top_live": {
+      "items": {
+       "$ref": "#/components/schemas/PlateSuggestionOut"
+      },
+      "type": "array",
+      "title": "Top Live"
+     }
+    },
+    "type": "object",
+    "required": [
+     "demo",
+     "watchlist",
+     "top_live"
+    ],
+    "title": "PlateSuggestOut"
+   },
+   "PlateSuggestionOut": {
+    "properties": {
+     "plate": {
+      "type": "string",
+      "title": "Plate"
+     },
+     "reads": {
+      "type": "integer",
+      "title": "Reads"
+     },
+     "cameras": {
+      "type": "integer",
+      "title": "Cameras"
+     },
+     "last_seen": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Seen"
+     },
+     "provenance": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Provenance"
+     },
+     "on_watchlist": {
+      "type": "boolean",
+      "title": "On Watchlist"
+     }
+    },
+    "type": "object",
+    "required": [
+     "plate",
+     "reads",
+     "cameras",
+     "on_watchlist"
+    ],
+    "title": "PlateSuggestionOut"
    },
    "RouteGapOut": {
     "properties": {
@@ -3605,6 +4009,26 @@
       },
       "type": "array",
       "title": "Sightings"
+     },
+     "match": {
+      "type": "string",
+      "enum": [
+       "contains",
+       "exact",
+       "anpr"
+      ],
+      "title": "Match",
+      "default": "contains"
+     },
+     "query": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/SightingQueryOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
      }
     },
     "type": "object",
@@ -3759,6 +4183,34 @@
        }
       ],
       "title": "Crop Url"
+     },
+     "match_type": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "exact",
+         "ambiguity",
+         "fuzzy",
+         "contains"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Match Type"
+     },
+     "match_distance": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Match Distance"
      }
     },
     "type": "object",
@@ -3776,6 +4228,56 @@
      "created_at"
     ],
     "title": "SightingOut"
+   },
+   "SightingQueryOut": {
+    "properties": {
+     "plate": {
+      "type": "string",
+      "title": "Plate"
+     },
+     "normalised": {
+      "type": "string",
+      "title": "Normalised"
+     },
+     "canonical": {
+      "type": "string",
+      "title": "Canonical"
+     },
+     "kind": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "full",
+         "partial"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Kind"
+     },
+     "coerced": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Coerced"
+     }
+    },
+    "type": "object",
+    "required": [
+     "plate",
+     "normalised",
+     "canonical"
+    ],
+    "title": "SightingQueryOut",
+    "description": "How the plate grammar read the query (docs/api.md \u00a76)."
    },
    "StatsOut": {
     "properties": {
