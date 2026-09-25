@@ -119,7 +119,7 @@ GATE A was later reversed on the laptop (RTSP primary, decision C6). GATE B's de
 | A′ — replay soak (S2.5): 10 min, zero restarts; live RTSP frames with correct timing (S2.2) | Tue 22 | **PASS** | 2026-09-23T20:55Z | Soak: 614.9 s, 0 worker restarts, 1843 frames on each of 3 replay cameras (3.0 fps each), RSS +0.6 MB over the run, stats every 10 s, 10 wrap ticks/camera. Live RTSP timing: S2.2's cam06 smoke, 134 frames monotonic (23 Sep) |
 | B — ANPR viability on the live sandbox (S4.1): real reads with sane confidence | Thu 24 | **PASS — continue on the current tier (no model tuning)** | 2026-09-25T08:58Z | 10-minute window (20260925-084754Z): 9 sightings, 12 full consensus reads, 0 restarts; cam06 carries the plates — 55 `provenance='live'` reads with crops over the afternoon run (conf 0.78–0.99, e.g. GJ11S7924 0.96, GJ03MH7800 0.96 seen twice, GJ32AG2883 0.97); cam09/26/27/28 contribute detections, motion and zone analytics but no plate reads (small/oblique plates, quiet end of the looped recording). The cam06 crossing line fired 53 `line_cross` events on the live feed — the first zone event ever on a real feed. Late vs the Thu 24 due: the run needed the laptop and daylight, both available Fri 25 afternoon |
 | C — route across ≥ 3 cameras from a plate typed into the UI (S4.2; demo vehicle qualifies) | Thu 24 20:00 | **PASS — demo vehicle (labelled)**; own-footage upgrade pending Adi's S3.6 filming | 2026-09-25T05:35Z | The smoke types GJ01AB1234 into the real UI (headless Chromium against `python -m backend.app`): Route renders 4 timeline entries incl. the ambiguity near-miss, numbered pins on 3 cameras, 3 departments in the header — asserted on two consecutive runs (S3.3), and re-checked at both viewports in S3.3b. Late vs the Thu 20:00 due: the plan's Wed/Thu columns compressed into the overnight run (F59) |
-| D — documents start whatever the code state (S5.1) | Fri 25 09:00 | | | |
+| D — documents start whatever the code state (S5.1) | Fri 25 09:00 | **PASS (late)** — S5.1 done, S5.2/S5.3 running | 2026-09-25T10:50Z | Documents started once the S4.1 laptop run had landed (it needed daylight and the laptop); the HLD cites only the six S4.1 [measured] rows |
 
 ## Open risks
 
@@ -1541,4 +1541,119 @@ GATE B:    PASS (table above). Continue on this tier; no model tuning.
 Next:      the demo fixes Adi asked for (every camera on the relay wall,
            GIS map, ANPR search with demo plates, 28 stock feeds), then
            Phase 5 (S5.1 onward).
+```
+
+```
+## Demo fixes (Adi's 25 Sep ask) — DONE: every camera on the relay wall,
+##          the GIS map, ANPR search with demo plates, 28 stock feeds
+##          [merges 563c6ca a173deb 8bf0a86 78f04dd; fixes d94c97b 58a8566
+##          9091174, smoke 43cb62b]
+When:      2026-09-25T10:00Z-12:00Z (15:30-17:30 IST), laptop, orchestrating
+           session + five worktree lanes (Workflow, one branch each).
+Ask:       "the demo [should] show live feeds on relay which are stored on
+           laptop in archive.zip (give them any coordinates); the map isn't
+           proper — load a proper map and GIS; the search window should have
+           ANPR and results based upon that with demo plates; I am not able
+           to view the cams which we actually got from the sentinel" and
+           "make sure the cams (from local and sentinel) run on relay in the
+           live wall; GIS should be picture perfect with a MAP".
+Root causes found first (orchestrator, before any lane):
+           (1) CSP img-src '*.tile.openstreetmap.org' never matches the bare
+           'tile.openstreetmap.org' host every TileLayer used -> every map
+           tile blocked (the blank map). (2) No media-src/worker-src -> the
+           blob: MediaSource URL hls.js attaches to <video> was blocked ->
+           NO wall tile could play in a real browser. The smoke never
+           noticed: it counted pins and playlist requests, never painted
+           tiles or played frames. Fixed in d94c97b with tests/test_csp.py
+           (scans frontend/src for tile URLs; fails on the old policy: 2
+           failed, passes on the new). (3) The relay refused the CDN for
+           every RTSP camera, so 25 of 30 sandbox cameras (no worker) could
+           never play. (4) Demo sightings had no crop -> Search showed no
+           image for demo plates. (5) Stored plates kept OCR confusions.
+Built (five lanes, merged; decisions F60-F67):
+           RELAY (F60-F62): tee -> mediamtx HLS (local) -> stale tee < 120 s
+           -> organisers' CDN VOD window; single-flight 48 MB segment/key
+           cache; breaker; 3,000/min limit; source badge per tile; 1/4/9/16
+           grid; filters All/Analysed/Sandbox/Local; ?cam deep link; H.265
+           worded where the browser lacks hvc1. scripts/smoke_playback.py.
+           GIS (F63-F64): Esri Canvas dark/light + OSM + Esri imagery,
+           department layers, FOV wedges, activity (new
+           GET /api/cameras/activity), 15 km cluster hulls, gaps, legend,
+           scale, cursor readout, camera search, record panel.
+           ANPR (F65-F66): plates.coerce() stored at the commit point;
+           renormalise_plates applied to sentinel.db (129 rows, 147 -> 134
+           live plates; backups data/backup/sentinel-pre-demo-fixes-
+           20260925.db and sentinel-pre-renormalise-20260925T110545Z.db);
+           GET /api/sightings match=exact|contains|anpr with match types;
+           GET /api/plates/suggest; Search rebuilt as ANPR search; DEMO-
+           marked rendered crops for every demo row.
+           FEEDS (F67): data/local_feeds.csv (28 rows, seeded Ahmedabad/
+           Gandhinagar clusters, disclosure in every name) +
+           scripts/prepare_feeds.py (all 28 transcoded: 343 MB outside the
+           repo; libx264 - NVENC failed "Invalid argument"); mediamtx HLS on
+           127.0.0.1:8888; replay_publish --register; launch.py start/stop/
+           status run the feeds; seed_registry upserts them; the supervisor
+           picks catalogue cameras first. Orchestrator override: every stock
+           feed fps_tier='registered' (view-only) - a looped clip analysed
+           on the platform DB would re-store its plates as 'live' each loop.
+Integration observed (merged tree, platform stopped):
+           pytest 344 passed, 0 failed (351.9 s). frontend lint clean, build
+           OK. smoke_playback.py in real Edge 153: 28/28 PASS — local feed
+           plays (readyState 4, +4.01 s), ?cam 1-up plays, the CDN branch
+           (local stand-in with the sandbox's contract) plays in two pages
+           with 4 upstream segment fetches for 12 browser requests, key and
+           playlist once, H.265 worded, 0 CSP violations. smoke_frontend.py
+           first FAILED "fresh registry seeded with 30 cameras (got 58)" -
+           the lanes each passed alone; the seeder now adds the register -
+           fixed to 30 + register rows -> 87/87 PASS.
+Live platform (launch.py start, real sentinel.db, real Edge, viewer via
+           the X-API-Key script path routed to 127.0.0.1:8000 only):
+           28/28 feeds publishing; map 80 tiles painted, 0 CSP messages;
+           Local-feeds wall 4/4 playing (+2.2..+4.0 s over 4 s); cam09 and
+           cam27 play from their tees; cam06/cam26 (H.265) worded in Edge;
+           ANPR search GJ11S7924 -> 8 reads, 9 crop images loaded; Route
+           GJ01AB1234 renders with DEMO crops.
+Surprises: (1) the organisers' CDN origin went DOWN at ~16:40 IST - every
+           login answers Cloudflare HTTP 521 (one credential-free curl of
+           the root: 521); the relay backs off (jittered, capped) and tiles
+           say "Organisers' CDN not answering". Non-analysed sandbox tiles
+           cannot play until it returns; nothing on our side to fix.
+           (2) cam26 (H.265, 2560x1440) drops its gateway pull every ~2 min
+           and earlier got RTSP 401 for ~30 min; health passes alternate
+           "26 online" with "0 online, 25 offline" - the gateway, not us.
+           (3) Health slept 300 s before its first pass -> "1/58 online"
+           for 5 min after every start (fixed, F69, regression test).
+           (4) Command's Start here called the stock clips "our own filmed
+           feeds" and named MH04JH3316, which this DB never held - rewritten;
+           the plate to try is now the top live read from /plates/suggest.
+           (5) Two of Command's four tiles were H.265 -> "open in Chrome" in
+           Edge; tiles are now ranked by what this browser can play (F62).
+           (6) The feed publisher once died at birth (rc 0xC000013A) after a
+           stop+start while a smoke ran; not reproducible alone; start now
+           retries it once (regression test).
+Next:      review gate (F53) over d94c97b..HEAD; S5.2 deck + S5.3 reports.
+```
+
+```
+## S5.1 — DONE (HLD corrected against architecture Part C/Part D;
+##          PDF re-rendered) [lane commit a9be422, merged 3518e00]
+When:      2026-09-25T10:50Z, HLD lane (worktree), checked by the
+           orchestrator after the merge.
+Observed:  deliverables/HLD.md rewritten against every S5.1 bullet and the
+           session's additions; `grep -c "\[measured\]" deliverables/HLD.md`
+           -> 6 = the six [measured] rows in Key measurements (all in HLD
+           §7.1). Part C: 15 rows, each fixed or retained with a reason
+           (tracker = IoU not ByteTrack; "never written to disk" -> self-
+           overwriting 20 s relay window; audit + login/roles as built;
+           Pipeline 3 described, not built; HLS fallback for viewing only;
+           retention/DPDP note; ffmpeg GPL disclosed as a separate binary -
+           libx264 only in prepare_feeds/--reencode). §8 gains an
+           estimated implementation + operating cost, all [model] (F68).
+           Two internal inconsistencies of the 15 Sep HLD fixed: the WAN
+           2.1 Mbps / 3,750x pair, and matching described as plain
+           Levenshtein (contradicting F21). Rendered with pandoc 3.8 ->
+           HTML -> Playwright PDF: 19 pages, diagram on page 2 checked by
+           eye. Orchestrator follow-up: the basemap licensing line named
+           CARTO, which the GIS no longer uses - corrected (58a8566).
+Next:      re-render the PDF if later tasks change what the HLD describes.
 ```

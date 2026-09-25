@@ -83,7 +83,7 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S4.1 | Live sandbox run on the demo tier (F55), 10-minute measurement — **GATE B** | Thu 24 | 2 h | [x] done Fri 25 (laptop): 600 s window, 5/5 alive, 0 restarts, 12 full reads on cam06, 53 live line_cross events; **GATE B PASS**; sampler 'unmeasured' fix + test |
 | S4.2 | HLS VOD reader + harvest for a real multi-camera route | Thu 24 | 3 h | [-] cut v2.5 (F54): own footage supplies the real route; GATE C moved to S3.6 |
 | S4.3 | Pipeline 3 evidence clips | Fri 25 pm | 3 h | [-] cut v2.5 (F54): Pipeline 3 is described and validated separately, not built |
-| S5.1 | HLD corrections + PDF | Fri 25 | 2 h | |
+| S5.1 | HLD corrections + PDF | Fri 25 | 2 h | [x] done Fri 25 (HLD lane): every Part C/D row fixed or retained; 6 [measured] = 6 S4.1 rows; §8 cost [model]; PDF 19 pp |
 | S5.2 | Deck with live screenshots, links, PDF; diagram PNG | Fri 25 | 2 h | |
 | S5.3 | Reports, `registry-api.json`, sample dataset, notes regenerated | Fri 25 | 1 h | |
 | S5.4 | [Adi + Claude] Demo video 1 (own feed) and video 2 (government feed) | Fri 25 | 2 h | |
@@ -434,7 +434,7 @@ git rev-parse --short main origin/main
 
 ## Phase 5 — Deliverables (Fri 25 Sep — GATE D: start by 09:00 whatever the code state)
 
-### S5.1 — HLD corrections + PDF `[ ]`
+### S5.1 — HLD corrections + PDF `[x]`
 *Read first:* `docs/architecture.md` Part C (the claim-by-claim list) and **Part D (v2.5: the demo against the HLD, model by model)**; `docs/progress.md` "Key measurements"; `deliverables/HLD.md`.
 *Build:* edit `deliverables/HLD.md`: tracker described truthfully (F14); "never written to disk" → self-overwriting relay buffer; `[measured]` only for numbers from S4.1 (else `[model]`); audit table and API-key auth described as built; onboarding form + CSV as built; alert path = DB tail across processes; Pipeline 3 **described and validated separately, not built** (F54) — in §1 and Appendix B; every model and pipeline named exactly as the brief names them (Part D); add the one-time-base design and provenance labels; add the retention/DPDP note (decisions §3); S4.2 was cut (F54): say the HLS fallback exists for viewing only; keep every section of the ten dimensions.
 **Added in v2.3:** a short **deployment section for the demo itself** — the platform as an edge node published over an outbound-only tunnel with TLS terminated on the device, which is the same shape as the department-side collector §2.2 already describes; **login, roles and the audit trail described as built** (F41), replacing the API-key-only wording; **§8 gains an actual estimated implementation and operating cost** (a per-node bill of materials, the pilot and the statewide figure), because the portal asks for estimated costs and §8 currently argues savings only; **every §8 figure labelled `[model]`** (₹4 crore, 0.69 TB/day, the 1,600-GPU fleet carry no label today, though line 350 claims every figure is labelled); and **ffmpeg disclosed as a GPL binary invoked as a separate process**, since the licensing paragraph says Apache/MIT/BSD throughout while the laptop runs BtbN's `win64-gpl` build. Render to `deliverables/HLD.pdf` (any clean markdown→PDF renderer; check the ASCII diagram survives).
