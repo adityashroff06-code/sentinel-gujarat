@@ -23,6 +23,7 @@ from backend.core.logging_setup import setup
 from backend.core.matcher import WatchlistCache
 from ml.analytics.events import EventThrottle, insert_events, insert_zone_event, object_event_row
 from ml.analytics.zones import ZoneMonitor, parse_zones
+from ml.anpr.detect import superclass
 from ml.anpr.pipeline import AnprPipeline, CommittedRead
 from ml.anpr.sightings import record_sighting
 from ml.ingest import for_camera
@@ -102,8 +103,14 @@ class CameraWorker(threading.Thread):
         self.stats: dict[str, float] = {
             "frames": 0, "inferred": 0, "motion_skipped": 0, "detections": 0,
             "sightings": 0, "alerts": 0, "zone_events": 0, "restart_ticks": 0,
+            "ocr_attempts": 0, "full_reads": 0, "vehicle_tracks": 0,
         }
         self._stats_lock = threading.Lock()
+        # Track ids are assigned in increasing order and never reused
+        # (S2.3; the tracker's reset() keeps the counter), so a high-water
+        # mark counts each vehicle track exactly once in O(1) memory —
+        # S4.1's plate-read-rate denominator (full reads / vehicle tracks).
+        self._max_vehicle_track = -1
 
     def update_zones(self, zones_json: str | None) -> None:
         """Hot reload from the supervisor poll (10 s)."""
@@ -200,10 +207,20 @@ class CameraWorker(threading.Thread):
                         with self._stats_lock:
                             self.stats["restart_ticks"] += 1
                     result = self.pipeline.process(tick)
+                    new_vehicle_tracks = [
+                        track.id for track, det in result.matches
+                        if superclass(det.cls) == "vehicle"
+                        and track.id > self._max_vehicle_track]
                     with self._stats_lock:
                         self.stats["frames"] += 1
                         self.stats["inferred" if result.moving else "motion_skipped"] += 1
                         self.stats["detections"] += len(result.detections)
+                        self.stats["ocr_attempts"] += result.ocr_attempts
+                        self.stats["full_reads"] += sum(
+                            1 for read in result.committed if read.kind == "full")
+                        if new_vehicle_tracks:
+                            self.stats["vehicle_tracks"] += len(new_vehicle_tracks)
+                            self._max_vehicle_track = max(new_vehicle_tracks)
                     for read in result.committed:
                         self._handle_committed(read, tick)
                     if result.moving:

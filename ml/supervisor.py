@@ -146,7 +146,8 @@ class Supervisor:
     def _write_stats(self) -> None:
         uptime = time.monotonic() - self.started
         totals = {"frames": 0, "inferred": 0, "motion_skipped": 0, "detections": 0,
-                  "sightings": 0, "alerts": 0, "zone_events": 0, "restart_ticks": 0}
+                  "sightings": 0, "alerts": 0, "zone_events": 0, "restart_ticks": 0,
+                  "ocr_attempts": 0, "full_reads": 0, "vehicle_tracks": 0}
         cameras = {}
         for camera_id, worker in self.workers.items():
             snap = dict(worker.stats)
@@ -169,6 +170,11 @@ class Supervisor:
             "sightings": totals["sightings"],
             "alerts": totals["alerts"],
             "zone_events": totals["zone_events"],
+            "ocr_attempts": totals["ocr_attempts"],
+            "full_reads": totals["full_reads"],
+            "vehicle_tracks": totals["vehicle_tracks"],
+            "plate_read_rate": round(
+                totals["full_reads"] / max(1, totals["vehicle_tracks"]), 3),
             "cameras": cameras,
         }
         path = config.REPO_ROOT / "data" / "worker_stats.json"
