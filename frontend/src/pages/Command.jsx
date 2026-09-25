@@ -1,9 +1,11 @@
-import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { CircleMarker, MapContainer, TileLayer, Tooltip } from 'react-leaflet'
+import { useCallback, useMemo } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { LayersControl, MapContainer } from 'react-leaflet'
 import AlertCard from '../components/AlertCard.jsx'
 import FeedStatus from '../components/FeedStatus.jsx'
 import FitBounds from '../components/FitBounds.jsx'
+import BaseLayers from '../components/map/BaseLayers.jsx'
+import { NetworkOverview } from '../components/map/GisLayers.jsx'
 import { ProvenanceBadge } from '../components/Badges.jsx'
 import Tile from '../components/Tile.jsx'
 import { api, deptColor } from '../lib/api.js'
@@ -57,7 +59,15 @@ export default function Command() {
         .slice(0, 4),
     [cams]
   )
-  const pts = cams.filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lon))
+  const pts = useMemo(
+    () => cams.filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lon)),
+    [cams]
+  )
+  const navigate = useNavigate()
+  const openOnMap = useCallback(
+    (id) => navigate(`/map?cam=${encodeURIComponent(id)}`),
+    [navigate]
+  )
 
   const lastReadByCam = useMemo(() => {
     const m = {}
@@ -188,28 +198,12 @@ export default function Command() {
           <div className="mini-map">
             {pts.length > 0 ? (
               <MapContainer center={[22.5, 71.5]} zoom={7} zoomControl={false} scrollWheelZoom={false}>
-                <TileLayer
-                  url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution="&copy; OpenStreetMap contributors"
-                />
+                {/* the same basemaps and pins as the Map page (GIS lane) */}
+                <LayersControl position="topright" collapsed>
+                  <BaseLayers />
+                </LayersControl>
                 <FitBounds points={pts.map((c) => [c.lat, c.lon])} maxZoom={9} padding={20} />
-                {pts.map((c) => (
-                  <CircleMarker
-                    key={c.camera_id}
-                    center={[c.lat, c.lon]}
-                    radius={5}
-                    pathOptions={{
-                      color: deptColor(c.department),
-                      fillColor: deptColor(c.department),
-                      fillOpacity: c.health === 'online' ? 0.9 : 0.25,
-                      opacity: c.health === 'online' ? 1 : 0.4,
-                    }}
-                  >
-                    <Tooltip>
-                      {c.camera_id} · {c.department || 'Unknown'} · {c.health || 'unknown'}
-                    </Tooltip>
-                  </CircleMarker>
-                ))}
+                <NetworkOverview cams={pts} onPin={openOnMap} />
               </MapContainer>
             ) : (
               <div className="state-empty">No located cameras yet.</div>

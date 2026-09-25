@@ -64,6 +64,14 @@ S3.3b (hero-screen design checks; every assertion appended AFTER the
   its own designed error, and the login form says it cannot reach the
   platform — never a blank page.
 
+GIS lane (25 Sep; ``check_gis``, run with the demo seed still injected):
+painted basemap tiles (or an explicit SKIP naming the network failure),
+the tile referrer policy, zero CSP violations, the layers control's 4
+basemaps and overlays, every camera on the map and pins == cameras when
+zoomed in, a pin click opening the record with its Open-live link, and
+data/screens/gis-*.png screenshots. The S3.2 pin check counts cameras as
+pins plus cluster-bubble counts (below zoom 9 a cluster is one bubble).
+
 The throwaway API keys and account passwords are generated per run and
 never printed (root CLAUDE.md rule 1). Exits 0 on success.
 """
@@ -347,6 +355,198 @@ def count_when_stable(locator, expected: int, timeout_s: float = 15.0) -> int:
     return n
 
 
+# ------------------------------------------------------------------ GIS lane
+
+#: every camera represented on /map: a pin, or one unit of a cluster
+#: bubble's count (below zoom 9 a cluster of 2+ cameras is one bubble)
+_CAMERAS_ON_MAP_JS = """() => {
+    const pins = document.querySelectorAll('.gis-map .cam-pin').length;
+    const inBubbles = [...document.querySelectorAll('.gis-map .cl-bubble')]
+        .reduce((s, b) => s + Number(b.dataset.count || 0), 0);
+    return pins + inBubbles;
+}"""
+
+#: collects Content-Security-Policy violations from the page itself
+_CSP_LISTENER_JS = """() => {
+    window.__cspViolations = [];
+    document.addEventListener('securitypolicyviolation', (e) => {
+        window.__cspViolations.push(e.violatedDirective + ' ' + e.blockedURI);
+    });
+}"""
+
+BASEMAP_NAMES = ("Dark", "Streets", "Light", "Satellite")
+ANALYSIS_OVERLAYS = ("Clusters", "Coverage", "Activity", "Gaps")
+TILE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
+
+def cameras_on_map_when_stable(page, expected: int, timeout_s: float = 15.0) -> int:
+    """Poll /map until pins + cluster-bubble counts reach `expected` (or
+    timeout); returns the final count."""
+    deadline = time.monotonic() + timeout_s
+    n = -1
+    while time.monotonic() < deadline:
+        n = page.evaluate(_CAMERAS_ON_MAP_JS)
+        if n == expected:
+            return n
+        time.sleep(0.25)
+    return n
+
+
+def check_gis(page) -> None:
+    """GIS lane (25 Sep): the Map page is a working GIS, not a blank grey
+    box. Asserts, on /map: at least 8 basemap tiles actually painted
+    (img.leaflet-tile-loaded with naturalWidth > 0) — or an explicit SKIP
+    naming the network failure when tiles cannot load, never a fake pass;
+    every tile <img> carries referrerpolicy=strict-origin-when-cross-origin;
+    zero CSP violations; the layers control lists the 4 basemaps and the
+    department + analysis overlays; every camera is on the map (pins +
+    bubble counts) and, zoomed into a cluster, pins == cameras; a pin click
+    opens the record panel with an Open-live link to /wall?cam=<id>; no
+    horizontal scroll at 1366x768 or 1920x1080. Screenshots land in
+    data/screens/gis-*.png (map at both sizes, the record panel, the
+    Command mini-map and the Route map)."""
+    csp_console: list[str] = []
+    tile_failures: list[str] = []
+
+    def on_console(msg) -> None:
+        if "Content Security Policy" in msg.text or "Refused to" in msg.text:
+            csp_console.append(msg.text)
+
+    def on_failed(req) -> None:
+        if req.resource_type == "image" and "/api/" not in req.url:
+            tile_failures.append(f"{req.url.split('/')[2]}: {req.failure}")
+
+    page.on("console", on_console)
+    page.on("requestfailed", on_failed)
+    page.add_init_script(f"({_CSP_LISTENER_JS})()")
+    try:
+        page.set_viewport_size({"width": 1920, "height": 1080})
+        page.goto(f"{BASE}/map")
+        page.wait_for_selector(".gis-map .leaflet-container", timeout=15000)
+
+        # --- painted basemap tiles (needs internet) ------------------------
+        deadline = time.monotonic() + 20
+        painted = 0
+        while time.monotonic() < deadline:
+            painted = page.evaluate(
+                "() => [...document.querySelectorAll('img.leaflet-tile-loaded')]"
+                ".filter((i) => i.complete && i.naturalWidth > 0).length"
+            )
+            if painted >= 8:
+                break
+            time.sleep(0.25)
+        if painted >= 8:
+            ok(f"GIS: basemap tiles painted on /map ({painted} img.leaflet-tile-loaded, naturalWidth > 0)")
+            policies = page.evaluate(
+                "() => [...new Set([...document.querySelectorAll('img.leaflet-tile')]"
+                ".map((i) => i.getAttribute('referrerpolicy')))]"
+            )
+            check(
+                policies == [TILE_REFERRER_POLICY],
+                f"GIS: every tile <img> sends referrerpolicy={TILE_REFERRER_POLICY} (got {policies})",
+            )
+        elif tile_failures:
+            print(
+                f"SKIP: GIS basemap tiles — network unavailable, {painted} painted; "
+                f"first failure: {tile_failures[0]}"
+            )
+        else:
+            fail(f"GIS: basemap tiles painted on /map (only {painted}, no network error seen)")
+
+        # --- layers control: 4 basemaps + overlays -------------------------
+        bases = page.eval_on_selector_all(
+            ".leaflet-control-layers-base label", "els => els.map((e) => e.textContent.trim())"
+        )
+        check(
+            len(bases) == 4 and all(any(n in b for b in bases) for n in BASEMAP_NAMES),
+            f"GIS: layers control lists the 4 basemaps ({bases})",
+        )
+        overlays = page.eval_on_selector_all(
+            ".leaflet-control-layers-overlays label", "els => els.map((e) => e.textContent.trim())"
+        )
+        # the registry as it stands now (the admin CSV import earlier in
+        # the run added cameras to the 30 seeded ones)
+        registry = page.evaluate(
+            "async () => { const r = await fetch('/api/cameras', {credentials: 'same-origin'});"
+            " const d = await r.json();"
+            " return {total: d.total,"
+            "  located: d.cameras.filter((c) => c.lat != null && c.lon != null).length,"
+            "  depts: [...new Set(d.cameras.map((c) => c.department || 'Unknown'))]}; }"
+        )
+        camera_count = registry["located"]
+        present_depts = registry["depts"]
+        print(f"registry now: {registry['total']} cameras, {camera_count} with coordinates")
+        missing = [
+            n for n in (*ANALYSIS_OVERLAYS, *present_depts)
+            if not any(n in o for o in overlays)
+        ]
+        check(not missing, f"GIS: layers control lists department + analysis overlays (missing {missing})")
+
+        # --- every camera on the map; both sizes; no sideways scroll -------
+        for width, height in ((1920, 1080), (1366, 768)):
+            page.set_viewport_size({"width": width, "height": height})
+            page.click("#gis-fit-all")
+            page.wait_for_timeout(2500)
+            on_map = cameras_on_map_when_stable(page, camera_count)
+            check(
+                on_map == camera_count,
+                f"GIS {width}x{height}: every camera on the map, pins + cluster counts ({on_map} == {camera_count})",
+            )
+            check(no_hscroll(page), f"GIS: no horizontal scroll at {width}x{height}")
+            page.screenshot(path=str(SCREENS / f"gis-map-{width}x{height}.png"))
+
+        # --- zoomed into the largest cluster: one pin per camera ---------
+        page.set_viewport_size({"width": 1920, "height": 1080})
+        page.click(".gis-cluster-chip >> nth=0")
+        page.wait_for_timeout(2500)
+        pins = count_when_stable(page.locator(".gis-map .cam-pin"), camera_count)
+        check(pins == camera_count, f"GIS: zoomed in, map pins == camera count ({pins} == {camera_count})")
+
+        # --- a pin click opens the record with an Open-live link ---------
+        cam_id = page.evaluate(
+            """() => {
+                const box = document.querySelector('.gis-map').getBoundingClientRect();
+                const inside = [...document.querySelectorAll('.gis-map .cam-pin')].find((p) => {
+                    const r = p.getBoundingClientRect();
+                    return r.left > box.left + 80 && r.right < box.right - 260 &&
+                           r.top > box.top + 80 && r.bottom < box.bottom - 60;
+                });
+                return inside ? inside.dataset.cam : null;
+            }"""
+        )
+        check(cam_id is not None, f"GIS: a camera pin is on screen to click ({cam_id})")
+        page.click(f'.gis-map .cam-pin[data-cam="{cam_id}"]')
+        page.wait_for_selector("#camera-record", timeout=10000)
+        href = page.get_attribute("#record-open-live", "href") or ""
+        check(
+            href == f"/wall?cam={cam_id}",
+            f"GIS: pin click opens the record panel with an Open-live link ({href})",
+        )
+        page.wait_for_timeout(1500)
+        page.screenshot(path=str(SCREENS / "gis-map-record.png"))
+
+        # --- the same basemaps on Command and Route ----------------------
+        page.goto(f"{BASE}/command")
+        page.wait_for_selector(".mini-map .leaflet-container", timeout=15000)
+        page.wait_for_timeout(2500)
+        page.locator(".map-card").screenshot(path=str(SCREENS / "gis-command-minimap.png"))
+        page.goto(f"{BASE}/route/GJ01AB1234")
+        page.wait_for_selector(".route-stop", timeout=15000)
+        page.wait_for_timeout(2500)
+        page.screenshot(path=str(SCREENS / "gis-route.png"))
+
+        violations = page.evaluate("() => window.__cspViolations || []")
+        check(
+            not csp_console and not violations,
+            f"GIS: zero CSP violations across Map, Command and Route "
+            f"({len(csp_console)} console, {len(violations)} events)",
+        )
+    finally:
+        page.remove_listener("console", on_console)
+        page.remove_listener("requestfailed", on_failed)
+        page.set_viewport_size({"width": 1920, "height": 1080})
+
+
 def main() -> int:
     if not (REPO / "frontend" / "dist" / "index.html").is_file():
         print("frontend/dist is missing — run: npm --prefix frontend run build", file=sys.stderr)
@@ -376,11 +576,11 @@ def main() -> int:
             role = page.locator(".session .role").inner_text(timeout=10000)
             check(role.strip().lower() == "viewer", "signed in as the seeded viewer (role shown)")
 
-            # /map: one pin per camera
+            # /map: one pin per camera (GIS lane: pins are markers, and
+            # below zoom 9 a cluster shows as one count bubble — so a
+            # camera is on the map as a pin or inside a bubble's count)
             page.wait_for_selector(".leaflet-container", timeout=15000)
-            pins = count_when_stable(
-                page.locator(".leaflet-overlay-pane path"), camera_count
-            )
+            pins = cameras_on_map_when_stable(page, camera_count)
             check(
                 pins == camera_count,
                 f"map pins == camera count ({pins} == {camera_count})",
@@ -740,6 +940,9 @@ def main() -> int:
                 not missing,
                 f"five hero screenshots at 1920x1080 saved to data/screens ({missing or 'all present'})",
             )
+
+            # --- GIS lane: a working map (tiles, layers, pins, record) ---
+            check_gis(page)
 
             # --- empty database: purge back to the fresh state; every
             #     hero screen keeps a DESIGNED empty state -------------

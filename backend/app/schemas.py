@@ -150,6 +150,19 @@ class GapAnalysisOut(BaseModel):
     department_summary: dict[str, DepartmentSummaryOut]
 
 
+class CameraActivityOut(BaseModel):
+    """One camera's read activity over a trailing window (the GIS Activity
+    layer). ``by_provenance`` splits ``sightings`` so a demo read never
+    passes as a live one (root rule 12)."""
+
+    camera_id: str
+    sightings: int
+    plates: int
+    alerts: int
+    last_seen: str | None = None
+    by_provenance: dict[str, int] = Field(default_factory=dict)
+
+
 class HealthOut(BaseModel):
     status: str
     db: str
