@@ -387,17 +387,53 @@ tbody tr.selected { background: var(--surface-3); }
   position: absolute; top: 0; left: 0; right: 0; padding: var(--s-2) var(--s-3);
   background: linear-gradient(rgba(0, 0, 0, 0.65), transparent);
   font-size: var(--fs-sm); display: flex; justify-content: space-between; align-items: center;
+  gap: var(--s-2); z-index: 1;
 }
-.tile .live { display: flex; align-items: center; gap: var(--s-1); font-size: var(--fs-xs); }
-.tile .live .dot {
+/* relay lane (25 Sep): id + location + department dot on the left, the
+   source badge (which relay path is showing) and expand on the right;
+   long locations truncate so a 16-up tile never wraps its label */
+.tile .tile-id {
+  display: flex; align-items: center; gap: var(--s-2); min-width: 0; overflow: hidden;
+}
+.tile .tile-loc {
+  color: var(--text); opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+/* labels sit on live video of any brightness: a shadow keeps them legible */
+.tile .label { text-shadow: var(--shadow-1); }
+.tile .tile-right { display: flex; align-items: center; gap: var(--s-2); flex-shrink: 0; }
+.dept-dot {
+  display: inline-block; width: 9px; height: 9px; border-radius: var(--r-pill);
+  flex-shrink: 0; box-shadow: 0 0 0 1px var(--overlay);
+}
+.src-badge {
+  display: inline-flex; align-items: center; gap: var(--s-1);
+  font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; white-space: nowrap;
+  padding: 0 var(--s-2); border-radius: var(--r-pill); line-height: 1.7;
+  border: 1px solid currentColor; background: var(--overlay);
+}
+.src-badge.src-live { color: var(--text); border-color: var(--danger); }
+.src-badge.src-stale { color: var(--warn); }
+.src-badge.src-local { color: var(--accent-strong); }
+.src-badge.src-cdn { color: var(--warn); }
+.src-badge .dot {
   width: 7px; height: 7px; border-radius: var(--r-pill);
   background: var(--danger); animation: pulse 1.4s infinite;
 }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-.tile .err {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  color: var(--text-muted); font-size: var(--fs-sm); text-align: center; padding: var(--s-3);
+.tile .tile-expand {
+  color: var(--text); text-decoration: none; font-size: var(--fs-md); line-height: 1;
+  padding: 0 var(--s-1); border-radius: var(--r-sm);
 }
+.tile .tile-expand:hover { background: var(--overlay); }
+/* every non-playing state is worded on a scrim — never a blank black tile */
+.tile .tile-state {
+  position: absolute; inset: 0; display: flex; flex-direction: column; gap: var(--s-1);
+  align-items: center; justify-content: center; text-align: center; padding: var(--s-6) var(--s-3) var(--s-3);
+  color: var(--text-muted); font-size: var(--fs-sm); background: var(--overlay);
+}
+.tile .tile-state .mono { color: var(--text-faint); font-size: var(--fs-xs); }
+.tile .tile-state.error, .tile .tile-state.stalled { color: var(--warn); }
+.tile .tile-state.blocked { color: var(--text); }
 
 /* route sequence badges on the map (S3.3 Route) */
 .seqtip {
@@ -479,6 +515,8 @@ tbody tr.selected { background: var(--surface-3); }
 .grid.g1 { grid-template-columns: 1fr; }
 .grid.g4 { grid-template-columns: repeat(2, 1fr); }
 .grid.g9 { grid-template-columns: repeat(3, 1fr); }
+.grid.g16 { grid-template-columns: repeat(4, 1fr); }
+.wall-ctrl .wall-sep { margin-left: var(--s-3); }
 /* the wall FILLS the viewport (frontend/CLAUDE.md): rows share the
    remaining height and tiles stretch into their cells instead of
    holding 16:9 — at 1366x768 fixed-ratio tiles overflowed the content
@@ -487,6 +525,8 @@ tbody tr.selected { background: var(--surface-3); }
 .wall .grid.g1 { grid-template-rows: minmax(0, 1fr); }
 .wall .grid.g4 { grid-template-rows: repeat(2, minmax(0, 1fr)); }
 .wall .grid.g9 { grid-template-rows: repeat(3, minmax(0, 1fr)); }
+.wall .grid.g16 { grid-template-rows: repeat(4, minmax(0, 1fr)); gap: var(--s-2); }
+.wall .grid.g16 .tile .label { padding: var(--s-1) var(--s-2); }
 .wall .tile { aspect-ratio: auto; min-height: 0; }
 
 /* ---------- command ---------- */

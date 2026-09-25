@@ -80,8 +80,12 @@ async function detailOf(r) {
   return `request failed (${r.status})`
 }
 
-/** Core request. opts.on401 'redirect' (default) or 'throw' (login form). */
-async function request(path, { method = 'GET', body, formData, on401 = 'redirect' } = {}) {
+/** Core request. opts.on401 'redirect' (default) or 'throw' (login form).
+ *  opts.quiet: an HTTP error is thrown but NOT put on the global status
+ *  strip (per-tile background calls — each tile shows its own state);
+ *  an unreachable API and a 401 are still reported. */
+async function request(path, { method = 'GET', body, formData, on401 = 'redirect', quiet = false } = {}) {
+  const say = quiet ? () => {} : report
   const init = { method, credentials: 'same-origin', headers: {} }
   if (formData) {
     init.body = formData
@@ -104,7 +108,7 @@ async function request(path, { method = 'GET', body, formData, on401 = 'redirect
   }
   if (!r.ok) {
     const err = new ApiError(kindFor(r.status), r.status, await detailOf(r), path)
-    report({ kind: err.kind, message: err.detail }, path)
+    say({ kind: err.kind, message: err.detail }, path)
     throw err
   }
   clearOnSuccess(path)
@@ -161,6 +165,11 @@ export const api = {
   // alerts
   alerts: (params = {}) => request('/alerts' + qs(params)),
   ack: (id) => request(`/alerts/${encodeURIComponent(id)}/ack`, { method: 'POST' }),
+
+  // live relay (Pipeline 1): which path a camera's playlist takes —
+  // {camera_id, source: tee|stale-tee|mediamtx|cdn|none, detail}. Quiet:
+  // a tile shows its own state, never the global strip.
+  hlsSource: (id) => request(`/hls/${encodeURIComponent(id)}/source`, { quiet: true }),
 
   // media URLs — plain same-origin paths: the session cookie carries them
   streamUrl: (id) => `${BASE}/hls/${encodeURIComponent(id)}/live.m3u8`,
