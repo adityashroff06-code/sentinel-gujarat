@@ -1,0 +1,29 @@
+camera_id,clip,department,location_name,lat,lon,bearing_deg,fov_deg,range_m,fps_tier
+local01,13270133_3840_2160_30fps.mp4,Police,"Sample feed 1 - Kh Rd gate (stock footage, seeded coordinates)",23.2156,72.6369,180,70,90,active
+local02,13269027_3840_2160_30fps.mp4,Municipal,"Sample feed 2 - market junction (stock footage, seeded coordinates)",23.2225,72.6441,135,75,80,active
+local03,13172888_3840_2160_30fps.mp4,GSRTC,"Sample feed 3 - highway approach (stock footage, seeded coordinates)",23.2288,72.6512,200,60,120,active
+local04,13105330_3840_2160_30fps.mp4,Municipal,"Sample feed 4 - flyover lane (stock footage, seeded coordinates)",23.2101,72.6296,90,65,100,active
+local05,13268898_3840_2160_30fps.mp4,Police,"Sample feed 5 - Infocity circle Gandhinagar (stock footage, seeded coordinates)",23.1936,72.6365,45,70,90,registered
+local06,13067896_3840_2160_30fps.mp4,Municipal,"Sample feed 6 - GIFT City main gate (stock footage, seeded coordinates)",23.1606,72.6843,300,75,90,registered
+local07,12937197_3840_2160_30fps.mp4,Police,"Sample feed 7 - Sargasan cross roads (stock footage, seeded coordinates)",23.1917,72.6208,10,70,100,registered
+local08,12937233_3840_2160_30fps.mp4,Panchayat,"Sample feed 8 - Pethapur circle (stock footage, seeded coordinates)",23.2610,72.6795,250,65,80,registered
+local09,13002271_3840_2160_30fps.mp4,Police,"Sample feed 9 - Thaltej cross roads SG Highway (stock footage, seeded coordinates)",23.0496,72.5117,180,70,110,registered
+local10,13009518_1920_1080_30fps.mp4,Municipal,"Sample feed 10 - Sola bridge SG Highway (stock footage, seeded coordinates)",23.0690,72.5195,0,60,120,registered
+local11,13009546_3840_2160_30fps.mp4,GSRTC,"Sample feed 11 - Gota cross roads (stock footage, seeded coordinates)",23.1015,72.5402,200,70,100,registered
+local12,13016073_3840_2160_30fps.mp4,Police,"Sample feed 12 - Iskcon cross roads (stock footage, seeded coordinates)",23.0265,72.5073,90,75,100,registered
+local13,13028079_3840_2160_30fps.mp4,Health,"Sample feed 13 - Prahlad Nagar junction (stock footage, seeded coordinates)",23.0120,72.5108,320,65,80,registered
+local14,13052823_3840_2160_30fps.mp4,Police,"Sample feed 14 - Sarkhej cross roads (stock footage, seeded coordinates)",22.9918,72.4996,30,70,110,registered
+local15,13052943_3840_2160_30fps.mp4,Municipal,"Sample feed 15 - Vaishnodevi circle (stock footage, seeded coordinates)",23.1368,72.5429,160,70,100,registered
+local16,13053075_3840_2160_30fps.mp4,Police,"Sample feed 16 - Income Tax circle Ashram Road (stock footage, seeded coordinates)",23.0461,72.5664,190,70,90,registered
+local17,13067660_3840_2160_30fps.mp4,Municipal,"Sample feed 17 - Nehru Bridge east end (stock footage, seeded coordinates)",23.0245,72.5757,270,60,120,registered
+local18,13067691_3840_2160_30fps.mp4,Health,"Sample feed 18 - Law Garden junction (stock footage, seeded coordinates)",23.0266,72.5570,110,70,80,registered
+local19,13105470_3840_2160_30fps.mp4,Police,"Sample feed 19 - Kalupur station approach (stock footage, seeded coordinates)",23.0265,72.6016,60,75,90,registered
+local20,13105476_3840_2160_30fps.mp4,GSRTC,"Sample feed 20 - Geeta Mandir bus terminus (stock footage, seeded coordinates)",23.0158,72.5913,340,70,90,registered
+local21,13143934_3840_2160_30fps.mp4,Municipal,"Sample feed 21 - Maninagar cross roads (stock footage, seeded coordinates)",22.9964,72.6031,20,70,100,registered
+local22,13178733_3840_2160_30fps.mp4,Police,"Sample feed 22 - Naroda Patiya (stock footage, seeded coordinates)",23.0700,72.6560,210,70,100,registered
+local23,13193036_3840_2160_30fps.mp4,Municipal,"Sample feed 23 - Nikol road junction (stock footage, seeded coordinates)",23.0463,72.6664,95,65,90,registered
+local24,13269670_3840_2160_30fps.mp4,GSRTC,"Sample feed 24 - CTM cross roads (stock footage, seeded coordinates)",22.9960,72.6370,150,70,110,registered
+local25,13269676_3840_2160_30fps.mp4,Police,"Sample feed 25 - Narol cross roads (stock footage, seeded coordinates)",22.9585,72.5960,0,70,110,registered
+local26,13450758_1080_1920_30fps.mp4,Health,"Sample feed 26 - Odhav ring road circle (stock footage, seeded coordinates)",23.0305,72.6750,240,55,70,registered
+local27,13486920_1920_1080_25fps.mp4,Police,"Sample feed 27 - Airport circle Hansol (stock footage, seeded coordinates)",23.0735,72.6310,300,70,100,registered
+local28,5124507-hd_1920_1080_30fps.mp4,Panchayat,"Sample feed 28 - Kathwada GIDC gate (stock footage, seeded coordinates)",23.0580,72.6860,180,70,90,registered

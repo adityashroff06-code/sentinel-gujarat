@@ -52,6 +52,8 @@ _DEFAULTS: dict[str, str] = {
     "SENTINEL_ALERT_ON_FUZZY": "false",
     "SENTINEL_HEALTH_INTERVAL_S": "300",
     "SENTINEL_HLS_DIR": "data/hls",
+    "SENTINEL_MEDIAMTX_HLS_PORT": "8888",
+    "SENTINEL_FOOTAGE_DIR": r"D:\projects\sentinel-footage",
     "SENTINEL_MOTION_MIN_RATIO": "0.002",
     "SENTINEL_DETECT_CONF": "0.4",
     "SENTINEL_SESSION_TTL_H": "8",
@@ -95,6 +97,8 @@ def loop_seconds() -> int: return int(get("SENTINEL_LOOP_SECONDS"))
 def playback_offset_s() -> float: return float(get("SENTINEL_PLAYBACK_OFFSET_S"))
 def health_interval_s() -> float: return float(get("SENTINEL_HEALTH_INTERVAL_S"))
 def hls_dir() -> Path: return _path("SENTINEL_HLS_DIR")
+def mediamtx_hls_port() -> int: return int(get("SENTINEL_MEDIAMTX_HLS_PORT"))
+def footage_dir() -> Path: return Path(get("SENTINEL_FOOTAGE_DIR"))
 def motion_min_ratio() -> float: return float(get("SENTINEL_MOTION_MIN_RATIO"))
 def detect_conf() -> float: return float(get("SENTINEL_DETECT_CONF"))
 def session_ttl_h() -> float: return float(get("SENTINEL_SESSION_TTL_H"))
