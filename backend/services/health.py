@@ -24,7 +24,8 @@ stays quiet), then every interval — waiting a whole interval first left the
 map and header showing the previous run's health ("1/58 online") for five
 minutes after every ``launch.py start`` (found 25 Sep on the live platform).
 The credentialed RTSP URL exists only in memory and is never logged
-unmasked (root rule 1).
+unmasked, and the credentials are filled in only for a template on the
+sandbox gateway — any other host is probed without them (root rule 1).
 """
 
 from __future__ import annotations
@@ -72,13 +73,50 @@ def tee_age_s(camera_id: str) -> float | None:
         return None
 
 
+def _is_sandbox_gateway(template: str) -> bool:
+    """True when *template* is an ``rtsp://`` URL on the configured sandbox
+    gateway (``config.stream_ip()`` : ``config.rtsp_port()``, 554 when the
+    template names no port) — the only host the organisers' credentials may
+    ever be sent to (root rule 1). A template with whitespace, control
+    characters or a backslash is refused outright, so no parser disagreement
+    between this check and ffprobe can move the credentials elsewhere."""
+    if "\\" in template or any(ord(c) <= 0x20 or ord(c) == 0x7F for c in template):
+        return False
+    try:
+        parts = urllib.parse.urlsplit(template)
+        port = parts.port if parts.port is not None else 554
+    except ValueError:
+        return False
+    gateway = config.stream_ip().strip().strip("[]").lower()
+    return (
+        parts.scheme.lower() == "rtsp"
+        and (parts.hostname or "") == gateway
+        and port == config.rtsp_port()
+    )
+
+
 def _resolve_rtsp_url(camera_id: str, template: str | None) -> str:
     """The camera's RTSP URL, built in memory only (mirrors
     ``ml.ingest.rtsp.resolve_url`` — duplicated because the API process
-    never imports the worker package). Never log or store the result."""
+    never imports the worker package). Never log or store the result.
+
+    ``<email>``/``<password>`` placeholders are filled **only** when the
+    template points at the sandbox gateway (:func:`_is_sandbox_gateway`);
+    a template on any other host is returned as-is, placeholders and all,
+    so a registered camera can never make the probe hand the organisers'
+    credentials to a host of its choosing (root rule 1)."""
     email = urllib.parse.quote(config.email(), safe="")
     password = urllib.parse.quote(config.password(), safe="")
     if template:
+        if "<email>" not in template and "<password>" not in template:
+            return template  # a plain local URL, used as-is
+        if not _is_sandbox_gateway(template):
+            log.warning(
+                "camera %s: credential placeholders on a host that is not the"
+                " sandbox gateway - probed as-is, without credentials (root rule 1)",
+                camera_id,
+            )
+            return template
         return template.replace("<email>", email).replace("<password>", password)
     return (
         f"rtsp://{email}:{password}@{config.stream_ip()}:{config.rtsp_port()}"
