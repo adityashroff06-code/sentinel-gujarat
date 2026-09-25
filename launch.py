@@ -7,12 +7,15 @@ before and around the venv; everything it spawns runs as
 
     python launch.py check         # report present / missing, change nothing
     python launch.py start         # doctor -> venv -> ffmpeg -> models -> probe
-                                   #   -> seeds -> frontend -> API + worker -> browser
+                                   #   -> seeds -> frontend -> local stock feeds
+                                   #   -> API + worker -> browser
     python launch.py stop          # graceful (data/stop), then recorded PID trees only
-    python launch.py status        # worker stats, DB counts, whether :8000 answers
+                                   #   (the local feeds' publisher too)
+    python launch.py status        # worker stats, DB counts, :8000, feeds N/28
     python launch.py demo          # inject the labelled demo route (demo_seed inject)
     python launch.py demo-clear    # remove only the demo rows (demo_seed purge)
     python launch.py replay-start  # second system (F9/F19/F58): mediamtx + local feeds
+                                   #   (no args = the register, data/local_feeds.csv)
     python launch.py replay-stop   # stop the replay publisher tree
     python launch.py measure       # S4.1/F18 window sampler (--minutes 10)
     python launch.py harvest       # stub - cut in v2.5 (F54)
@@ -31,6 +34,7 @@ Output is ASCII only: the laptop console is cp1252 (doctor.py's lesson).
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 import os
@@ -64,9 +68,11 @@ IS_WIN = os.name == "nt"
 API_PORT = int(os.environ.get("SENTINEL_API_PORT", "8000"))
 RTSP_PORT = int(os.environ.get("SENTINEL_RTSP_PORT", "8554"))
 
-# F58: the transcoded sample feeds live outside both repos, never committed.
-FOOTAGE_FEEDS = Path(r"D:\projects\sentinel-footage\feeds")
-DEFAULT_REPLAY_NAMES = ("local01", "local02", "local03", "local04")
+# F58: the committed stock-feed register (local01..local28); the transcoded
+# clips live outside both repos (SENTINEL_FOOTAGE_DIR/feeds, never committed).
+REGISTER = DATA / "local_feeds.csv"
+DEFAULT_FOOTAGE_DIR = r"D:\projects\sentinel-footage"
+MEDIAMTX_EXE = ROOT / "tools" / "mediamtx" / ("mediamtx.exe" if IS_WIN else "mediamtx")
 
 # Portable ffmpeg (BtbN GPL build first, gyan.dev essentials as fallback),
 # fetched ONLY if backend.core.config resolves nothing (F25).
@@ -83,12 +89,16 @@ usage: python launch.py <mode>
 modes:
   check         report what is present / missing; change nothing
   start         doctor -> venv+deps -> ffmpeg -> models -> probe -> seeds
-                -> frontend -> API + worker (detached, logs in data/logs/) -> browser
+                -> frontend -> local stock feeds (mediamtx, looped, F58)
+                -> API + worker (detached, logs in data/logs/) -> browser
   stop          graceful stop (data/stop), then kill only the recorded PID trees
-  status        worker stats highlights, database counts, whether :8000 answers
+                (API, worker, then the local feeds' publisher)
+  status        worker stats, database counts, whether :8000 answers,
+                feeds: N/28 publishing
   demo          inject the labelled demo route + alerts (backend.tools.demo_seed inject)
   demo-clear    remove only the demo rows (backend.tools.demo_seed purge)
-  replay-start  second system (F9/F19/F58): scripts/replay_publish.py --many, detached
+  replay-start  second system (F9/F19/F58), detached: no args = the register
+                (replay_publish.py --register); NAME=PATH ... = --many
   replay-stop   stop the replay publisher tree (recorded PID only)
   measure       S4.1/F18 window sampler against the RUNNING platform
                 (start first, warm up >= 10 min): --minutes 10 --sample-s 5;
@@ -428,7 +438,7 @@ def _fetch_ffmpeg() -> Path:
 def ensure_ffmpeg(vp: Path) -> str:
     """Resolve ffmpeg via config; fetch the BtbN build only if nothing
     resolves. Returns the resolved path."""
-    say("[3/9] resolving ffmpeg through backend.core.config (F25) ...")
+    say("[3/10] resolving ffmpeg through backend.core.config (F25) ...")
     path = _resolve_ffmpeg(vp)
     if path:
         say(f"    ffmpeg: {path}")
@@ -456,14 +466,14 @@ def ensure_venv_and_deps() -> Path:
     requirements.txt + requirements-dev.txt (data/.req_hash) changes."""
     vp = venv_python()
     if vp is None:
-        say("[2/9] creating .venv (first run) ...")
+        say("[2/10] creating .venv (first run) ...")
         if run([sys.executable, "-m", "venv", str(VENV)]) != 0:
             die("could not create .venv")
         vp = venv_python()
         if vp is None:
             die(".venv was created but no python found inside it")
     else:
-        say(f"[2/9] .venv present ({vp})")
+        say(f"[2/10] .venv present ({vp})")
     want = _req_hash()
     have = (REQ_HASH_FILE.read_text(encoding="utf-8").strip()
             if REQ_HASH_FILE.exists() else "")
@@ -521,7 +531,7 @@ def ensure_directml(vp: Path) -> None:
 
 
 def ensure_models(vp: Path) -> None:
-    say("[4/9] model weights (fetch once + SHA-256 verify every run, F25) ...")
+    say("[4/10] model weights (fetch once + SHA-256 verify every run, F25) ...")
     code = "from ml.tools import fetch_models; print(fetch_models.ensure())"
     r = subprocess.run([str(vp), "-c", code], cwd=str(ROOT),
                        capture_output=True, text=True, check=False)
@@ -536,7 +546,7 @@ def ensure_models(vp: Path) -> None:
 def ensure_probe(vp: Path) -> None:
     """Probe on first run only. NEVER fails start: with the sandbox down the
     local feeds keep the platform demonstrable (task S3.4 / F58)."""
-    say("[5/9] camera grid probe (first run only) ...")
+    say("[5/10] camera grid probe (first run only) ...")
     if sorted(DATA.glob("probe_results*.json")):
         say("    probe results present - skipping"
             " (delete data/probe_results_*.json to re-probe)")
@@ -548,17 +558,17 @@ def ensure_probe(vp: Path) -> None:
 
 
 def ensure_seeds(vp: Path) -> None:
-    say("[6/9] seeding the camera registry (every start, F35) ...")
+    say("[6/10] seeding the camera registry (every start, F35) ...")
     if run([str(vp), "-m", "backend.tools.seed_registry"]) != 0:
         die("registry seeding failed")
-    say("[7/9] seeding the watchlist (every start, C11"
+    say("[7/10] seeding the watchlist (every start, C11"
         " - it must exist before the workers load their cache) ...")
     if run([str(vp), "-m", "backend.tools.seed_watchlist"]) != 0:
         die("watchlist seeding failed")
 
 
 def ensure_frontend() -> None:
-    say("[8/9] frontend build ...")
+    say("[8/10] frontend build ...")
     if (ROOT / "frontend" / "dist" / "index.html").exists():
         say("    frontend/dist present - skipping")
         return
@@ -575,6 +585,142 @@ def ensure_frontend() -> None:
         die("frontend build failed")
 
 
+# --- the local stock feeds (F58): register -> mediamtx, from one command ---
+
+def _register_ids(path: Path | None = None) -> list[str]:
+    """camera_ids listed in data/local_feeds.csv, in file order ([] when the
+    register is absent)."""
+    path = path or REGISTER
+    if not path.exists():
+        return []
+    with open(path, encoding="utf-8", newline="") as fh:
+        return [row["camera_id"] for row in csv.DictReader(fh)
+                if row.get("camera_id")]
+
+
+def _feeds_dir(vp: Path | None) -> Path:
+    """SENTINEL_FOOTAGE_DIR/feeds exactly as backend.core.config resolves it
+    (environment, then .env, then the default) - the directory
+    replay_publish.py --register publishes from. Without a venv: the
+    environment variable or the documented default."""
+    if vp is not None:
+        r = subprocess.run(
+            [str(vp), "-c", "from backend.core import config;"
+                            " print(config.footage_dir())"],
+            cwd=str(ROOT), capture_output=True, text=True, check=False)
+        if r.returncode == 0 and r.stdout.strip():
+            return Path(r.stdout.strip()) / "feeds"
+    return Path(os.environ.get("SENTINEL_FOOTAGE_DIR", DEFAULT_FOOTAGE_DIR)) / "feeds"
+
+
+def _register_feeds(feeds: Path) -> tuple[list[str], list[str]]:
+    """(ids whose feeds/<id>.mp4 exists, ids whose file is missing)."""
+    ids = _register_ids()
+    present = [i for i in ids if (feeds / f"{i}.mp4").is_file()]
+    return present, [i for i in ids if i not in present]
+
+
+def _register_cmd(vp: Path) -> list[str]:
+    """The argv the register publisher runs (split out so a test can
+    assert it): every register feed, looped, copy mode, one mediamtx."""
+    return [str(vp), str(ROOT / "scripts" / "replay_publish.py"), "--register"]
+
+
+def _alive_pids(vp: Path | None, pids: list[int]) -> list[int]:
+    """The subset of *pids* still running (venv psutil; no venv = assume
+    all alive, the conservative answer for 'is a publisher recorded')."""
+    if vp is None or not pids:
+        return list(pids)
+    r = subprocess.run([str(vp), "-c", _WAIT_PIDS_PY, "0",
+                        *[str(p) for p in pids]],
+                       cwd=str(ROOT), capture_output=True, text=True, check=False)
+    if r.returncode != 0:
+        return list(pids)
+    return [int(tok) for tok in r.stdout.split() if tok.isdigit()]
+
+
+def _rtsp_publishing(name: str, port: int | None = None,
+                     timeout_s: float = 1.0) -> bool:
+    """True when the local mediamtx answers DESCRIBE for stream/<name> with
+    200 - what any reader would see (404 = nothing publishing there). A
+    DESCRIBE starts no media; it is local mediamtx, never the gateway."""
+    port = port or RTSP_PORT
+    url = f"rtsp://127.0.0.1:{port}/stream/{name}"
+    req = (f"DESCRIBE {url} RTSP/1.0\r\nCSeq: 1\r\n"
+           "Accept: application/sdp\r\nUser-Agent: sentinel-launcher\r\n\r\n")
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=timeout_s) as sk:
+            sk.sendall(req.encode("ascii"))
+            head = sk.recv(64).decode("ascii", "replace")
+    except OSError:
+        return False
+    return head.startswith("RTSP/1.0 200")
+
+
+def start_feeds(vp: Path) -> None:
+    """Step 9: publish the register's stock feeds on the local mediamtx
+    (RTSP 127.0.0.1:8554 for the worker, HLS 127.0.0.1:8888 for the wall's
+    relay), detached, pid in data/replay_pids.txt so stop and replay-stop
+    both reach it. NEVER fails start: without the feeds the sandbox side
+    still runs (root section 9)."""
+    say("[9/10] local stock feeds (data/local_feeds.csv -> mediamtx;"
+        " looped stock clips, F56/F58) ...")
+    ids = _register_ids()
+    if not ids:
+        say("    no data/local_feeds.csv - skipping")
+        return
+    if not MEDIAMTX_EXE.exists():
+        say("[!] mediamtx is not fetched (python scripts/replay_publish.py"
+            " --fetch) - continuing without the local feeds")
+        return
+    feeds = _feeds_dir(vp)
+    present, missing = _register_feeds(feeds)
+    if not present:
+        say(f"    no transcoded feed under {feeds}"
+            " (.venv/Scripts/python scripts/prepare_feeds.py) - skipping")
+        return
+    if REPLAY_PIDFILE.exists():
+        recorded = list(_read_pidfile(REPLAY_PIDFILE).values())
+        alive = _alive_pids(vp, recorded)
+        if alive:
+            say(f"    a replay publisher is already running (pid"
+                f" {' '.join(map(str, alive))}, data/replay_pids.txt) - kept")
+            return
+        REPLAY_PIDFILE.unlink(missing_ok=True)  # stale record of a dead run
+    if _port_busy(RTSP_PORT):
+        say(f"[!] 127.0.0.1:{RTSP_PORT} is held by a process this launcher did"
+            " not record - continuing without the local feeds")
+        return
+    LOGS.mkdir(parents=True, exist_ok=True)
+    proc = _spawn_detached(_register_cmd(vp), LOGS / "replay.launcher.log")
+    DATA.mkdir(exist_ok=True)
+    REPLAY_PIDFILE.write_text(f"feeds {proc.pid}\n", encoding="utf-8")
+    for _ in range(30):  # checksum verify + mediamtx bind: a few seconds
+        if proc.poll() is not None:
+            REPLAY_PIDFILE.unlink(missing_ok=True)
+            say(f"[!] the feed publisher exited rc={proc.returncode}"
+                " - see data/logs/replay.launcher.log; continuing without"
+                " the local feeds")
+            return
+        if _port_busy(RTSP_PORT):
+            break
+        time.sleep(0.5)
+    else:
+        say(f"[!] mediamtx did not bind 127.0.0.1:{RTSP_PORT} in 15 s -"
+            " the worker's local cameras will retry with backoff")
+    up: list[str] = []
+    for _ in range(20):  # publishers connect a moment after the bind
+        up = [i for i in present if _rtsp_publishing(i)]
+        if len(up) == len(present) or proc.poll() is not None:
+            break
+        time.sleep(0.5)
+    if missing:
+        say(f"    skipped (no transcoded file): {', '.join(missing)}")
+    say(f"    {len(up)}/{len(present) + len(missing)} feeds publishing from"
+        f" {feeds} (pid {proc.pid}, data/replay_pids.txt):"
+        f" rtsp://127.0.0.1:{RTSP_PORT}/stream/<id>")
+
+
 def _fail_start(reason: str) -> NoReturn:
     say(f"[X] {reason}")
     say("    read the reason in data/logs/api.launcher.log, fix it, run again")
@@ -583,7 +729,7 @@ def _fail_start(reason: str) -> NoReturn:
 
 
 def start() -> int:
-    say("[1/9] environment doctor (scripts/doctor.py) ...")
+    say("[1/10] environment doctor (scripts/doctor.py) ...")
     if subprocess.call([sys.executable, str(ROOT / "scripts" / "doctor.py")],
                        cwd=str(ROOT)) != 0:
         die("scripts/doctor.py failed")
@@ -595,14 +741,18 @@ def start() -> int:
     ensure_seeds(vp)
     ensure_frontend()
 
-    say("[9/9] starting the platform ...")
     if PIDFILE.exists():
         say("    a previous instance is recorded - stopping it first"
             " (one stream pull per camera, root rule 2) ...")
-        stop()
+        stop()  # the previous run's feeds too; step 9 brings them back
         time.sleep(2)
     if _port_busy(API_PORT):
         die(f"port {API_PORT} is already in use - stop whatever holds it and run again")
+    # After the seeds (their rows exist), before the worker (its local active
+    # cameras find a publishing path on the first pull).
+    start_feeds(vp)
+
+    say("[10/10] starting the platform ...")
     STOP_FILE.unlink(missing_ok=True)  # a stale stop file would kill the worker at birth
     LOGS.mkdir(parents=True, exist_ok=True)
     api = _spawn_detached([str(vp), "-m", "backend.app"], LOGS / "api.launcher.log")
@@ -627,8 +777,8 @@ def start() -> int:
     say(f"  dashboard : {url}  (sign in; nothing is reachable without it, rule 11)")
     say("  status    : python launch.py status")
     say("  demo      : python launch.py demo      (labelled demo route + alerts)")
-    say("  replay    : python launch.py replay-start   (second system, F9/F19)")
-    say("  stop      : python launch.py stop")
+    say("  feeds     : looped stock clips on the local mediamtx (status: feeds N/28)")
+    say("  stop      : python launch.py stop      (the feeds too)")
     return 0
 
 
@@ -650,8 +800,7 @@ def check() -> int:
                              else "STALE or never installed (start reinstalls)"))
     else:
         say("deps     : unknown until .venv exists")
-    mtx = ROOT / "tools" / "mediamtx" / ("mediamtx.exe" if IS_WIN else "mediamtx")
-    say(f"mediamtx : {'fetched' if mtx.exists() else 'MISSING - python scripts/replay_publish.py --fetch'}")
+    say(f"mediamtx : {'fetched' if MEDIAMTX_EXE.exists() else 'MISSING - python scripts/replay_publish.py --fetch'}")
     say(f"model    : {'present' if (ROOT / 'models' / 'yolox_s.onnx').exists() else 'MISSING (fetched on start)'}"
         " (models/yolox_s.onnx)")
     say(f"frontend : {'built (frontend/dist)' if (ROOT / 'frontend' / 'dist' / 'index.html').exists() else 'NOT BUILT (built on start)'}")
@@ -659,9 +808,11 @@ def check() -> int:
         " (data/sentinel.db)")
     probes = sorted(DATA.glob("probe_results*.json"))
     say(f"probe    : {probes[-1].name if probes else 'never run (runs on first start)'}")
-    feeds = (sorted(FOOTAGE_FEEDS.glob("local*.mp4"))
-             if FOOTAGE_FEEDS.exists() else [])
-    say(f"feeds    : {len(feeds)} default replay feeds under {FOOTAGE_FEEDS}")
+    feeds_dir = _feeds_dir(vp)
+    present, missing = _register_feeds(feeds_dir)
+    say(f"feeds    : {len(present)}/{len(present) + len(missing)} register feeds"
+        f" transcoded under {feeds_dir} (data/local_feeds.csv;"
+        " scripts/prepare_feeds.py makes the rest)")
     say(f"pids     : {'recorded (data/launcher_pids.txt)' if PIDFILE.exists() else 'none recorded'};"
         f" api port {API_PORT} {'ANSWERING' if _port_busy(API_PORT) else 'closed'}")
     return 0 if rc == 0 else 1
@@ -669,10 +820,15 @@ def check() -> int:
 
 def stop() -> int:
     """Graceful first (data/stop; the supervisor watches it), then kill only
-    the recorded PID trees. Unrelated ffmpeg processes are never touched."""
+    the recorded PID trees - API and worker, then the local feeds'
+    publisher (data/replay_pids.txt), last so the worker never sees its
+    local cameras vanish while it is still running. Unrelated ffmpeg
+    processes are never touched."""
     if not PIDFILE.exists():
         say("nothing recorded as running (no data/launcher_pids.txt)")
         STOP_FILE.unlink(missing_ok=True)
+        if REPLAY_PIDFILE.exists():
+            replay_stop()
         return 0
     pids = _read_pidfile(PIDFILE)
     DATA.mkdir(exist_ok=True)
@@ -689,6 +845,8 @@ def stop() -> int:
     _kill_trees(list(pids.values()))
     PIDFILE.unlink(missing_ok=True)
     STOP_FILE.unlink(missing_ok=True)
+    if REPLAY_PIDFILE.exists():
+        replay_stop()
     say("stopped - only the recorded PID trees were touched"
         " (unrelated ffmpeg never killed)")
     return 0
@@ -764,10 +922,32 @@ def _api_line() -> None:
             f" ({type(exc).__name__})")
 
 
+def _feeds_line() -> None:
+    """'feeds    : N/28 publishing' - every register id DESCRIBEd on the
+    local mediamtx (what a reader would get, not what a pid file says)."""
+    ids = _register_ids()
+    if not ids:
+        say("feeds    : no register (data/local_feeds.csv missing)")
+        return
+    if not _port_busy(RTSP_PORT):
+        say(f"feeds    : 0/{len(ids)} publishing (nothing listening on"
+            f" 127.0.0.1:{RTSP_PORT})")
+        return
+    up = [i for i in ids if _rtsp_publishing(i)]
+    down = [i for i in ids if i not in up]
+    tail = ""
+    if down:
+        shown = ", ".join(down[:8]) + (" ..." if len(down) > 8 else "")
+        tail = f" - not publishing: {shown}"
+    say(f"feeds    : {len(up)}/{len(ids)} publishing"
+        f" (rtsp://127.0.0.1:{RTSP_PORT}/stream/<id>){tail}")
+
+
 def status() -> int:
     _stats_highlights()
     _db_counts()
     _api_line()
+    _feeds_line()
     say(f"pids     : launcher {'recorded' if PIDFILE.exists() else 'none'};"
         f" replay {'recorded' if REPLAY_PIDFILE.exists() else 'none'}"
         " (data/launcher_pids.txt, data/replay_pids.txt)")
@@ -820,29 +1000,45 @@ def harvest() -> int:
 
 # ---------------------------------------------------- second system (F9/F19)
 
-def _default_replay_specs() -> list[str]:
-    """The F58 defaults: local01..local04 from the feeds folder, looped
-    (they are loopable WALL feeds - test DB only). Missing files are skipped
-    with a warning (partial coverage beats none, root section 9); none at
-    all is an error. A filmed-route run instead passes explicit NAME=PATH
-    pairs plus --offsets and NO --loop (F56: real gaps, real speeds)."""
-    specs: list[str] = []
-    for name in DEFAULT_REPLAY_NAMES:
-        path = FOOTAGE_FEEDS / f"{name}.mp4"
-        if path.exists():
-            specs.append(f"{name}={path}")
-        else:
-            say(f"[!] {path} missing - skipping {name}")
-    if not specs:
-        die(f"no default feeds found under {FOOTAGE_FEEDS}"
-            " - pass NAME=PATH pairs explicitly")
-    specs.append("--loop")
-    return specs
-
-
 def _replay_cmd(vp: Path, specs: list[str]) -> list[str]:
-    """The argv replay-start spawns (split out so a test can assert it)."""
+    """The argv replay-start spawns for explicit feeds (split out so a test
+    can assert it)."""
     return [str(vp), str(ROOT / "scripts" / "replay_publish.py"), "--many", *specs]
+
+
+def _replay_plan(vp: Path, extra: list[str]) -> tuple[list[str], list[str]]:
+    """(argv, stream names) for replay-start. No arguments = the register
+    (every data/local_feeds.csv feed that is transcoded, looped - F56/F58
+    wall and demo feeds; missing files skipped with a line, none at all is
+    an error). NAME=PATH pairs = --many, passed through as given: a
+    filmed-route run adds --offsets and NO --loop (F56: real gaps, real
+    speeds)."""
+    if extra:
+        say("replay-start (explicit feeds): " + " ".join(extra))
+        if "--loop" in extra:
+            say("[!] --loop repeats every clip: wall/soak tests on a TEST DB"
+                " only (F56/F58) - never a run that feeds a route")
+        # --many's NAME=PATH pairs are the tokens before the first flag;
+        # after it, "r2=30" is an --offsets value, not a stream
+        names: list[str] = []
+        for token in extra:
+            if token.startswith("-"):
+                break
+            names.append(token.split("=", 1)[0])
+        return _replay_cmd(vp, extra), names
+    feeds = _feeds_dir(vp)
+    present, missing = _register_feeds(feeds)
+    for name in missing:
+        say(f"[!] {feeds / (name + '.mp4')} missing - skipping {name}")
+    if not present:
+        die(f"no register feed found under {feeds} - run"
+            " .venv/Scripts/python scripts/prepare_feeds.py, or pass NAME=PATH"
+            " pairs explicitly")
+    say(f"replay-start (the register, data/local_feeds.csv): {len(present)}/"
+        f"{len(present) + len(missing)} feeds - LOOPED STOCK CLIPS (F56/F58:"
+        " wall and demo feeds, disclosed in each registry row; a filmed-route"
+        " run passes NAME=PATH pairs plus --offsets and NO --loop instead)")
+    return _register_cmd(vp), present
 
 
 def replay_start(extra: list[str]) -> int:
@@ -852,37 +1048,27 @@ def replay_start(extra: list[str]) -> int:
     if REPLAY_PIDFILE.exists():
         die("a replay publisher is already recorded (data/replay_pids.txt)"
             " - python launch.py replay-stop first")
-    mtx = ROOT / "tools" / "mediamtx" / ("mediamtx.exe" if IS_WIN else "mediamtx")
-    if not mtx.exists():
+    if not MEDIAMTX_EXE.exists():
         die("mediamtx is not fetched - run: python scripts/replay_publish.py --fetch")
-    if extra:
-        specs = extra
-        say("replay-start (explicit feeds): " + " ".join(specs))
-    else:
-        specs = _default_replay_specs()
-        say("replay-start (F58 defaults - loopable wall feeds):")
-        for spec in specs:
-            say(f"    {spec}")
-        say("    a filmed-route run passes NAME=PATH pairs plus --offsets"
-            " and NO --loop instead (F56)")
-    if "--loop" in specs:
-        say("[!] --loop repeats every clip: wall/soak tests on a TEST DB only"
-            " (F56/F58) - never a run that feeds a route")
+    cmd, names = _replay_plan(vp, extra)
     LOGS.mkdir(parents=True, exist_ok=True)
-    proc = _spawn_detached(_replay_cmd(vp, specs), LOGS / "replay.launcher.log")
+    proc = _spawn_detached(cmd, LOGS / "replay.launcher.log")
     time.sleep(2)  # a checksum refusal or a held port dies immediately
     if proc.poll() is not None:
         die(f"replay publisher exited rc={proc.returncode} at once"
             " - see data/logs/replay.launcher.log")
     DATA.mkdir(exist_ok=True)
     REPLAY_PIDFILE.write_text(f"replay {proc.pid}\n", encoding="utf-8")
-    names = [s.split("=", 1)[0] for s in specs if "=" in s and not s.startswith("-")]
     say(f"replay publisher running (pid {proc.pid} -> data/replay_pids.txt); streams:")
     for name in names:
         say(f"    rtsp://127.0.0.1:{RTSP_PORT}/stream/{name}")
-    say("  onboard during the demo through the Cameras form; for tests:")
-    say("    .venv/Scripts/python -m backend.tools.seed_registry --add"
-        f" local01 <department> rtsp://127.0.0.1:{RTSP_PORT}/stream/local01 --tier active")
+    if extra:
+        say("  onboard during the demo through the Cameras form; for tests:")
+        say("    .venv/Scripts/python -m backend.tools.seed_registry --add"
+            f" <id> <department> rtsp://127.0.0.1:{RTSP_PORT}/stream/<id> --tier active")
+    else:
+        say("  registry rows: .venv/Scripts/python -m backend.tools.seed_registry"
+            " (upserts every register row; launch.py start runs it)")
     say("  stop with: python launch.py replay-stop")
     return 0
 

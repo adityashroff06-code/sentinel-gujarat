@@ -125,9 +125,17 @@ class Supervisor:
     # A DB error in the poll loop must not kill the run; connections are
     # cheap and per-use so a locked read never pins the writer.
     def _active_rows(self, con: sqlite3.Connection) -> list[sqlite3.Row]:
+        """The active tier under the SENTINEL_ACTIVE_CAMERAS cap: catalogue
+        (sandbox) cameras first, then the manual/local ones, each group by
+        camera_id — so the cap never trades a live sandbox camera for a
+        stock feed, and cap+1 adds local01 (F55/F58). Ordering by id alone
+        only did that while every catalogue id happened to sort before
+        'local' (a grid with ids like 'road01' would lose to local01)."""
         return con.execute(
             "SELECT * FROM cameras WHERE transport IN ('rtsp', 'replay')"
-            " AND fps_tier = 'active' ORDER BY camera_id LIMIT ?",
+            " AND fps_tier = 'active'"
+            " ORDER BY CASE WHEN source = 'catalogue' THEN 0 ELSE 1 END,"
+            " camera_id LIMIT ?",
             (config.active_cameras(),),
         ).fetchall()
 

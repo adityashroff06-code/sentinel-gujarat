@@ -8,8 +8,12 @@ disclosed ``data/camera_seed.csv`` then fills only what the catalogue did
 not carry (department, location, coordinates), plus the seed-owned
 ``fps_tier``. ``SENTINEL_CATALOGUE_URL`` naming a local JSON file replaces
 the committed catalogue; fetching a URL is the probe's business — the
-seeder never touches the network. Idempotent: running twice leaves the
-same rows.
+seeder never touches the network. Then every row of the committed
+stock-feed register ``data/local_feeds.csv`` (F58: local01..local28, looped
+stock clips on the local mediamtx, disclosed as "stock footage, seeded
+coordinates" in each location_name) is upserted as a ``source='manual'``
+RTSP camera; a catalogue row is never touched by it. Idempotent: running
+twice leaves the same rows.
 
     python -m backend.tools.seed_registry
     python -m backend.tools.seed_registry --add local01 Municipal rtsp://127.0.0.1:8554/stream/local01 --tier active
@@ -20,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import re
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -30,6 +35,11 @@ from backend.tools import probe  # the shared catalogue normaliser (F45)
 
 CATALOGUE = config.REPO_ROOT / "data" / "cameras_raw.json"
 SEED_CSV = config.REPO_ROOT / "data" / "camera_seed.csv"
+# The committed stock-feed register (F58): local01..local28, published on the
+# local mediamtx by scripts/replay_publish.py --register (launch.py start).
+LOCAL_FEEDS_CSV = config.REPO_ROOT / "data" / "local_feeds.csv"
+LOCAL_RTSP_TEMPLATE = "rtsp://127.0.0.1:8554/stream/{camera_id}"
+_CAMERA_ID_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")  # docs/api.md B11
 
 # The registry columns a catalogue may supply (docs/api.md §1). transport,
 # tier and the seed-owned fields stay out: probing and the seed own those.
@@ -102,6 +112,79 @@ def apply_seed(con: sqlite3.Connection) -> int:
     return applied
 
 
+def load_local_feeds(path: Path | None = None) -> list[dict[str, str]]:
+    """The rows of the committed stock-feed register ``data/local_feeds.csv``
+    (decision F58), header order kept."""
+    with open(path or LOCAL_FEEDS_CSV, newline="", encoding="utf-8") as fh:
+        return list(csv.DictReader(fh))
+
+
+def upsert_local_feeds(con: sqlite3.Connection,
+                       rows: list[dict[str, str]] | None = None) -> int:
+    """Upsert every register row as a ``source='manual'`` RTSP camera on the
+    local mediamtx (``rtsp://127.0.0.1:8554/stream/<id>``), with the
+    register's department, location (its disclosure included), coordinates,
+    bearing/fov/range and tier. Idempotent. ``ownership`` is left to the
+    column default (the local rows' value), so an edit through the UI
+    survives. A row the catalogue owns is never touched, even if the
+    register named it. Returns the number of register rows applied; raises
+    ValueError for an id outside docs/api.md B11."""
+    if rows is None:
+        rows = load_local_feeds()
+    now = dbmod.utcnow()
+    applied = 0
+    for row in rows:
+        camera_id = row["camera_id"]
+        if not _CAMERA_ID_RE.fullmatch(camera_id):
+            raise ValueError(f"local_feeds.csv: bad camera_id {camera_id!r} (B11)")
+        cur = con.execute(
+            "INSERT INTO cameras (camera_id, department, location_name, lat, lon,"
+            " bearing_deg, fov_deg, range_m, fps_tier, transport,"
+            " rtsp_url_template, source, created_at, updated_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'rtsp', ?, 'manual', ?, ?)"
+            " ON CONFLICT(camera_id) DO UPDATE SET"
+            " department = excluded.department,"
+            " location_name = excluded.location_name,"
+            " lat = excluded.lat, lon = excluded.lon,"
+            " bearing_deg = excluded.bearing_deg, fov_deg = excluded.fov_deg,"
+            " range_m = excluded.range_m, fps_tier = excluded.fps_tier,"
+            " transport = 'rtsp',"
+            " rtsp_url_template = excluded.rtsp_url_template,"
+            " source = 'manual', updated_at = excluded.updated_at"
+            " WHERE cameras.source IS NOT 'catalogue'",
+            (
+                camera_id, row["department"], row["location_name"],
+                float(row["lat"]), float(row["lon"]),
+                _opt_float(row.get("bearing_deg")), _opt_float(row.get("fov_deg")),
+                _opt_float(row.get("range_m")), row["fps_tier"],
+                LOCAL_RTSP_TEMPLATE.format(camera_id=camera_id), now, now,
+            ),
+        )
+        applied += cur.rowcount
+    return applied
+
+
+def _opt_float(value: str | None) -> float | None:
+    return float(value) if value not in (None, "") else None
+
+
+def local_feed_count(con: sqlite3.Connection,
+                     rows: list[dict[str, str]] | None = None) -> tuple[int, int]:
+    """``(present, registered)``: how many register ids exist as manual RTSP
+    rows, out of how many the register lists."""
+    if rows is None:
+        rows = load_local_feeds()
+    ids = [r["camera_id"] for r in rows]
+    if not ids:
+        return 0, 0
+    present = con.execute(
+        f"SELECT COUNT(*) FROM cameras WHERE source = 'manual'"
+        f" AND transport = 'rtsp' AND camera_id IN ({', '.join('?' * len(ids))})",
+        ids,
+    ).fetchone()[0]
+    return present, len(ids)
+
+
 def add_manual(con: sqlite3.Connection, camera_id: str, department: str,
                url: str, tier: str) -> None:
     now = dbmod.utcnow()
@@ -161,6 +244,8 @@ def main() -> int:
         dbmod.migrate(con)
         upsert_catalogue(con)
         apply_seed(con)
+        local_rows = load_local_feeds()
+        upsert_local_feeds(con, local_rows)
         if args.add:
             add_manual(con, args.add[0], args.add[1], args.add[2], args.tier)
         if args.replay:
@@ -169,10 +254,13 @@ def main() -> int:
             add_replay(con, args.replay[0], args.replay[1:])
         con.commit()
         total, active, departments, ok = summarise(con)
+        local_present, local_listed = local_feed_count(con, local_rows)
     finally:
         con.close()
+    ok = ok and local_present == local_listed
     print(
-        f"cameras: {total} rows, {active} active across {departments} departments"
+        f"cameras: {total} rows, {active} active across {departments} departments,"
+        f" {local_present}/{local_listed} local stock feeds (data/local_feeds.csv)"
         f" — ACCEPTANCE: {'PASS' if ok else 'FAIL'}"
     )
     return 0 if ok else 1

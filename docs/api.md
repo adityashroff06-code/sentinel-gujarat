@@ -64,6 +64,8 @@ CREATE INDEX idx_cameras_tier   ON cameras(fps_tier);
 
 **Department and coordinates:** if the catalogue supplies them, use them verbatim. If it does not, assign them once in a committed seed file (`data/camera_seed.csv`), never silently in code, and state in the submission that geography was assigned for demonstration because the catalogue did not carry it. Do not fabricate it invisibly.
 
+**Local stock feeds (F58, 25 Sep):** the committed register `data/local_feeds.csv` (`local01`…`local28`) is upserted by `backend.tools.seed_registry` on every run as `source = 'manual'`, `transport = 'rtsp'`, `rtsp_url_template = rtsp://127.0.0.1:8554/stream/<id>` (plain local URL), with the register's `department`, `location_name`, `lat`, `lon`, `bearing_deg`, `fov_deg`, `range_m` and `fps_tier`; `ownership`, `health` and `last_seen` are left as they are. Every such `location_name` carries the disclosure "(stock footage, seeded coordinates)" — the clips are looped stock footage, not the sandbox and not a filmed route (rule 12). A catalogue row is never touched by the register. The worker's active pick orders catalogue cameras first, then the rest by `camera_id`, under `SENTINEL_ACTIVE_CAMERAS`.
+
 **`camera_id` hygiene (B11):** `camera_id` matches `^[A-Za-z0-9_-]{1,64}$` — it flows into filesystem paths and URLs, so nothing else is accepted, at every boundary. `rtsp_url_template` may carry `<email>`/`<password>` placeholders (filled from the environment in memory) **or** be a plain local URL used as-is; no stored URL ever contains a credential.
 
 ---
@@ -363,7 +365,7 @@ CREATE INDEX idx_sessions_user ON sessions(user_id, expires_at);
 - **Rate limits** on the expensive reads — the route query, the report exports and the HLS relay — per session, returning `429` rather than queueing.
 - **Response headers** on every response: `Content-Security-Policy` (self, plus the OSM tile host and `data:` images), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, and HSTS when `SENTINEL_PUBLIC_HOST` is set.
 - **Body limits:** the CSV import accepts at most 2 MB and 5,000 rows, and rejects anything else with a reason, not a stack trace.
-- **Only the API port is published** (decision F42). mediamtx (8554) and the Vite dev server bind to `127.0.0.1` and are never tunnelled.
+- **Only the API port is published** (decision F42). mediamtx (RTSP 8554, and HLS on `SENTINEL_MEDIAMTX_HLS_PORT`, default 8888 — `http://127.0.0.1:8888/stream/<id>/index.m3u8`, MPEG-TS, 2 s segments, the relay's local source) and the Vite dev server bind to `127.0.0.1` and are never tunnelled.
 
 ---
 

@@ -150,7 +150,82 @@ Nothing to do in code — this is the designed case (F45):
   (the catalogue is the contract); expect them to appear as their own
   group in UI filters and the gap analysis.
 
+## Adding a local stock feed
+
+*Added 25 Sep 2026 (decision F58 and the local-feeds lane).* The 28 stock
+CCTV clips are **looped stock footage with seeded coordinates** — not
+Adi's filmed route, not the sandbox. One committed register drives
+everything: `data/local_feeds.csv` (`camera_id, clip, department,
+location_name, lat, lon, bearing_deg, fov_deg, range_m, fps_tier`).
+`launch.py start` seeds every row into the registry, publishes every
+transcoded feed on the local mediamtx (RTSP `127.0.0.1:8554/stream/<id>`
+for the worker, HLS `127.0.0.1:8888/stream/<id>/index.m3u8` for the wall's
+relay), then starts the API and worker. Nothing binds anything but
+`127.0.0.1` (rule 11).
+
+To add one (say `local29`):
+
+1. **Register row** — append to `data/local_feeds.csv`:
+
+   ```
+   local29,<clip file name in raw/>,Municipal,"Sample feed 29 - <junction name> (stock footage, seeded coordinates)",23.0300,72.5800,90,70,100,registered
+   ```
+
+   - `camera_id`: `^[A-Za-z0-9_-]{1,64}$`, never a `cam…` id (those are
+     the organisers'; the seeder never touches a catalogue row anyway).
+   - `lat`/`lon` inside Gujarat; `bearing_deg` 0–359 (0 = north),
+     `fov_deg`, `range_m` for the GIS cone.
+   - `fps_tier`: `registered` (a view-only wall tile — the default) or
+     `active` (an ANPR worker; the worker takes catalogue cameras first,
+     then local feeds by id, up to `SENTINEL_ACTIVE_CAMERAS` — every
+     active stock feed costs worker fps).
+   - **The disclosure is mandatory**: `location_name` must end with
+     `(stock footage, seeded coordinates)` — it is how rule 12 reaches
+     every screen, export and map popup that shows the name.
+     `tests/test_local_feeds.py` fails without it.
+
+2. **Transcode once** — put the clip in
+   `SENTINEL_FOOTAGE_DIR\raw\` (default `D:\projects\sentinel-footage\raw`,
+   outside the repo, never committed) and run:
+
+   ```powershell
+   .venv\Scripts\python scripts\prepare_feeds.py --only local29
+   ```
+
+   It writes `feeds\local29.mp4`: H.264, 30 fps, a keyframe every exactly
+   2 s (so mediamtx copy-publishes it and cuts 2 s HLS segments), no audio,
+   faststart; 1080p for `active`, 720p for `registered`. Idempotent — an
+   existing feed is skipped.
+
+3. **Restart** — `python launch.py stop` then `python launch.py start`
+   (step 6 upserts the row, step 9 publishes the feed). Or, without
+   restarting the platform: `.venv\Scripts\python -m backend.tools.seed_registry`
+   then `python launch.py replay-stop` + `python launch.py replay-start`
+   (no arguments = the register).
+
+**Check after it:** `seed_registry` prints `... N/N local stock feeds ...
+ACCEPTANCE: PASS`; `python launch.py status` prints `feeds    : N/N
+publishing`; the camera's pin appears on the GIS map with its cone, and
+its tile plays on the Live Wall. A row whose feed file is missing is
+skipped with a printed line (partial coverage beats none, root §9) and
+counts as not publishing.
+
+**Memory (measured 25 Sep, alternate ports):** all 28 feeds publishing
+continuously cost 505–539 MB working set for the 28 copy-mode ffmpeg
+publishers (USS 130–164 MB — each process's ~13 MB of shared ffmpeg image
+is counted once per process in the working-set sum) plus 52–54 MB for
+mediamtx, with no HLS readers. Every HLS stream being read adds to
+mediamtx: 3 open tiles added ~114 MB; **all 28 read at once took mediamtx
+to 0.9–1.2 GB** (7 segments kept). Keep the number of local tiles playing
+at once small (a paged wall), not all 28.
+
 ## The second system: local demo feeds (own recordings)
+
+*The stock feeds above replaced the steps below for `local01…local28`
+(their rows now come from `data/local_feeds.csv`, not `--add` plus
+`camera_seed.csv`). The steps stay valid for Adi's own filmed recordings,
+which must use ids outside the register and are published once through
+with real offsets (F56), never looped.*
 
 Adi's 10 recordings (60–90 s, with coordinates) become `local01..local10`
 — published over local RTSP and consumed by the **same** worker, relay and

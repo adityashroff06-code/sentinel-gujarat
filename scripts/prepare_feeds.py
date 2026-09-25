@@ -53,6 +53,12 @@ def load_register(path: Path = REGISTER) -> list[dict[str, str]]:
         return list(csv.DictReader(f))
 
 
+def feed_height(fps_tier: str) -> int:
+    """Output height for a register row's tier: 1080 for ``active`` (ANPR
+    needs the plate pixels), 720 for view-only ``registered`` wall tiles."""
+    return 1080 if fps_tier == "active" else 720
+
+
 def _has_nvenc(ffmpeg: str) -> bool:
     out = subprocess.run([ffmpeg, "-hide_banner", "-encoders"],
                          capture_output=True, text=True, timeout=30).stdout
@@ -115,7 +121,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[feeds] {cam}: MISSING source {src.name}")
             failed += 1
             continue
-        height = 1080 if row["fps_tier"] == "active" else 720
+        height = feed_height(row["fps_tier"])
         tmp = dst.with_suffix(".part.mp4")
         t0 = time.monotonic()
         rc = subprocess.call(transcode_cmd(ffmpeg, src, tmp, height=height,
