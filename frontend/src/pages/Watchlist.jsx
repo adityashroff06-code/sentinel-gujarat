@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { SeverityWord } from '../components/Badges.jsx'
 import { api } from '../lib/api.js'
 import { roleAtLeast, useSession } from '../lib/session.js'
 import { formatTs } from '../lib/time.js'
@@ -16,13 +17,6 @@ const CATEGORIES = [
   'suspect',
 ]
 const SEVERITIES = ['high', 'medium', 'low']
-
-const SEV_VAR = {
-  critical: 'var(--sev-critical)',
-  high: 'var(--sev-high)',
-  medium: 'var(--sev-medium)',
-  low: 'var(--sev-low)',
-}
 
 const EMPTY = { plate: '', category: 'stolen_vehicle', severity: 'high', reason: '', source_ref: '' }
 
@@ -87,7 +81,12 @@ export default function Watchlist() {
     <div className="page">
       <div className="card">
         <h2>
-          Watchlist <span className="count num">{state.rows.length} plates</span>
+          Watchlist{' '}
+          {state.status === 'ready' && (
+            <span className="count num">
+              {state.rows.length} {state.rows.length === 1 ? 'plate' : 'plates'}
+            </span>
+          )}
         </h2>
 
         {state.status === 'loading' && (
@@ -132,14 +131,7 @@ export default function Watchlist() {
                   <td className="plate">{w.plate}</td>
                   <td>{w.category.replace(/_/g, ' ')}</td>
                   <td>
-                    <span
-                      className="badge outline"
-                      style={{ color: SEV_VAR[w.severity] ? undefined : 'var(--text-muted)' }}
-                    >
-                      <span style={{ color: SEV_VAR[w.severity] || 'var(--text-muted)' }}>
-                        {w.severity}
-                      </span>
-                    </span>
+                    <SeverityWord severity={w.severity} />
                   </td>
                   <td>{w.description || w.reason || '—'}</td>
                   <td className="mono">{w.source_ref || '—'}</td>

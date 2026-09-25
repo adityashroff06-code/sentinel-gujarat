@@ -25,11 +25,14 @@ function fmtDuration(seconds) {
   return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`
 }
 
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`
+
 export default function RoutePage() {
   const { plate: plateParam } = useParams()
   const navigate = useNavigate()
   const [plate, setPlate] = useState(plateParam || '')
   const [state, setState] = useState({ status: plateParam ? 'loading' : 'idle', route: null, error: null })
+  const [tilesFailed, setTilesFailed] = useState(false)
 
   const run = useCallback(async (p) => {
     if (!p) return
@@ -109,6 +112,7 @@ export default function RoutePage() {
             <TileLayer
               url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution="&copy; OpenStreetMap contributors"
+              eventHandlers={{ tileerror: () => setTilesFailed(true) }}
             />
             {legs.map((leg) => (
               <Polyline
@@ -149,6 +153,11 @@ export default function RoutePage() {
             {state.status === 'ready'
               ? 'No located stops for this plate.'
               : 'Enter a registration number to trace its route across the camera network.'}
+          </div>
+        )}
+        {located.length > 0 && tilesFailed && (
+          <div className="map-note" role="note">
+            Basemap tiles need internet — pins, route and timeline still work.
           </div>
         )}
       </div>
@@ -206,7 +215,7 @@ export default function RoutePage() {
                   </span>
                 ))}
                 <span className="route-depts-count">
-                  {route.departments_crossed.length} departments crossed
+                  {plural(route.departments_crossed.length, 'department')} crossed
                 </span>
               </div>
               <div className="route-stats">
@@ -224,12 +233,14 @@ export default function RoutePage() {
                 </div>
                 <div className="kv">
                   <span>Distance</span>
-                  <span className="num">{route.distance_km} km</span>
+                  <span className="num">
+                    {route.distance_km != null ? `${route.distance_km} km` : '—'}
+                  </span>
                 </div>
                 <div className="kv">
                   <span>Stops / cameras</span>
                   <span className="num">
-                    {stops.length} stops · {camerasCrossed} cameras
+                    {plural(stops.length, 'stop')} · {plural(camerasCrossed, 'camera')}
                   </span>
                 </div>
               </div>
@@ -289,7 +300,7 @@ export default function RoutePage() {
 
             {route.gaps?.length > 0 && (
               <p className="muted route-gaps">
-                {route.gaps.length} coverage gap(s):{' '}
+                {plural(route.gaps.length, 'coverage gap')}:{' '}
                 {route.gaps
                   .map((g) => `after #${g.after_sequence} (${g.minutes} min — ${g.note})`)
                   .join('; ')}

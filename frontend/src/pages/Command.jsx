@@ -22,7 +22,11 @@ import { formatTimeIST } from '../lib/time.js'
 
 const SORT_TIER = { active: 0 }
 const SORT_HEALTH = { online: 0, degraded: 1 }
-const OBJECT_CLASSES = ['car', 'motorcycle', 'truck', 'bus', 'auto', 'person']
+// the classes the detector actually emits (ml/anpr/detect.py COCO_KEEP);
+// 'auto' was a dead counter — YOLOX has no such class
+const OBJECT_CLASSES = ['car', 'motorcycle', 'truck', 'bus', 'bicycle', 'person']
+const CLASS_LABELS = { bus: 'buses', person: 'persons' }
+const classLabel = (cls) => CLASS_LABELS[cls] || `${cls}s`
 
 const fetchCameras = () => api.cameras()
 const fetchLatest = () => api.sightings({ limit: 50 })
@@ -173,7 +177,10 @@ export default function Command() {
         {/* ---- mini-map ---- */}
         <div className="card map-card">
           <h2>
-            Camera network <span className="count num">{cams.length} cameras</span>
+            Camera network{' '}
+            <span className="count num">
+              {cams.length} {cams.length === 1 ? 'camera' : 'cameras'}
+            </span>
             <Link to="/map" className="chip more">
               map ›
             </Link>
@@ -301,7 +308,7 @@ export default function Command() {
             {OBJECT_CLASSES.map((cls) => (
               <div className="kpi" key={cls} id={cls === 'person' ? 'person-count' : undefined}>
                 <b className="num">{objectCounts[cls]}</b>
-                <span>{cls === 'person' ? 'persons' : `${cls}s`}</span>
+                <span>{classLabel(cls)}</span>
               </div>
             ))}
           </div>

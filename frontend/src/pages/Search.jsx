@@ -11,11 +11,14 @@ import { formatTs } from '../lib/time.js'
 // fixed (IST times, no silent .catch, designed states), provenance and
 // class filters added, ?plate= deep link supported.
 //
-// NOTE: GET /api/sightings has no vehicle_class filter yet (backend gap,
-// flagged to the orchestrator) — the class filter narrows CLIENT-SIDE
-// over the fetched page and says so in the count line.
+// Vehicle class filters twice: Search sends vehicle_class to the API
+// (server-side since commit 8b8e8b8), and changing the select between
+// submits also narrows the already-fetched page instantly — the count
+// line says when it is showing a narrowed page.
 
-const CLASSES = ['car', 'truck', 'bus', 'motorcycle', 'auto', 'unknown']
+// the classes the detector actually emits (ml/anpr/detect.py COCO_KEEP)
+// plus 'unknown' for rows with no stored class — never a dead option
+const CLASSES = ['car', 'truck', 'bus', 'motorcycle', 'bicycle', 'unknown']
 const PROVENANCES = ['live', 'harvest', 'demo', 'test']
 
 export default function Search() {
@@ -50,7 +53,14 @@ export default function Search() {
 
   const submit = (e) => {
     e?.preventDefault()
-    run({ plate, min_confidence: minConf || undefined, provenance })
+    run({
+      plate,
+      min_confidence: minConf || undefined,
+      provenance,
+      // 'unknown' means rows with NO stored class — the server filter
+      // matches literal values only, so that bucket narrows client-side
+      vehicle_class: vclass && vclass !== 'unknown' ? vclass : undefined,
+    })
   }
 
   const shown = vclass
@@ -64,8 +74,8 @@ export default function Search() {
           Vehicle search{' '}
           <span className="count num">
             {state.status === 'ready'
-              ? vclass
-                ? `${shown.length} of ${state.rows.length} fetched (class filter is client-side) · ${state.total} total`
+              ? shown.length !== state.rows.length
+                ? `${shown.length} of ${state.rows.length} on this page · ${state.total} total — press Search to filter the full set`
                 : `${state.rows.length} shown · ${state.total} total`
               : '…'}
           </span>

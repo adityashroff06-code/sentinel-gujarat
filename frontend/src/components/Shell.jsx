@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { api } from '../lib/api.js'
 import { roleAtLeast, SessionContext } from '../lib/session.js'
@@ -93,7 +93,11 @@ export default function Shell() {
           <Header />
           <StatusStrip />
           <div className="content">
-            <Outlet />
+            {/* the heavy pages are route-level chunks (S3.3b) — the
+                fallback is designed, never a blank content area */}
+            <Suspense fallback={<div className="lazy-fallback">Loading…</div>}>
+              <Outlet />
+            </Suspense>
           </div>
         </div>
       </div>

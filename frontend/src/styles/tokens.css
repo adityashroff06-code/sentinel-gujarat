@@ -18,7 +18,9 @@
   /* ---- text ---- */
   --text: #e6edf5;
   --text-muted: #8a97a6;
-  --text-faint: #5c6875;
+  /* faintest text still >= 4.5:1 on surface-2 (S3.3b: #5c6875 measured
+     ~3:1 on surface-1 — below the CLAUDE.md contrast floor) */
+  --text-faint: #7f8b99;
   --text-on-color: #ffffff;
 
   /* ---- accent and status ---- */

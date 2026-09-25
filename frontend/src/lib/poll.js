@@ -130,8 +130,9 @@ export function useAlertStream(cap = 200) {
 
   /** Merge an acknowledged row (the POST /ack response) into the list. */
   const applyAck = useCallback((row) => {
+    const seq = Number(row.alert_seq) // same coercion as insertAlert above
     setAlerts((cur) =>
-      (cur ?? []).map((a) => (a.alert_seq === row.alert_seq ? { ...a, ...row } : a))
+      (cur ?? []).map((a) => (Number(a.alert_seq) === seq ? { ...a, ...row } : a))
     )
   }, [])
 

@@ -26,6 +26,15 @@ const loadPolicy = () => ({
 const RETRY_BASE_MS = 4000
 const RETRY_CAP_MS = 30000
 
+// hls.js failure details are developer strings ('manifestLoadTimeOut');
+// the overlay speaks operator words and keeps the detail on the tooltip
+// (S3.3b: never a raw error string on a wall screen).
+function friendlyReason(detail = '') {
+  if (/manifest|level/i.test(detail)) return 'no signal'
+  if (/frag|buffer/i.test(detail)) return 'stream interrupted'
+  return 'stream error'
+}
+
 export default function Tile({ cam }) {
   const videoRef = useRef(null)
   const [err, setErr] = useState(null)
@@ -58,13 +67,23 @@ export default function Tile({ cam }) {
       }
     }
 
-    const scheduleRetry = (reason) => {
+    const onNativeError = () => {
+      if (disposed) return
+      scheduleRetry(video.error?.message || 'native playback error')
+    }
+    const onNativePlaying = () => {
+      if (disposed) return
+      attemptsRef.current = 0 // the feed answered — reset the ladder
+      setErr(null)
+    }
+
+    const scheduleRetry = (detail) => {
       if (disposed || retryTimer) return
       const attempt = attemptsRef.current
       attemptsRef.current = attempt + 1
       const delay =
         Math.min(RETRY_BASE_MS * 2 ** attempt, RETRY_CAP_MS) * (0.5 + Math.random())
-      setErr(`${reason} — retrying`)
+      setErr({ word: `${friendlyReason(detail)} — retrying`, detail })
       retryTimer = setTimeout(() => {
         retryTimer = null
         if (!disposed) setGen((g) => g + 1)
@@ -98,14 +117,20 @@ export default function Tile({ cam }) {
       hls.attachMedia(video)
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src // Safari native HLS
+      // the native path needs its own error handling or a dead feed is a
+      // silent black tile labelled LIVE (frontend/CLAUDE.md: never silent)
+      video.addEventListener('error', onNativeError)
+      video.addEventListener('playing', onNativePlaying)
     } else {
-      setErr('HLS not supported')
+      setErr({ word: 'live view not supported in this browser', detail: 'no HLS support' })
     }
 
     return () => {
       disposed = true
       if (retryTimer) clearTimeout(retryTimer)
       killPlayer()
+      video.removeEventListener('error', onNativeError)
+      video.removeEventListener('playing', onNativePlaying)
       video.removeAttribute('src')
       video.load()
     }
@@ -129,8 +154,8 @@ export default function Tile({ cam }) {
         </span>
       </div>
       {err && (
-        <div className="err">
-          {cam.camera_id}: {err}
+        <div className="err" title={err.detail}>
+          {cam.camera_id}: {err.word}
         </div>
       )}
     </div>

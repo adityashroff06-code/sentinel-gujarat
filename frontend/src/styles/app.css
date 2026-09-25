@@ -270,6 +270,15 @@ tbody tr.selected { background: var(--surface-3); }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 .skeleton-rows { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-3) 0; }
 
+/* while a lazily-loaded page chunk arrives (S3.3b code-splitting) —
+   designed, never a blank content area */
+.lazy-fallback {
+  padding: var(--s-8) var(--s-5);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--fs-md);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
@@ -467,10 +476,18 @@ tbody tr.selected { background: var(--surface-3); }
 .wall-ctrl { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
 .wall-ctrl .spacer { flex: 1; }
 .grid { display: grid; gap: var(--s-3); }
-.wall .grid { flex: 1; min-height: 0; align-content: start; }
 .grid.g1 { grid-template-columns: 1fr; }
 .grid.g4 { grid-template-columns: repeat(2, 1fr); }
 .grid.g9 { grid-template-columns: repeat(3, 1fr); }
+/* the wall FILLS the viewport (frontend/CLAUDE.md): rows share the
+   remaining height and tiles stretch into their cells instead of
+   holding 16:9 — at 1366x768 fixed-ratio tiles overflowed the content
+   area by a few px and produced a scrollbar (S3.3b) */
+.wall .grid { flex: 1; min-height: 0; }
+.wall .grid.g1 { grid-template-rows: minmax(0, 1fr); }
+.wall .grid.g4 { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+.wall .grid.g9 { grid-template-rows: repeat(3, minmax(0, 1fr)); }
+.wall .tile { aspect-ratio: auto; min-height: 0; }
 
 /* ---------- command ---------- */
 

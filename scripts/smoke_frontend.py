@@ -1,4 +1,4 @@
-"""Playwright smoke for the frontend (tasks S3.2 + S3.3).
+"""Playwright smoke for the frontend (tasks S3.2 + S3.3 + S3.3b).
 
 Run from the repo root as ``.venv/Scripts/python scripts/smoke_frontend.py``.
 
@@ -44,6 +44,25 @@ the demo rows, since the seeder writes no image files):
   /reports reached directly shows the needs-evaluator-access state, and
   ack buttons are hidden for the viewer;
 - screenshots of every screen land in data/screens/.
+
+S3.3b (hero-screen design checks; every assertion appended AFTER the
+43 above, which are unchanged):
+- each hero screen (Login, Command, Live Wall, Route, Search) renders
+  at BOTH 1366x768 and 1920x1080 with no horizontal scroll (document
+  AND the .content scroller);
+- screenshots of the five hero screens at 1920x1080, with the demo
+  seed still injected, land in data/screens/hero-*.png for the deck;
+- on an EMPTY database (``demo_seed purge`` back to the fresh state)
+  Command, Search, Route and Reports show their designed empty states
+  (a visible message element, never a blank main area), the feed-status
+  strip stays present, and the wall's no-cameras state renders (the
+  registry response stubbed empty — a fresh DB always carries the
+  catalogue, so that state is unreachable otherwise);
+- with the API process STOPPED mid-session (the smoke kills its own
+  API child; navigation is client-side only, since the API also serves
+  the SPA) every hero screen shows the status strip's offline state or
+  its own designed error, and the login form says it cannot reach the
+  platform — never a blank page.
 
 The throwaway API keys and account passwords are generated per run and
 never printed (root CLAUDE.md rule 1). Exits 0 on success.
@@ -201,6 +220,37 @@ def seed_demo() -> None:
         print(r.stderr, file=sys.stderr)
         fail("demo_seed inject seeded the demo route")
     print(r.stdout.strip())
+
+
+def purge_demo() -> None:
+    """Run ``backend.tools.demo_seed purge`` against the smoke's temp DB —
+    back to the fresh, no-demo state for the S3.3b empty-state checks."""
+    r = subprocess.run(
+        [PY, "-m", "backend.tools.demo_seed", "purge"],
+        cwd=REPO, env=os.environ.copy(), capture_output=True, text=True,
+        timeout=300,
+    )
+    if r.returncode != 0:
+        print(r.stdout)
+        print(r.stderr, file=sys.stderr)
+        fail("demo_seed purge returned the database to the fresh state")
+    print(r.stdout.strip())
+
+
+def no_hscroll(page) -> bool:
+    """True when nothing scrolls sideways (S3.3b layout rule): neither
+    the document nor the app's .content scroller overflows its width."""
+    return page.evaluate(
+        """() => {
+            const doc = document.documentElement;
+            const content = document.querySelector('.content');
+            return (
+                doc.scrollWidth <= window.innerWidth &&
+                document.body.scrollWidth <= window.innerWidth &&
+                (!content || content.scrollWidth <= content.clientWidth + 1)
+            );
+        }"""
+    )
 
 
 def demo_sighting_count() -> int:
@@ -636,6 +686,187 @@ def main() -> int:
                 page.locator(".alert-card button.ack").count() == 0,
                 "ack buttons hidden for the viewer",
             )
+
+            # ==========================================================
+            # S3.3b — hero-screen design checks. Everything below is
+            # appended AFTER the 43 assertions above, which are
+            # unchanged.
+            # ==========================================================
+
+            # A separate context (browser.new_page = its own cookies):
+            # stays signed OUT for the /login checks, and is opened
+            # while the API is still alive because the API serves the
+            # SPA itself — it later proves the login error state with
+            # the API stopped.
+            login_page = browser.new_page(viewport={"width": 1366, "height": 768})
+            login_page.goto(f"{BASE}/login")
+            login_page.wait_for_selector("#login-username", timeout=15000)
+            check(no_hscroll(login_page), "login: no horizontal scroll at 1366x768")
+            login_page.set_viewport_size({"width": 1920, "height": 1080})
+            check(no_hscroll(login_page), "login: no horizontal scroll at 1920x1080")
+            login_page.screenshot(path=str(SCREENS / "hero-login.png"))
+
+            # back to admin for the remaining hero screens (Reports and
+            # the ack buttons belong on the deck screenshots)
+            page.click(".session button")
+            page.wait_for_url("**/login**", timeout=15000)
+            sign_in(page, ADMIN_USER, ADMIN_PASS)
+
+            heroes = [
+                ("command", "/command", "#start-here", "hero-command.png"),
+                ("wall", "/wall", ".wall .grid.g4 .tile", "hero-wall.png"),
+                ("route", "/route/GJ01AB1234", ".route-stop", "hero-route.png"),
+                ("search", "/search?plate=GJ01", ".search-table tbody tr", "hero-search.png"),
+            ]
+            for width, height in ((1366, 768), (1920, 1080)):
+                page.set_viewport_size({"width": width, "height": height})
+                for name, path, selector, shot in heroes:
+                    page.goto(f"{BASE}{path}")
+                    page.wait_for_selector(selector, timeout=15000)
+                    page.wait_for_timeout(700)  # let late panels fill before measuring
+                    check(
+                        no_hscroll(page),
+                        f"{name}: no horizontal scroll at {width}x{height}",
+                    )
+                    if (width, height) == (1920, 1080):
+                        page.screenshot(path=str(SCREENS / shot))
+            missing = [
+                n
+                for n in ("hero-login.png", "hero-command.png", "hero-wall.png",
+                          "hero-route.png", "hero-search.png")
+                if not (SCREENS / n).is_file()
+            ]
+            check(
+                not missing,
+                f"five hero screenshots at 1920x1080 saved to data/screens ({missing or 'all present'})",
+            )
+
+            # --- empty database: purge back to the fresh state; every
+            #     hero screen keeps a DESIGNED empty state -------------
+            purge_demo()
+            check(
+                demo_sighting_count() == 0,
+                "demo purge returned the database to the fresh, no-demo state",
+            )
+
+            # /api/workers reads data/worker_stats.json from the REPO, so a
+            # live pipeline on this machine would leak real snapshots into
+            # the smoke — stub it to the no-snapshot shape, exactly as the
+            # S3.3 Command check does.
+            page.route(
+                "**/api/workers",
+                lambda route: route.fulfill(
+                    status=200, content_type="application/json",
+                    body='{"available": false}',
+                ),
+            )
+            page.goto(f"{BASE}/command")
+            page.wait_for_selector("#start-here", timeout=15000)
+            empties = count_when_stable(page.locator(".command .state-empty"), 3)
+            check(
+                empties >= 3,
+                f"empty DB: Command shows designed empty states for alerts, reads and workers (got {empties})",
+            )
+            check(
+                page.locator(".feed-status").count() == 1,
+                "empty DB: the feed-status strip stays present, never a silent blank",
+            )
+            page.unroute("**/api/workers")
+
+            # the no-cameras wall state is unreachable on a fresh DB (a
+            # fresh DB always carries the 30-camera catalogue), so the
+            # registry response is stubbed empty for this one check
+            page.route(
+                "**/api/cameras**",
+                lambda route: route.fulfill(
+                    status=200, content_type="application/json",
+                    body='{"total": 0, "cameras": []}',
+                ),
+            )
+            page.goto(f"{BASE}/wall")
+            page.wait_for_selector(".state-empty", timeout=15000)
+            check(
+                "no cameras" in page.locator(".state-empty").inner_text().lower(),
+                "empty registry: the wall shows its designed no-cameras state",
+            )
+            page.unroute("**/api/cameras**")
+
+            page.goto(f"{BASE}/search")
+            page.wait_for_selector(".state-empty", timeout=15000)
+            check(
+                "no sightings" in page.locator(".state-empty").inner_text().lower(),
+                "empty DB: Search shows its designed empty state",
+            )
+
+            page.goto(f"{BASE}/route/GJ01AB1234")
+            page.wait_for_selector(".route-panel .state-empty", timeout=15000)
+            check(
+                "no sightings for"
+                in page.locator(".route-panel .state-empty").inner_text().lower(),
+                "empty DB: Route shows its designed no-sightings state",
+            )
+
+            page.goto(f"{BASE}/reports")
+            page.wait_for_selector("#report-preview .state-empty", timeout=15000)
+            check(
+                "no detections" in page.locator("#report-preview .state-empty").inner_text().lower(),
+                "empty DB: Reports preview shows its designed empty state",
+            )
+
+            # --- API stopped mid-session: designed errors, never a
+            #     blank page. Navigation is CLIENT-SIDE only from here —
+            #     the API serves the SPA, so a full reload could never
+            #     render anything at all. -----------------------------
+            api_proc.terminate()
+            try:
+                api_proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                api_proc.kill()
+
+            page.click('.nav a[href="/command"]')
+            page.wait_for_selector(".status-strip", timeout=15000)
+            check(
+                "api unreachable" in page.locator(".status-strip").inner_text().lower(),
+                "API stopped: the status strip reports the API is unreachable",
+            )
+            check(
+                page.locator("#start-here").count() == 1,
+                "API stopped: Command still renders its content, never a blank page",
+            )
+
+            page.click('.nav a[href="/wall"]')
+            page.wait_for_selector(".state-error", timeout=15000)
+            check(
+                "camera registry" in page.locator(".state-error").inner_text().lower(),
+                "API stopped: the wall shows its designed error state",
+            )
+
+            page.click('.nav a[href="/search"]')
+            page.wait_for_selector(".state-error", timeout=15000)
+            check(
+                "search failed" in page.locator(".state-error").inner_text().lower(),
+                "API stopped: Search shows its designed error state",
+            )
+
+            page.click('.nav a[href="/route"]')
+            page.wait_for_selector("#route-plate", timeout=15000)
+            page.fill("#route-plate", "GJ01AB1234")
+            page.click(".route-form button[type=submit]")
+            page.wait_for_selector(".route-panel .state-error", timeout=15000)
+            check(
+                page.locator(".status-strip").count() == 1,
+                "API stopped: Route shows its designed error state and the strip stays up",
+            )
+
+            login_page.fill("#login-username", VIEWER_USER)
+            login_page.fill("#login-password", VIEWER_PASS)
+            login_page.click("button[type=submit]")
+            login_page.wait_for_selector(".login-error", timeout=15000)
+            check(
+                "cannot reach" in login_page.locator(".login-error").inner_text().lower(),
+                "API stopped: the login form shows its designed cannot-reach error",
+            )
+            login_page.close()
 
             browser.close()
     finally:

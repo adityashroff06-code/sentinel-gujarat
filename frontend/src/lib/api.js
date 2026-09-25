@@ -26,6 +26,7 @@ export class ApiError extends Error {
 }
 
 const statusListeners = new Set()
+let stripError = null // {kind, path} of the error the strip currently shows
 
 /** Subscribe to data-layer status events ({kind, message} or null to clear).
  *  Returns an unsubscribe function. Used by the StatusStrip. */
@@ -34,8 +35,18 @@ export function onStatus(listener) {
   return () => statusListeners.delete(listener)
 }
 
-function report(event) {
+function report(event, path) {
+  stripError = event ? { kind: event.kind, path } : null
   for (const l of statusListeners) l(event)
+}
+
+// A success clears the strip only when it answers the message on it: the
+// same path recovering, or ANY success while a network error shows (any
+// answer proves the API is reachable again). A background poll succeeding
+// must not wipe an unrelated error the operator has not read yet.
+function clearOnSuccess(path) {
+  if (!stripError) return
+  if (stripError.path === path || stripError.kind === 'network') report(null)
 }
 
 function kindFor(status) {
@@ -83,20 +94,20 @@ async function request(path, { method = 'GET', body, formData, on401 = 'redirect
     r = await fetch(BASE + path, init)
   } catch {
     const err = new ApiError('network', 0, 'API unreachable — is the backend running?', path)
-    report({ kind: err.kind, message: err.detail })
+    report({ kind: err.kind, message: err.detail }, path)
     throw err
   }
   if (r.status === 401 && on401 === 'redirect') {
-    report({ kind: 'auth', message: 'Session expired — sign in again.' })
+    report({ kind: 'auth', message: 'Session expired — sign in again.' }, path)
     redirectToLogin()
     throw new ApiError('auth', 401, 'not authenticated', path)
   }
   if (!r.ok) {
     const err = new ApiError(kindFor(r.status), r.status, await detailOf(r), path)
-    report({ kind: err.kind, message: err.detail })
+    report({ kind: err.kind, message: err.detail }, path)
     throw err
   }
-  report(null) // a successful call clears the strip
+  clearOnSuccess(path)
   return r.status === 204 ? null : r.json()
 }
 
