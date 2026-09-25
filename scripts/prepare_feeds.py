@@ -7,6 +7,11 @@ in copy mode and the relay can cut into clean 2 s HLS segments:
 
 - H.264 High, 30 fps constant, a keyframe every exactly 2 s (so a stream-
   copied HLS tee or mediamtx's muxer cuts 2 s segments), no audio, faststart.
+- **No B-frames** (``-bf 0``): 25 Sep, mediamtx's HLS muxer kept destroying
+  itself on the looped 24 Sep transcodes with "unable to extract DTS: too
+  many reordered frames (13)" (local01 15 times in an evening), and the
+  wall tile went "Local feed offline". Without reordering DTS = PTS, so the
+  muxer cannot hit it; the cost is a little bitrate on view-only feeds.
 - ``active`` rows (analysed by the ANPR workers) keep 1920x1080 so plates
   stay readable; ``registered`` rows (view-only relay tiles) go to 1280x720,
   which is plenty for a wall tile and a third of the browser decode cost.
@@ -80,12 +85,12 @@ def transcode_cmd(ffmpeg: str, src: Path, dst: Path, *, height: int,
     cmd += ["-i", str(src), "-map", "0:v:0", "-an", "-vf", vf]
     if nvenc:
         cmd += ["-c:v", "h264_nvenc", "-preset", "p4", "-rc", "vbr",
-                "-cq", "23", "-b:v", "0", "-profile:v", "high",
+                "-cq", "23", "-b:v", "0", "-profile:v", "high", "-bf", "0",
                 "-g", gop, "-forced-idr", "1",
                 "-force_key_frames", f"expr:gte(t,n_forced*{KEYFRAME_S})"]
     else:
         cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
-                "-profile:v", "high", "-g", gop, "-keyint_min", gop,
+                "-profile:v", "high", "-bf", "0", "-g", gop, "-keyint_min", gop,
                 "-sc_threshold", "0"]
     cmd += ["-pix_fmt", "yuv420p", "-movflags", "+faststart", str(dst)]
     return cmd

@@ -4,7 +4,21 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 
 ---
 
-## Current state (25 Sep 2026 — Phase 3 validated complete; S4.1 code half done, its live run is the laptop's)
+## Current state (25 Sep 2026, ~21:15 IST — Phase 4 closed; demo fixes, review gate and S5.1–S5.3 done)
+
+- **Phase 4 is closed.** S4.1 DONE on the laptop: 10-minute live window, 5/5 cameras, 0 restarts, **GATE B PASS**, the six `[measured]` rows filled (VRAM 119 MiB on the GTX 1650, RAM peak 1749 MB, fps 0.6–1.5/cam, plate-read 0.062), and the **first zone event ever on a live feed** (cam06 crossing line: 53 `line_cross`). S4.2/S4.3 stay cut (F54).
+- **Adi's demo asks (25 Sep) are built, merged and verified on the real platform** (decisions F60–F69): every camera plays on the Live Wall through the relay — analysed cameras from their tee, the other 25 sandbox cameras from the organisers' CDN recording (**proven end to end at 20:34 IST**: cam01 played 1920 px, +4.02 s, badge CDN RECORDING), the 28 archive.zip stock clips from our mediamtx (`local01…local28`, seeded Ahmedabad/Gandhinagar coordinates, disclosed, **view-only** on the platform DB); a GIS console (Esri/OSM basemaps, department layers, FOV sectors, activity, cluster hulls, gaps, legend, record panel); **ANPR search** (exact / OCR-ambiguity / fuzzy, plates stored in coerced form — 129 live rows backfilled — DEMO-marked rendered crops, plates to try). Root causes of "no map" and "no cams": the CSP blocked every tile and every hls.js MediaSource, and the relay refused the CDN for all RTSP cameras.
+- **Review gate (F53) passed:** 19 findings, 17 confirmed and fixed, each with a regression test — including a **critical path traversal** (any viewer could download `sentinel.db` with session ids via `/api/hls/%2E%2E/local/…`, pre-existing since S3.1b) and three routes by which the organisers' credentials could reach a host an evaluator chose (health probe, worker `resolve_url`, onboarding into the active catalogue tier).
+- **Phase 5:** S5.1 (HLD + PDF), S5.2 (deck from live captures, pptx + PDF via PowerPoint) and S5.3 (reports, OpenAPI 35 paths, dataset, Model-2 note) DONE. **GATE D: PASS (late).**
+- **Suites (final):** pytest **360 passed, 0 failed** (platform stopped); `smoke_frontend.py` **92/92**; `smoke_playback.py` **31/31** in real Edge.
+- **Platform:** running from `python launch.py start` (API, worker, 28 feeds, all re-encoded without B-frames — see the last Log block). Verified live at ~21:15 IST: cam01 plays from the organisers' CDN, the four local feeds that had failed play continuously (~150 s advanced in 150 s each, 0 false stall overlays in 40 samples). `python launch.py status` must show `feeds: 28/28` — if not, `python launch.py replay-start`.
+- **The organisers' side was unstable today** (not ours to fix): CDN origin down 16:40–~20:30 IST (Cloudflare 521); RTSP gateway 401 on all cameras 16:59–17:14 IST; cam26 drops its pull every ~2 min. Everything on our side shows it in operator words and backs off.
+- **Known limits, stated honestly:** the six H.265 cameras (cam06/12/17/18/22/26) play in **Chrome**, not in this laptop's Edge (no HEVC extension) — record the videos in Chrome; a 16-up wall of CDN tiles may trip the organisers' rate limiter (default grid is 4); `deliverables/gap-analysis-report.html` was captured during the outage — re-run `.venv/Scripts/python scripts/export_deliverables.py` (without `--gap-note`) once the sandbox is steady.
+- **[Adi] queue:** ① **S3.5 go-live** — `docs/runbook-hosting.md` §0 (Tailscale Funnel, evaluator + admin accounts, `SENTINEL_PUBLIC_HOST`), and set the laptop to **never sleep on AC** (the worker log shows a ~2 h gap this evening consistent with sleep). ② S3.6 filming (own-footage route; GATE C's headline). ③ S5.4 demo videos (Chrome; the Start-here panel now names a real live plate on cam06). ④ **`git push`** — this session committed to `main` but did not push. ⑤ The S2.2 20 s Wi-Fi pull. (`SENTINEL_ACTIVE_CAMERAS=6` is no longer useful: stock feeds are view-only.)
+- **Next Claude task: S5.5** (README rewritten for a judge, credential sweep across history/deliverables/screens, checklist walk-through; the `v2.0-submission` tag once S3.5's URL is in), then **S6.1** soak Saturday.
+- **Blockers:** none on our side.
+
+## Previous state (25 Sep 2026, morning — Phase 3 validated complete; S4.1 code half done)
 
 - **Phase 3 stands validated** (this session re-checked the ledger, the gate table, the tree and the suite): S3.0, S3.7, S3.1a, S3.1b, S3.2, S3.3, S3.3b, S3.4 all `[x]` with acceptance runs and commits; **GATE C PASS** (labelled demo vehicle); the only open Phase 3 items are physically Adi's — **S3.5 go-live** (runbook §0: Funnel trial, accounts, `SENTINEL_PUBLIC_HOST`, ~15 min) and **S3.6 filming**. Neither blocks Phase 4/5.
 - **S4.1 is PARTIAL — the build half is done and tested** (this cloud session, branch `claude/sentinel-progress-check-rrtp9n`, draft PR): `python launch.py measure --minutes 10` now runs the F18 window sampler ported from the old build (`ml/tools/measure_run.py`), the worker counts `ocr_attempts` / `full_reads` / `vehicle_tracks` for the plate-read rate, `GET /api/workers` documents them, and 13 new tests cover it. **The run half is the laptop's**: probe → `launch.py start` (demo tier, F55) → ≥ 10 min warm-up → `launch.py measure --minutes 10` → paste the printed table into "Key measurements" → zone check → fill **GATE B**. Steps are in the S4.1 Log block below.
@@ -1781,4 +1795,35 @@ Observed:  relay (36bba23): CDN /seg and /key refuse anything outside the
            in real Edge; registry-api.json re-exported (35 paths, camera_ids,
            the live-window wording).
 Next:      Current state (below); [Adi] items.
+```
+
+```
+## Live wall fixes after the review gate — DONE (two defects the real
+##          platform showed; each with a regression)
+When:      2026-09-25T15:00Z-15:50Z (20:30-21:20 IST), orchestrator, laptop.
+Observed:  (1) mediamtx destroyed its HLS muxer on local01..04 - "unable to
+           extract DTS: too many reordered frames (13)", 21 times (local01
+           15) - and the tiles went "Local feed offline". Only the four
+           24 Sep (F58) transcodes; the 24 made today never errored. Fix:
+           scripts/prepare_feeds.py encodes with NO B-frames (-bf 0, both
+           encoders): DTS = PTS, the muxer cannot hit it. All 28 feeds
+           re-transcoded (old files kept in
+           D:\projects\sentinel-footage\feeds-bframes-20260925). Test:
+           test_local_feeds.py asserts -bf 0. Live: 0 muxer errors over
+           3.5 min across three local01 loop points.
+           (2) That same run showed "Feed stalled - waiting for video" over
+           tiles whose video kept advancing (local01..04 for minutes): the
+           watchdog armed on 'waiting' and only 'playing' cleared it, and
+           Edge sometimes resumes a stalled hls.js player without firing
+           'playing'. Fix (Tile.jsx): progress decides - the watchdog stands
+           down if currentTime moved since it armed, and timeupdate progress
+           clears a stalled overlay. Regression: smoke_playback dispatches a
+           bare 'waiting' on a playing tile - FAILED on the old build
+           (advanced 11.0 s, stalled overlays 1), passes on the new (0).
+           Live recheck, four local tiles for 150 s: 0 false stalls in 40
+           samples, each tile advanced 148-150 s.
+           Also proven at 20:34 IST now that the CDN is back: cam01 (no
+           worker) plays through the organisers' CDN -> relay -> Edge at
+           1920 px, badge CDN RECORDING.
+           Suites: smoke_playback 31/31, smoke_frontend 92/92.
 ```

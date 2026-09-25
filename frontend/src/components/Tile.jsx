@@ -210,14 +210,28 @@ export default function Tile({ cam, expandable = true }) {
       attemptsRef.current = 0 // the feed answered — reset the ladder
       setState(null)
     }
+    // Progress, not events, decides a stall (25 Sep, live laptop): Edge can
+    // resume a stalled hls.js player WITHOUT firing 'playing' (seen across
+    // the looped feeds), which left "Feed stalled" over tiles whose video
+    // kept advancing. So the watchdog remembers where the video was when it
+    // armed and stands down if it moved, and any real progress clears the
+    // overlay (smoke_playback reproduces it with a bare 'waiting' event).
+    let stallFrom = -1
     const onWaiting = () => {
       if (disposed || stallTimer || retryTimer || hlsDead) return
+      stallFrom = video.currentTime
       stallTimer = setTimeout(() => {
         stallTimer = null
-        if (!disposed && !retryTimer && !hlsDead) {
-          setState({ kind: 'stalled', word: 'Feed stalled — waiting for video', detail: 'buffer empty' })
-        }
+        if (disposed || retryTimer || hlsDead) return
+        if (video.currentTime !== stallFrom) return // it kept playing
+        setState({ kind: 'stalled', word: 'Feed stalled — waiting for video', detail: 'buffer empty' })
       }, STALL_MS)
+    }
+    const onTimeUpdate = () => {
+      if (disposed || video.currentTime === stallFrom) return
+      stallFrom = -1
+      clearStall()
+      setState((s) => (s && s.kind === 'stalled' ? null : s))
     }
     const onNativeError = () => {
       if (disposed) return
@@ -225,6 +239,7 @@ export default function Tile({ cam, expandable = true }) {
     }
     video.addEventListener('playing', onPlaying)
     video.addEventListener('waiting', onWaiting)
+    video.addEventListener('timeupdate', onTimeUpdate)
 
     const startPlayer = () => {
       if (disposed) return
@@ -323,6 +338,7 @@ export default function Tile({ cam, expandable = true }) {
       killPlayer()
       video.removeEventListener('error', onNativeError)
       video.removeEventListener('playing', onPlaying)
+      video.removeEventListener('timeupdate', onTimeUpdate)
       video.removeEventListener('waiting', onWaiting)
       video.removeAttribute('src')
       video.load()

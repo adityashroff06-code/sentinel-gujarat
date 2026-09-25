@@ -178,6 +178,9 @@ def test_transcode_cmd_forces_a_2s_gop_720_or_1080_no_audio_faststart():
     assert cmd[cmd.index("-g") + 1] == "60"            # 2 s at 30 fps
     assert cmd[cmd.index("-keyint_min") + 1] == "60"   # ... exactly 2 s
     assert cmd[cmd.index("-sc_threshold") + 1] == "0"  # no scene-cut extras
+    # Regression (25 Sep): B-frame reordering made mediamtx's HLS muxer fail
+    # "unable to extract DTS: too many reordered frames" on looped feeds
+    assert cmd[cmd.index("-bf") + 1] == "0"
     vf = cmd[cmd.index("-vf") + 1]
     assert vf.startswith("fps=30,") and "720" in vf and "1080" not in vf
     assert "-an" in cmd
@@ -188,6 +191,7 @@ def test_transcode_cmd_forces_a_2s_gop_720_or_1080_no_audio_faststart():
                           height=pf.feed_height("active"), nvenc=True)
     assert "1080" in hd[hd.index("-vf") + 1]
     assert hd[hd.index("-c:v") + 1] == "h264_nvenc"
+    assert hd[hd.index("-bf") + 1] == "0"               # no B-frames on NVENC either
     assert hd[hd.index("-g") + 1] == "60"
     assert hd[hd.index("-force_key_frames") + 1] == "expr:gte(t,n_forced*2)"
     assert "-an" in hd and "+faststart" in hd

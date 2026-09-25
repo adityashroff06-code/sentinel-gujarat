@@ -659,6 +659,24 @@ def main() -> int:
                 check("H.265 feed" in said and tried >= 1,
                       f"H.265 CDN copy in Edge: the tile tried the stream ({tried} playlist"
                       f" requests), hit the decode failure and said H.265 in operator words")
+            # Regression (25 Sep, live laptop): Edge sometimes resumes a
+            # stalled hls.js player WITHOUT a 'playing' event (seen across
+            # the looped feeds), and the event-only watchdog then left "Feed
+            # stalled" over tiles whose video kept advancing - local01..04
+            # for minutes. Reproduce the exact condition: a 'waiting' event
+            # that no 'playing' follows, on a tile that keeps playing.
+            page.goto(f"{BASE}/wall?cam={CAMERA}")
+            one = f".wall .grid.g1 {tile}"
+            page.wait_for_selector(one, timeout=15000)
+            assert_plays(page, f"{one} video", "stall-watchdog tile")
+            t0 = page.eval_on_selector(f"{one} video", "v => { v.dispatchEvent(new Event('waiting'));"
+                                                       " return v.currentTime }")
+            page.wait_for_timeout(11000)  # past the tile's 8 s STALL_MS
+            t1 = page.eval_on_selector(f"{one} video", "v => v.currentTime")
+            stalled = page.locator(f"{one} .tile-state.stalled").count()
+            check(t1 - t0 > 5 and stalled == 0,
+                  f"a 'waiting' with no 'playing' after it never leaves 'Feed stalled' over"
+                  f" advancing video (advanced {t1 - t0:.1f} s, stalled overlays {stalled})")
             violations = (page.evaluate("() => window.__cspViolations") or []) + (
                 page2.evaluate("() => window.__cspViolations") or [])
             check(not violations and not console_csp,
