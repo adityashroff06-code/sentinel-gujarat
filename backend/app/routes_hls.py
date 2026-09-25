@@ -34,18 +34,23 @@ HLS copy, relayed once through this backend, is the only viewing path for
 the other 25 that respects one-pull-per-camera. It is a recording on the
 shared timeline, and the tile says so ("CDN RECORDING").
 
-- **Input hygiene (B11):** ``/seg/{name}`` proxies only names present in
-  the fetched playlist, and every CDN fetch must resolve inside the
-  configured CDN origin; ``/key`` requires a 16-byte AES-128 key;
-  ``/mtx/{name}`` fetches only from 127.0.0.1 and only listed names.
+- **Input hygiene (B11):** ``/seg/{name}`` proxies only names of the live
+  window actually served for that camera in the last minute (the window,
+  plus the one before it for a request racing the reload) — never another
+  name from the 12 h VOD (root rule 6) — and ``/seg`` and ``/key`` refuse
+  a camera no CDN window was served for. Every CDN fetch, each redirect
+  hop included, must resolve inside the configured CDN origin; ``/key``
+  requires a 16-byte AES-128 key; ``/mtx/{name}`` fetches only from
+  127.0.0.1 and only listed names.
 - **One upstream fetch per segment:** CDN segments and keys go through a
   bounded in-memory single-flight cache (48 MB, 120 s) so N viewers cost
   one CDN request per segment; nothing touches disk (Pipeline 1 stores
   nothing). Upstream VOD playlists are cached ~10 minutes per camera.
-- **The CDN rate-limits hard:** short timeouts, two attempts, and a relay
-  circuit breaker with jittered exponential backoff (root rule 7) answer
-  ``503`` immediately while the CDN is refusing us, instead of every tile
-  retrying into a ban.
+- **The CDN rate-limits hard:** short timeouts, two attempts, one shared
+  re-login per wave of 403s, and a relay circuit breaker with jittered
+  exponential backoff (root rule 7) answer ``503`` immediately while the
+  CDN is refusing us — checked before the playlist pacer, so nothing
+  queues only to be refused — instead of every tile retrying into a ban.
 - **Errors are machine-readable:** ``503`` details ``cdn-backoff``,
   ``cdn-unavailable``, ``cdn-login-failed``, ``cdn-not-configured``,
   ``local feed server not running``, ``local feed not publishing``.
@@ -174,10 +179,36 @@ class HlsSourceOut(BaseModel):
 _session_lock = threading.Lock()
 _session: CdnSession | None = None
 
-#: camera_id -> (fetched_at, playlist_text, base_url, servable segment names)
-_PLAYLIST_CACHE: dict[str, tuple[float, str, str, frozenset[str]]] = {}
+@dataclass(frozen=True, eq=False)
+class _Servable:
+    """The simple-named segments of one upstream VOD playlist, in playlist
+    order — ``/seg/{name}`` can only ever serve one of these (B11) — and
+    where each name sits, for the live-window check."""
+
+    segs: tuple[tuple[str, str], ...]  # (EXTINF duration, name)
+    positions: dict[str, tuple[int, ...]]
+
+    @classmethod
+    def parse(cls, text: str) -> "_Servable":
+        # An absolute or path-carrying URI in the playlist is never proxied.
+        segs = tuple((dur, seg) for dur, seg in _SEGMENT.findall(text) if _SAFE_NAME.match(seg))
+        positions: dict[str, tuple[int, ...]] = {}
+        for i, (_dur, seg) in enumerate(segs):
+            positions[seg] = positions.get(seg, ()) + (i,)
+        return cls(segs, positions)
+
+    def __contains__(self, name: object) -> bool:
+        return name in self.positions
+
+
+#: camera_id -> (fetched_at, playlist_text, base_url, servable segments)
+_PLAYLIST_CACHE: dict[str, tuple[float, str, str, _Servable]] = {}
 _playlist_locks: dict[str, threading.Lock] = {}
 _playlist_locks_guard = threading.Lock()
+
+#: camera_id -> monotonic time a CDN window was last handed to a viewer.
+#: /seg and /key serve a camera only within WINDOW_S of that (rule 6).
+_CDN_SERVED: dict[str, float] = {}
 
 
 def _cdn() -> CdnSession:
@@ -435,23 +466,30 @@ _last_playlist_fetch = 0.0
 
 
 def _pace_playlist_fetch() -> None:
-    """Block until this caller may start an upstream playlist fetch."""
+    """Block until this caller may start an upstream playlist fetch.
+    Raises 503 ``cdn-backoff`` instead of sleeping when the breaker is (or
+    opened while this caller queued) open — no thread sleeps its turn only
+    to be refused (25 Sep review)."""
     global _last_playlist_fetch
     with _pace_lock:
+        _BREAKER.check()
         wait = _last_playlist_fetch + _PLAYLIST_GAP_S - time.monotonic()
         if wait > 0:
             time.sleep(wait)
         _last_playlist_fetch = time.monotonic()
 
 
-def _upstream_playlist(camera_id: str, hls_url: str) -> tuple[str, str, frozenset[str]]:
-    """(playlist_text, base_url, servable_names) for a camera, cached ~10 min.
+def _upstream_playlist(camera_id: str, hls_url: str) -> tuple[str, str, _Servable]:
+    """(playlist_text, base_url, servable_segments) for a camera, cached
+    ~10 min.
 
     One fetch per camera at a time: the first request waits for it (a
     login plus the ~215 KB VOD playlist took ~15 s on 25 Sep). Once a copy
     exists, an expired one keeps serving while ONE caller refreshes it, and
     survives a failed refresh — the VOD recording does not change, and a
-    10-minute refresh must never stall the segments of a playing tile."""
+    10-minute refresh must never stall the segments of a playing tile.
+    While the breaker is open an uncached camera gets 503 ``cdn-backoff``
+    at once, never after a turn in the pacing queue."""
     lock = _playlist_lock(camera_id)
     cached = _PLAYLIST_CACHE.get(camera_id)
     usable = cached if cached and cached[2] == hls_url else None
@@ -467,8 +505,12 @@ def _upstream_playlist(camera_id: str, hls_url: str) -> tuple[str, str, frozense
         if cached and cached[2] == hls_url and time.time() - cached[0] < _PLAYLIST_TTL_S:
             return cached[1], cached[2], cached[3]
         _require_cdn_origin(hls_url)
-        _pace_playlist_fetch()
         try:
+            # The breaker first: while the CDN refuses us, answer now (or
+            # serve the cached copy) instead of queueing behind the pacer on
+            # a threadpool thread (25 Sep review). _cdn_get re-checks it.
+            _BREAKER.check()
+            _pace_playlist_fetch()
             text = _cdn_get(hls_url).text
         except HTTPException:
             if usable:
@@ -477,11 +519,9 @@ def _upstream_playlist(camera_id: str, hls_url: str) -> tuple[str, str, frozense
             raise
         if "#EXTINF" not in text:
             raise HTTPException(status_code=502, detail="upstream did not return a media playlist")
-        # Only simple names are servable through /seg/{name}; an absolute or
-        # path-carrying URI in the playlist is never proxied (B11).
-        names = frozenset(seg for _, seg in _SEGMENT.findall(text) if _SAFE_NAME.match(seg))
-        _PLAYLIST_CACHE[camera_id] = (time.time(), text, hls_url, names)
-        return text, hls_url, names
+        servable = _Servable.parse(text)
+        _PLAYLIST_CACHE[camera_id] = (time.time(), text, hls_url, servable)
+        return text, hls_url, servable
     finally:
         lock.release()
 
@@ -707,20 +747,47 @@ def _playlist_response(text: str, source: Source) -> PlainTextResponse:
     )
 
 
-def _cdn_window(camera_id: str, url: str) -> str:
-    text, _base, _names = _upstream_playlist(camera_id, url)
-    segs = [(dur, seg) for dur, seg in _SEGMENT.findall(text) if _SAFE_NAME.match(seg)]
-    if not segs:
-        raise HTTPException(status_code=502, detail="no servable segments in upstream playlist")
-
+def _window_bounds(servable: _Servable, now: datetime) -> tuple[int, int]:
+    """``(start, size)`` of the sliding window over *servable* at *now*:
+    ``size`` segments (``WINDOW_S`` of video) ending at the shared-timeline
+    live edge — the same edge as the analytics workers, so what the
+    operator watches is what the detector would be reading."""
+    segs = servable.segs
     seg_dur = float(segs[0][0]) or 6.0
     total = len(segs)
     window = max(1, int(WINDOW_S / seg_dur))
-    # The same live edge as the analytics workers (shared timeline), so
-    # what the operator watches is what the detector would be reading.
-    pos = timeline.live_position(datetime.now(timezone.utc)) % (total * seg_dur)
+    pos = timeline.live_position(now) % (total * seg_dur)
     start = max(0, min(int(pos / seg_dur) - window + 1, total - window))
-    chosen = segs[start:start + window]
+    return start, window
+
+
+def _in_served_window(servable: _Servable, name: str, now: datetime) -> bool:
+    """True when *name* is in the window served at *now*, or in the one
+    before it (a segment request racing the next playlist reload). Distances
+    wrap at the loop point, where the window jumps from the end to 0."""
+    total = len(servable.segs)
+    start, window = _window_bounds(servable, now)
+    return any((i - start) % total < window or (start - i) % total <= window
+               for i in servable.positions.get(name, ()))
+
+
+def _require_served(camera_id: str) -> None:
+    """403 unless a CDN window of this camera was handed to a viewer within
+    the last ``WINDOW_S`` (a camera playing from its tee never was)."""
+    served_at = _CDN_SERVED.get(camera_id)
+    if served_at is None or time.monotonic() - served_at > WINDOW_S:
+        raise HTTPException(status_code=403, detail="no live window was served for this camera")
+
+
+def _cdn_window(camera_id: str, url: str) -> str:
+    text, _base, servable = _upstream_playlist(camera_id, url)
+    if not servable.segs:
+        raise HTTPException(status_code=502, detail="no servable segments in upstream playlist")
+
+    start, window = _window_bounds(servable, datetime.now(timezone.utc))
+    chosen = servable.segs[start:start + window]
+    seg_dur = float(servable.segs[0][0]) or 6.0
+    _CDN_SERVED[camera_id] = time.monotonic()
 
     lines = [
         "#EXTM3U",
@@ -830,12 +897,15 @@ def hls_key(
     __: None = Depends(_limit_hls),
 ) -> Response:
     """Proxy the AES-128 key named by the upstream playlist, with the
-    backend's CDN session; refused unless it is a 16-byte key from inside
-    the CDN origin. Held only in the relay's memory cache (≤ 120 s)."""
+    backend's CDN session; refused unless a CDN window of this camera was
+    just served, and unless it is a 16-byte key from inside the CDN origin.
+    Held only in the relay's memory cache (≤ 120 s)."""
     if not _SAFE_NAME.match(camera_id):
         raise HTTPException(status_code=400, detail="bad camera id")
     cam = _camera(camera_id)
-    text, base, _names = _upstream_playlist(camera_id, _cdn_camera_url(cam))
+    url = _cdn_camera_url(cam)
+    _require_served(camera_id)
+    text, base, _servable = _upstream_playlist(camera_id, url)
     key = _KEY_LINE.search(text)
     if not key:
         raise HTTPException(status_code=404, detail="upstream playlist names no key")
@@ -859,16 +929,23 @@ def hls_segment(
     _: str = Depends(require_auth),
     __: None = Depends(_limit_hls),
 ) -> Response:
-    """Proxy one media segment — **only** a name present in the fetched
-    upstream playlist, resolved **only** inside the configured CDN origin
-    (B11). N concurrent viewers share one upstream fetch (memory cache);
-    nothing is written to disk."""
+    """Proxy one media segment — **only** a name of the live window served
+    for this camera within the last minute (that window, or the one before
+    it), resolved **only** inside the configured CDN origin (B11). Never
+    another name from the 12 h VOD: the relay is a live view, not a
+    download path (root rule 6; 25 Sep review). N concurrent viewers share
+    one upstream fetch (memory cache); nothing is written to disk."""
     if not _SAFE_NAME.match(camera_id) or not _SAFE_NAME.match(name):
         raise HTTPException(status_code=400, detail="bad name")
     cam = _camera(camera_id)
-    _text, base, names = _upstream_playlist(camera_id, _cdn_camera_url(cam))
-    if name not in names:
+    url = _cdn_camera_url(cam)
+    _require_served(camera_id)
+    _text, base, servable = _upstream_playlist(camera_id, url)
+    if name not in servable:
         raise HTTPException(status_code=403, detail="segment is not in the upstream playlist")
+    if not _in_served_window(servable, name, datetime.now(timezone.utc)):
+        log.warning("refused %s/seg/%s: outside the live window served", camera_id, name)
+        raise HTTPException(status_code=403, detail="segment is outside the live window")
     seg_url = urllib.parse.urljoin(base, name)
     _require_cdn_origin(seg_url)
     content = _CACHE.get_or_fetch(seg_url, lambda: _cdn_get(seg_url).content)

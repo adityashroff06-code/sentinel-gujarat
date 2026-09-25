@@ -8,9 +8,11 @@ camera keeps a stale tee only while it is younger than 120 s and otherwise
 falls to the CDN VOD relay (the old "an RTSP camera never falls to the
 CDN" rule is replaced — see the tests below for why); the CDN path
 rewrites a sliding window with the key and segment URIs pointed back at
-the relay, refuses off-playlist names and off-origin URLs, needs a 16-byte
-key, shares ONE upstream fetch between concurrent viewers of a segment,
-and backs off (503) after a refusal; ``/source`` says which path a camera
+the relay, refuses off-playlist names, names outside the live window it
+served (rule 6) and off-origin URLs (redirect hops included), needs a
+16-byte key, shares ONE upstream fetch between concurrent viewers of a
+segment, and backs off (503) after a refusal — at once, never after a turn
+in the playlist pacer; ``/source`` says which path a camera
 takes; header, ``sentinel_key`` cookie and ``sentinel_session`` cookie all
 authenticate; the relay is rate-limited at the documented 16-tile budget.
 """
@@ -45,6 +47,18 @@ PLAYLIST = (
     '#EXT-X-KEY:METHOD=AES-128,URI="/enc.key",IV=0x00000000000000000000000000000000\n'
     + "".join(f"#EXTINF:6.0,\nseg{i:05d}.ts\n" for i in range(24))
     + "#EXTINF:6.0,\nhttps://evil.example/leak.ts\n#EXT-X-ENDLIST\n"
+)
+#: The fixture pins the shared-timeline position here: segment 10 is the
+#: live edge, so the served window is seg00001..seg00010.
+POSITION_S = 60.0
+
+#: The sandbox's real shape: a 12 h VOD of 7,200 x 6 s segments.
+VOD_12H = (
+    "#EXTM3U\n#EXT-X-VERSION:6\n#EXT-X-TARGETDURATION:7\n"
+    "#EXT-X-PLAYLIST-TYPE:VOD\n"
+    '#EXT-X-KEY:METHOD=AES-128,URI="/enc.key",IV=0x00000000000000000000000000000000\n'
+    + "".join(f"#EXTINF:6.0,\nseg{i:05d}.ts\n" for i in range(7200))
+    + "#EXT-X-ENDLIST\n"
 )
 
 #: What mediamtx v1.21.1 actually answered (observed 25 Sep with
@@ -130,6 +144,9 @@ def fake_cdn(monkeypatch):
     monkeypatch.setattr(routes_hls, "_CACHE", routes_hls._SingleFlightCache(
         routes_hls.CACHE_MAX_BYTES, routes_hls.CACHE_TTL_S))
     monkeypatch.setattr(routes_hls, "_PLAYLIST_GAP_S", 0.0)  # pacing has its own test
+    monkeypatch.setattr(routes_hls, "_CDN_SERVED", {})
+    # a deterministic live window (the /seg allow-list depends on it)
+    monkeypatch.setattr(routes_hls.timeline, "live_position", lambda now: POSITION_S)
     return fake
 
 
@@ -218,7 +235,9 @@ def test_relay_rewrites_a_sliding_window(client, fake_cdn) -> None:
 
 def test_segment_only_from_the_playlist_and_only_on_origin(client, fake_cdn) -> None:
     """B11: /seg/{name} proxies playlist-listed names only; the off-origin
-    playlist entry and any invented name are refused."""
+    playlist entry and any invented name are refused. (Since 25 Sep only
+    names of the live window just served — see the window test below.)"""
+    assert client.get("/api/hls/hlscam/live.m3u8", headers=VIEWER).status_code == 200
     ok = client.get("/api/hls/hlscam/seg/seg00003.ts", headers=VIEWER)
     assert ok.status_code == 200
     assert ok.content.startswith(b"TSDATA:")
@@ -247,7 +266,9 @@ def test_key_is_proxied_and_must_be_16_bytes(client, fake_cdn) -> None:
     """The key is proxied from inside the CDN origin and must be 16 bytes.
     (Since 25 Sep a good key sits in the relay's memory cache for ≤ 120 s,
     so the bad-key half clears that cache first — a short key is never
-    cached, the check runs before the cache stores anything.)"""
+    cached, the check runs before the cache stores anything. Since 25 Sep
+    the key, like /seg, follows a served window.)"""
+    assert client.get("/api/hls/hlscam/live.m3u8", headers=VIEWER).status_code == 200
     r = client.get("/api/hls/hlscam/key", headers=VIEWER)
     assert r.status_code == 200
     assert r.content == KEY_16
@@ -259,6 +280,78 @@ def test_key_is_proxied_and_must_be_16_bytes(client, fake_cdn) -> None:
     assert r.status_code == 502
     assert "16-byte" in r.json()["detail"]
     assert routes_hls._CACHE.size == 0
+
+
+def test_cdn_segment_outside_the_served_window_is_refused(client, fake_cdn, monkeypatch) -> None:
+    """Regression (25 Sep review, root rule 6): /seg/{name} checked only
+    that a name was SOMEWHERE in the 12 h upstream VOD, so any signed-in
+    viewer could walk seg00000..seg07199 of every sandbox camera through
+    the backend's CDN session — a footage download proxy, and the burst
+    that earns the account a ban. Only the live window actually served
+    (plus one window of grace for a request racing the next reload) is
+    fetched; nothing else ever reaches the CDN."""
+    fake_cdn.playlist = VOD_12H
+    position = [4909 * 6.0 + 1.0]  # live edge in segment 4909
+    monkeypatch.setattr(routes_hls.timeline, "live_position", lambda now: position[0])
+
+    r = client.get("/api/hls/rtspcam/live.m3u8", headers=VIEWER)
+    assert r.status_code == 200
+    served = [u.rsplit("/", 1)[1] for u in _uris(r.text)]
+    assert served == [f"seg{i:05d}.ts" for i in range(4900, 4910)]
+    before = list(fake_cdn.calls)
+    for name in ("seg00000.ts", "seg03600.ts", "seg07199.ts", "seg04910.ts", "seg04889.ts"):
+        r = client.get(f"/api/hls/rtspcam/seg/{name}", headers=VIEWER)
+        assert r.status_code == 403, name
+    assert fake_cdn.calls == before  # nothing outside the window was fetched upstream
+    # the window itself, and the one before it (a request racing the reload)
+    for name in ("seg04900.ts", "seg04909.ts", "seg04890.ts"):
+        assert client.get(f"/api/hls/rtspcam/seg/{name}", headers=VIEWER).status_code == 200, name
+
+    # the loop point: just after the wrap, the window before it is the grace
+    position[0] = 1.0
+    served = [u.rsplit("/", 1)[1]
+              for u in _uris(client.get("/api/hls/rtspcam/live.m3u8", headers=VIEWER).text)]
+    assert served == [f"seg{i:05d}.ts" for i in range(10)]
+    for name, code in (("seg07199.ts", 200), ("seg07190.ts", 200), ("seg00009.ts", 200),
+                       ("seg07189.ts", 403), ("seg00010.ts", 403)):
+        assert client.get(f"/api/hls/rtspcam/seg/{name}", headers=VIEWER).status_code == code, name
+
+    # a camera whose CDN window was never handed to anyone: no segment, no
+    # key, and no upstream fetch at all (e.g. an analysed camera on its tee)
+    assert client.get("/api/hls/hlscam/seg/seg04905.ts", headers=VIEWER).status_code == 403
+    assert client.get("/api/hls/hlscam/key", headers=VIEWER).status_code == 403
+    assert not any("/hlscam/" in u for u in fake_cdn.calls)
+
+
+def test_cdn_redirect_off_origin_never_reaches_the_viewer(client, monkeypatch) -> None:
+    """Regression (25 Sep review): the relay's CDN session followed a 3xx
+    to any host and /seg returned whatever came back. With the real
+    CdnSession on a mock CDN that redirects a segment off-origin, the
+    viewer gets a 503 and the foreign host is never contacted."""
+    import httpx
+
+    from backend.core.cdn_session import CdnSession
+
+    monkeypatch.setenv("SENTINEL_EMAIL", "tester@example.invalid")
+    monkeypatch.setenv("SENTINEL_PASSWORD", "not-a-real-password")
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        if request.url.host == "evil.example":
+            return httpx.Response(200, content=b"INTERNAL-SECRET")
+        if request.url.path == "/auth/login":
+            return httpx.Response(200, headers={"set-cookie": "s=1; Path=/"})
+        if request.url.path.endswith(".m3u8"):
+            return httpx.Response(200, content=PLAYLIST.encode())
+        return httpx.Response(302, headers={"location": "http://evil.example/leak.ts"})
+
+    monkeypatch.setattr(routes_hls, "_session", CdnSession(transport=httpx.MockTransport(handler)))
+    assert client.get("/api/hls/hlscam/live.m3u8", headers=VIEWER).status_code == 200
+    r = client.get("/api/hls/hlscam/seg/seg00003.ts", headers=VIEWER)
+    assert r.status_code == 503
+    assert b"INTERNAL-SECRET" not in r.content
+    assert not any("evil.example" in u for u in seen), seen
 
 
 # ------------------------------------------------------------- the local tee
@@ -592,6 +685,65 @@ def test_upstream_playlist_fetches_are_paced(client, fake_cdn, monkeypatch) -> N
     assert client.get("/api/hls/hlscam/live.m3u8", headers=VIEWER).status_code == 200
     assert time.monotonic() - t0 >= 0.4
     assert len([u for u in fake_cdn.calls if u.endswith(".m3u8")]) == 2
+
+
+def test_open_breaker_never_queues_behind_the_playlist_pacer(client, fake_cdn, monkeypatch) -> None:
+    """Regression (25 Sep review): the 1.5 s playlist pacer ran BEFORE the
+    breaker check, so while the CDN was refusing us every playlist request
+    for an uncached camera still slept its turn in the pacing queue (N x
+    1.5 s on a threadpool thread) only to get 503 — a queue that starves
+    anyio's 40 threads and with them login and the route query. An open
+    breaker now answers at once, and one that opens while requests queue
+    releases them without their sleeps."""
+    monkeypatch.setattr(routes_hls, "_PLAYLIST_GAP_S", 1.0)
+    monkeypatch.setattr(routes_hls, "_last_playlist_fetch", time.monotonic())  # a fetch just began
+    routes_hls._BREAKER.open_until = time.monotonic() + 30.0  # the CDN is refusing us
+    results: list[tuple[int, str, float]] = []
+    lock = threading.Lock()
+
+    def playlist(i: int) -> None:
+        t0 = time.monotonic()
+        try:
+            routes_hls._upstream_playlist(f"cam{i:02d}", f"{config.cdn()}/cam{i:02d}/index.m3u8")
+        except HTTPException as exc:
+            with lock:
+                results.append((exc.status_code, exc.detail, time.monotonic() - t0))
+
+    threads = [threading.Thread(target=playlist, args=(i,)) for i in range(4)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=15)
+    assert [r[:2] for r in results] == [(503, "cdn-backoff")] * 4
+    assert max(r[2] for r in results) < 0.5, results
+    assert fake_cdn.calls == []
+
+    # the breaker opens while two requests wait behind a paced fetch
+    monkeypatch.setattr(routes_hls, "_BREAKER", routes_hls._Breaker())
+    monkeypatch.setattr(routes_hls, "_last_playlist_fetch", time.monotonic())
+    pacer = threading.Thread(target=routes_hls._pace_playlist_fetch)  # sleeps ~1 s
+    pacer.start()
+    time.sleep(0.1)
+    routes_hls._BREAKER.open_until = time.monotonic() + 30.0
+    queued: list[tuple[str, float]] = []
+
+    def wait_in_queue() -> None:
+        t0 = time.monotonic()
+        try:
+            routes_hls._pace_playlist_fetch()
+            outcome = "paced"
+        except HTTPException as exc:
+            outcome = exc.detail
+        with lock:
+            queued.append((outcome, time.monotonic() - t0))
+
+    waiters = [threading.Thread(target=wait_in_queue) for _ in range(2)]
+    for t in waiters:
+        t.start()
+    for t in [pacer, *waiters]:
+        t.join(timeout=15)
+    assert [q[0] for q in queued] == ["cdn-backoff"] * 2
+    assert max(q[1] for q in queued) < 1.5, queued  # not 2 s and 3 s of sleeps
 
 
 def test_cdn_login_failure_is_named(client, fake_cdn) -> None:
