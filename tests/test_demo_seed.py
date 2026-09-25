@@ -14,6 +14,13 @@ from ml.worker import process_read
 T0 = datetime(2026, 9, 23, 10, 0, 0, tzinfo=timezone.utc)
 
 
+@pytest.fixture(autouse=True)
+def _demo_crops_in_tmp(tmp_path, monkeypatch):
+    """Rendered demo crops go to a per-test directory, never data/crops/."""
+    monkeypatch.setattr(demo_seed, "CROPS_ROOT", tmp_path / "crops")
+    return tmp_path / "crops"
+
+
 @pytest.fixture()
 def seeded(con):
     counts = demo_seed.inject(con, at=T0)
@@ -90,3 +97,65 @@ def test_background_plates_never_alert(con) -> None:
     demo_seed.inject(con, at=T0)
     plates = {a["plate"] for a in con.execute("SELECT plate FROM alerts")}
     assert plates == {demo_seed.HERO, demo_seed.NEAR_MISS}
+
+
+# --- rendered demo crops (ANPR search lane, 25 Sep) ---------------------------
+
+def test_every_demo_sighting_gets_a_rendered_demo_crop(seeded, _demo_crops_in_tmp) -> None:
+    from PIL import Image
+
+    from backend.tools import demo_crops
+
+    con, _ = seeded
+    rows = con.execute("SELECT sighting_id, plate, crop_path FROM sightings").fetchall()
+    assert len(rows) == 24
+    for r in rows:
+        assert r["crop_path"] == f"data/crops/demo/{r['sighting_id']}.jpg"  # live form
+        path = _demo_crops_in_tmp / "demo" / f"{r['sighting_id']}.jpg"
+        with Image.open(path) as img:
+            assert img.format == "JPEG"
+            assert img.size == (demo_crops.WIDTH, demo_crops.PLATE_H + demo_crops.BAND_H)
+            # the DEMO band (rule 12 on the image itself): demo orange
+            band = img.convert("RGB").getpixel((8, demo_crops.PLATE_H + 3))
+            assert all(abs(a - b) <= 24 for a, b in zip(band, (224, 145, 47))), band
+    # the API serves it at the live crop URL shape
+    from backend.services.route import crop_url
+    assert crop_url(rows[0]["crop_path"]) == f"/crops/demo/{rows[0]['sighting_id']}.jpg"
+
+
+def test_demo_crop_prints_the_registration_as_a_plate() -> None:
+    from backend.tools.demo_crops import display_text
+
+    assert display_text("GJ01AB1234") == "GJ 01 AB 1234"
+    assert display_text("GJ01A81234") == "GJ 01 AB 1234"   # the plate the misread came from
+    assert display_text("22BH1234AA") == "22 BH 1234 AA"
+    assert display_text("GJ05JB432") == "GJ05JB432"        # partial: as read
+
+
+def test_purge_deletes_the_demo_crops_and_nothing_else(seeded, _demo_crops_in_tmp) -> None:
+    con, _ = seeded
+    demo_dir = _demo_crops_in_tmp / "demo"
+    assert len(list(demo_dir.glob("*.jpg"))) == 24
+    live_crop = _demo_crops_in_tmp / "cam06" / "217.jpg"   # a live crop beside them
+    live_crop.parent.mkdir(parents=True)
+    live_crop.write_bytes(b"live")
+    stray = demo_dir / "not-referenced.jpg"                 # unreferenced: left alone
+    stray.write_bytes(b"x")
+
+    # a demo row whose stored path climbs out of data/crops/demo/ is never followed
+    con.execute("UPDATE sightings SET crop_path = 'data/crops/demo/../cam06/217.jpg'"
+                " WHERE sighting_id = (SELECT MIN(sighting_id) FROM sightings)")
+    con.commit()
+
+    counts = demo_seed.purge(con)
+    assert counts["crops"] == 23
+    assert sorted(p.name for p in demo_dir.iterdir()) == ["1.jpg", "not-referenced.jpg"]
+    assert live_crop.read_bytes() == b"live"
+
+
+def test_reinject_replaces_the_crops_of_the_previous_run(seeded, _demo_crops_in_tmp) -> None:
+    con, _ = seeded
+    first = {p.name for p in (_demo_crops_in_tmp / "demo").glob("*.jpg")}
+    demo_seed.inject(con, at=T0 + timedelta(minutes=5))
+    second = {p.name for p in (_demo_crops_in_tmp / "demo").glob("*.jpg")}
+    assert len(second) == 24 and first.isdisjoint(second)   # old files purged

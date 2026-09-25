@@ -17,10 +17,11 @@ export function ProvenanceBadge({ provenance, clockSource }) {
 }
 
 /** Match-type chip: exact is quiet; ambiguity/fuzzy are flagged with the
- *  confusion-weighted distance so a near-miss is visibly a near-miss. */
+ *  confusion-weighted distance so a near-miss is visibly a near-miss;
+ *  contains (a fragment match in Search) carries no distance. */
 export function MatchChip({ matchType, distance }) {
   if (!matchType || matchType === 'none') return null
-  const d = Number(distance)
+  const d = distance == null ? NaN : Number(distance)
   return (
     <span className={`match-chip match-${matchType}`}>
       {matchType}

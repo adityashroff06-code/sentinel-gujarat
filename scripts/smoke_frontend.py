@@ -64,6 +64,12 @@ S3.3b (hero-screen design checks; every assertion appended AFTER the
   its own designed error, and the login form says it cannot reach the
   platform — never a blank page.
 
+ANPR search lane (25 Sep; ``check_anpr_search``, run right after the S3.3
+Search checks): the typo GJ01A81234 in ANPR-tolerant mode returns the
+hero's reads with match badges and loaded DEMO crops, Plates to try
+offers the hero badged DEMO, ?camera= deep-links a filter, and
+data/screens/anpr-search.png is saved at 1920x1080.
+
 The throwaway API keys and account passwords are generated per run and
 never printed (root CLAUDE.md rule 1). Exits 0 on success.
 """
@@ -267,9 +273,12 @@ def demo_sighting_count() -> int:
 
 
 def attach_demo_crops() -> None:
-    """Write a throwaway crop image and point every demo sighting at it:
-    demo_seed stores no image, but the smoke must prove that crop <img>
-    thumbnails load through the session cookie. Cleaned up in main()."""
+    """Write a throwaway crop image and point every demo sighting that has
+    NO crop at it — the smoke must prove that crop <img> thumbnails load
+    through the session cookie. Since the ANPR search lane (25 Sep)
+    demo_seed renders a DEMO crop for every demo row, so this normally
+    attaches nothing and the rendered crops are what load. Cleaned up in
+    main()."""
     target = CROPS_DIR / SMOKE_CROP_REL
     target.parent.mkdir(parents=True, exist_ok=True)
     try:  # a real-looking crop when OpenCV is around (it ships with ml/)
@@ -289,7 +298,8 @@ def attach_demo_crops() -> None:
     con = dbmod.connect()
     try:
         con.execute(
-            "UPDATE sightings SET crop_path = ? WHERE provenance = 'demo'",
+            "UPDATE sightings SET crop_path = ? WHERE provenance = 'demo'"
+            " AND crop_path IS NULL",
             (SMOKE_CROP_REL,),
         )
         con.commit()
@@ -325,6 +335,81 @@ def insert_live_alert():
         return row
     finally:
         con.close()
+
+
+def check_anpr_search(page) -> None:
+    """ANPR search lane (25 Sep), with the demo seed injected: the hero
+    typed with an OCR look-alike (GJ01A81234 — 8 for B) in ANPR-tolerant
+    mode returns the hero GJ01AB1234's reads with match badges and their
+    rendered DEMO crops loaded (naturalWidth > 0); Plates to try offers
+    the hero badged DEMO; the summary strip groups the reads under the
+    registration with a watchlist-hit badge; ?camera= deep-links a camera
+    filter; the screen is saved at 1920x1080 as data/screens/anpr-search.png."""
+    page.goto(f"{BASE}/search")
+    page.wait_for_selector("#s-plate", timeout=15000)
+    chip = page.locator('.anpr-try [data-section="demo"] .try-chip[data-plate="GJ01AB1234"]')
+    chip.wait_for(timeout=15000)
+    check(
+        chip.locator(".prov-badge.prov-demo").count() == 1,
+        "ANPR: Plates to try offers the demo hero GJ01AB1234, badged DEMO",
+    )
+    page.fill("#s-plate", "GJ01A81234")
+    page.click('.segmented [data-mode="anpr"]')
+    # flex items: innerText separates them with newlines — drop all whitespace
+    preview = re.sub(r"\s+", "", page.locator(".plate-preview").inner_text()).lower()
+    check(
+        "readsasgj01ab1234" in preview,
+        "ANPR: the live preview reads the typo GJ01A81234 as GJ01AB1234",
+    )
+    page.click("form[role=search] button[type=submit]")
+    page.wait_for_url(re.compile(r"/search\?plate=GJ01A81234&match=anpr"), timeout=15000)
+    rows = count_when_stable(page.locator(".search-table tbody tr"), 4)
+    check(rows == 4, f"ANPR: typo GJ01A81234 returns the hero's reads (4 rows, got {rows})")
+    amb = page.locator(".search-table tbody .match-chip.match-ambiguity").count()
+    exact = page.locator(".search-table tbody .match-chip.match-exact").count()
+    check(
+        amb == 3 and exact == 1,
+        f"ANPR: 3 hero reads badged ambiguity + the stored near-miss exact (got {amb} + {exact})",
+    )
+    group = page.locator('.plate-group[data-plate="GJ01AB1234"]')
+    check(
+        group.count() == 1 and group.locator(".wl-hit").count() == 1,
+        "ANPR: the summary strip groups them under GJ01AB1234 with a watchlist-hit badge",
+    )
+    deadline = time.monotonic() + 10
+    loaded = 0
+    while time.monotonic() < deadline:
+        loaded = page.evaluate(
+            "() => [...document.querySelectorAll('.search-table img.crop-thumb')]"
+            ".filter((i) => i.complete && i.naturalWidth > 0).length"
+        )
+        if loaded >= 4:
+            break
+        time.sleep(0.25)
+    check(loaded == 4, f"ANPR: every hero row's rendered demo crop loaded (naturalWidth > 0: {loaded})")
+
+    page.goto(f"{BASE}/search?plate=GJ01AB1234&match=anpr&camera=cam09")
+    rows = count_when_stable(page.locator(".search-table tbody tr"), 2)
+    cams = page.eval_on_selector_all(
+        ".search-table tbody td .mono", "els => els.map((e) => e.textContent.trim())"
+    )
+    check(
+        rows == 2 and cams == ["cam09", "cam09"] and page.input_value("#s-camera") == "cam09",
+        f"ANPR: ?camera=cam09 deep link filters to cam09 ({rows} rows, {cams})",
+    )
+
+    page.set_viewport_size({"width": 1920, "height": 1080})
+    page.goto(f"{BASE}/search?plate=GJ01A81234&match=anpr")
+    page.wait_for_selector(".plate-group", timeout=15000)
+    page.wait_for_function(
+        "() => [...document.querySelectorAll('.search-table img.crop-thumb')]"
+        ".every((i) => i.complete && i.naturalWidth > 0)",
+        timeout=10000,
+    )
+    page.wait_for_timeout(500)
+    check(no_hscroll(page), "ANPR: no horizontal scroll at 1920x1080")
+    page.screenshot(path=str(SCREENS / "anpr-search.png"))
+    page.set_viewport_size({"width": 1366, "height": 768})
 
 
 def sign_in(page, username: str, password: str) -> None:
@@ -555,6 +640,7 @@ def main() -> int:
                 len(classes) > 0 and all(c == "truck" for c in classes),
                 f"class filter 'truck' returns only truck rows ({len(classes)} rows)",
             )
+            check_anpr_search(page)  # ANPR search lane (25 Sep)
 
             # --- Alerts: SSE through the real port, ack persists ---------
             page.goto(f"{BASE}/alerts")

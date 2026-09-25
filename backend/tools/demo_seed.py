@@ -12,6 +12,13 @@ demo clock domain never mixes with live routes (B6).
 ``purge`` deletes only ``provenance='demo'`` rows and their alerts;
 alerting keeps working afterwards (cooldowns derive from the table, D4).
 
+Every demo sighting gets a rendered crop (``backend.tools.demo_crops``):
+an Indian-plate image with a DEMO watermark and band, so Search and Route
+show an image for the demo plates and rule 12 holds on the image itself.
+Crops land at ``data/crops/demo/<sighting_id>.jpg`` (``crop_path`` in the
+live forward-slash form); ``purge`` deletes exactly those files — never
+anything outside ``data/crops/demo/``.
+
 The three cameras are pinned and final — decision F55 cut S3.7's
 ``--pick-active`` (R6a): cam06 (GSRTC), cam10 (Municipal), cam09
 (Police) — one geographic cluster, three departments — and the tests
@@ -25,11 +32,23 @@ from __future__ import annotations
 import argparse
 import sqlite3
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
+from backend.core import config
 from backend.core import db as dbmod
 from backend.core.db import utcnow
+from backend.core.logging_setup import setup
 from backend.core.matcher import WatchlistCache
+from backend.tools.demo_crops import render_plate_crop
 from ml.worker import process_read
+
+log = setup("demo-seed")
+
+#: Where crop files live; stored ``crop_path`` values stay repo-relative
+#: (``data/crops/...``, the form ``/crops/*`` serves). Tests point this at
+#: a temp directory.
+CROPS_ROOT: Path = config.REPO_ROOT / "data" / "crops"
+DEMO_CROP_PREFIX = "data/crops/demo/"
 
 HERO = "GJ01AB1234"
 NEAR_MISS = "GJ01A81234"  # 8<->B ambiguity of the hero
@@ -90,11 +109,12 @@ def inject(con: sqlite3.Connection, at: datetime | None = None) -> dict[str, int
 
     def read(camera_id: str, plate: str, seen: datetime, conf: float,
              vehicle_class: str, track_no: int) -> None:
-        _, alert = process_read(
+        sighting_id, alert = process_read(
             con, cache, camera_id=camera_id, plate=plate, plate_raw=plate,
             confidence=conf, seen_at=seen, wall_time=seen, clock_source="demo",
             provenance="demo", vehicle_class=vehicle_class,
             track_id=f"DEMO-{camera_id}-{track_no}")
+        attach_crop(con, sighting_id, plate)
         counts["sightings"] += 1
         counts["alerts"] += 1 if alert is not None else 0
 
@@ -110,9 +130,50 @@ def inject(con: sqlite3.Connection, at: datetime | None = None) -> dict[str, int
     return counts
 
 
+def crop_file(crop_path: str) -> Path:
+    """The file behind a stored, repo-relative ``data/crops/...`` path."""
+    return CROPS_ROOT / crop_path.replace("\\", "/").removeprefix("data/crops/")
+
+
+def attach_crop(con: sqlite3.Connection, sighting_id: int, plate: str) -> str:
+    """Render the DEMO crop for one demo sighting and store its path;
+    returns the stored ``crop_path`` (does not commit)."""
+    rel = f"{DEMO_CROP_PREFIX}{int(sighting_id)}.jpg"
+    render_plate_crop(plate, crop_file(rel))
+    con.execute("UPDATE sightings SET crop_path = ? WHERE sighting_id = ?"
+                " AND provenance = 'demo'", (rel, sighting_id))
+    return rel
+
+
+def _delete_demo_crops(paths: list[str]) -> int:
+    """Delete the demo crop files among *paths*; returns how many went.
+    Anything outside ``data/crops/demo/`` is left alone (a demo row may
+    point at a shared image, e.g. the smoke's throwaway crop)."""
+    removed = 0
+    demo_dir = (CROPS_ROOT / "demo").resolve()
+    for rel in paths:
+        if not rel or not rel.replace("\\", "/").startswith(DEMO_CROP_PREFIX):
+            continue
+        target = crop_file(rel).resolve()
+        if not target.is_relative_to(demo_dir):  # a '..' in a stored path
+            log.warning("demo crop path %r escapes %s; not deleted", rel, demo_dir)
+            continue
+        try:
+            target.unlink()
+            removed += 1
+        except FileNotFoundError:
+            continue
+        except OSError:
+            log.exception("could not delete demo crop %s", rel)
+    return removed
+
+
 def purge(con: sqlite3.Connection) -> dict[str, int]:
-    """Delete only demo rows — and their alerts. Nothing else."""
+    """Delete only demo rows — their alerts and their rendered crops.
+    Nothing else."""
     counts = {}
+    crop_paths = [r[0] for r in con.execute(
+        "SELECT crop_path FROM sightings WHERE provenance = 'demo' AND crop_path IS NOT NULL")]
     counts["alerts"] = con.execute(
         "DELETE FROM alerts WHERE clock_source = 'demo'"
         " OR sighting_id IN (SELECT sighting_id FROM sightings WHERE provenance = 'demo')"
@@ -123,6 +184,7 @@ def purge(con: sqlite3.Connection) -> dict[str, int]:
     counts["sightings"] = con.execute(
         "DELETE FROM sightings WHERE provenance = 'demo'").rowcount
     con.commit()
+    counts["crops"] = _delete_demo_crops(crop_paths)  # rows first, files after
     return counts
 
 
@@ -140,11 +202,13 @@ def main() -> int:
         if args.action == "inject":
             counts = inject(con, at)
             print(f"demo injected: {counts['sightings']} sightings,"
-                  f" {counts['alerts']} alerts (provenance=demo)")
+                  f" {counts['alerts']} alerts (provenance=demo),"
+                  f" crops under {CROPS_ROOT / 'demo'}")
         else:
             counts = purge(con)
             print(f"demo purged: {counts['sightings']} sightings,"
-                  f" {counts['events']} events, {counts['alerts']} alerts")
+                  f" {counts['events']} events, {counts['alerts']} alerts,"
+                  f" {counts['crops']} crop images")
     finally:
         con.close()
     return 0

@@ -64,8 +64,10 @@ def record_sighting(
 ) -> tuple[int, bool]:
     """Insert (or dedupe into) a sighting; returns ``(sighting_id, inserted)``.
 
-    *plate* is the normalised read; the canonical fold happens here at
-    write time. The caller owns *provenance* (``live`` for real pulls,
+    *plate* is the normalised read — for a structurally full OCR read the
+    pipeline has already coerced it (``plates.coerce``, docs/api.md §6),
+    while *plate_raw* keeps the OCR text; the canonical fold happens here
+    at write time (coercion never changes it). The caller owns *provenance* (``live`` for real pulls,
     ``test`` for replay, ``demo`` for the seeder — F26) and commits via
     its writer job; this function does not commit.
     """

@@ -39,7 +39,7 @@ class CommittedRead:
     """A consensus ready to become a sighting row."""
 
     track_id: int
-    plate: str            # normalised consensus
+    plate: str            # normalised consensus; coerced when kind == full (§6)
     plate_raw: str        # a genuine OCR output backing the consensus
     confidence: float
     bbox: tuple[int, int, int, int]
@@ -105,10 +105,16 @@ class AnprPipeline:
         if result is None:
             return
         text, conf = result
-        if text in track.committed_plates:
+        kind = plates.plate_like(text) or "partial"
+        # A full read is stored in its structurally coerced form
+        # (docs/api.md §6), so 6J23H1548 and GJ23H1548 are one plate for
+        # search, dedupe and the watchlist match; plate_raw keeps the OCR
+        # text. Partial reads are stored as read — never coerced (F40).
+        stored = plates.coerce(text) if kind == "full" else None
+        stored = stored or text
+        if stored in track.committed_plates:
             return
         agreeing = sum(1 for r in track.ocr_reads if r.text == text)
-        kind = plates.plate_like(text) or "partial"
         if need_agreement:
             if agreeing < 2:
                 return
@@ -116,11 +122,11 @@ class AnprPipeline:
             return  # dying track: only with >= 1 full read
         backing = max((r for r in track.ocr_reads if r.text == text),
                       key=lambda r: r.conf, default=track.ocr_reads[-1])
-        track.committed_plates.add(text)
+        track.committed_plates.add(stored)
         if kind == "full":
             track.committed_full = True
         out.append(CommittedRead(
-            track_id=track.id, plate=text, plate_raw=backing.raw, confidence=conf,
+            track_id=track.id, plate=stored, plate_raw=backing.raw, confidence=conf,
             bbox=backing.bbox, vehicle_class=track.cls, kind=kind, pts_ms=pts_ms,
             crop=backing.crop))
 
