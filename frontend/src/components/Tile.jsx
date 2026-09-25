@@ -22,9 +22,13 @@ import { api, deptColor } from '../lib/api.js'
 // H.265 in a browser that cannot decode it). Never a blank black tile.
 
 const noRetry = () => ({ maxNumRetry: 0, retryDelayMs: 0, maxRetryDelayMs: 0 })
+// hls.js 1.7 LoaderConfig keys (node_modules/hls.js/src/config.ts). A user
+// policy REPLACES the default object whole (mergeConfig is shallow), so a
+// misspelt key is not merely ignored: the default first-byte limit is lost
+// too and the loader falls back to maxLoadTimeMs.
 const loadPolicy = (firstByteMs, totalMs) => ({
   default: {
-    maxTimeToLoadMs: firstByteMs,
+    maxTimeToFirstByteMs: firstByteMs,
     maxLoadTimeMs: totalMs,
     timeoutRetry: noRetry(),
     errorRetry: noRetry(),
@@ -69,6 +73,20 @@ const HEVC_WORD = 'H.265 feed — this browser cannot decode HEVC; open the wall
 const HEVC_DETAIL =
   'MediaSource cannot play hvc1 here. Chrome decodes H.265 with hardware support; ' +
   'Edge needs the HEVC Video Extensions from the Microsoft Store.'
+
+// The hls.js errors that mean "this browser rejected the codec". Only these
+// earn the permanent H.265 message on an HEVC-registered camera; any other
+// fatal media error (a bad segment parse, an append failure, a stuck
+// buffer) goes down the ordinary recover / retry path — the organisers' CDN
+// copy may well be H.264, and if it really is H.265 the codec error comes
+// straight back on the next attempt.
+const CODEC_REJECTED = new Set([
+  Hls.ErrorDetails.MANIFEST_INCOMPATIBLE_CODECS_ERROR,
+  Hls.ErrorDetails.BUFFER_ADD_CODEC_ERROR,
+  Hls.ErrorDetails.BUFFER_INCOMPATIBLE_CODECS_ERROR,
+])
+const codecRejected = (data) =>
+  CODEC_REJECTED.has(data.details) || /hvc1|hev1/i.test(String(data.mimeType || ''))
 
 
 // Operator words for a failure: the HTTP status the relay answered (when
@@ -135,7 +153,19 @@ export default function Tile({ cam, expandable = true }) {
 
     setState({ kind: 'connecting', word: 'Connecting…' })
 
+    // The stall watchdog belongs to a playing player. Once the player is
+    // killed (fatal error, H.265 block) or a retry is pending, a timer left
+    // armed would overwrite the retry countdown or the blocked message with
+    // 'Feed stalled' — so every exit path disarms it.
+    const clearStall = () => {
+      if (stallTimer) {
+        clearTimeout(stallTimer)
+        stallTimer = null
+      }
+    }
+
     const killPlayer = () => {
+      clearStall()
       if (hls && !hlsDead) {
         hlsDead = true
         try {
@@ -158,6 +188,7 @@ export default function Tile({ cam, expandable = true }) {
 
     const scheduleRetry = (word, detail) => {
       if (disposed || retryTimer) return
+      clearStall()
       const attempt = attemptsRef.current
       attemptsRef.current = attempt + 1
       const delay =
@@ -175,16 +206,15 @@ export default function Tile({ cam, expandable = true }) {
 
     const onPlaying = () => {
       if (disposed) return
-      clearTimeout(stallTimer)
-      stallTimer = null
+      clearStall()
       attemptsRef.current = 0 // the feed answered — reset the ladder
       setState(null)
     }
     const onWaiting = () => {
-      if (disposed || stallTimer) return
+      if (disposed || stallTimer || retryTimer || hlsDead) return
       stallTimer = setTimeout(() => {
         stallTimer = null
-        if (!disposed) {
+        if (!disposed && !retryTimer && !hlsDead) {
           setState({ kind: 'stalled', word: 'Feed stalled — waiting for video', detail: 'buffer empty' })
         }
       }, STALL_MS)
@@ -220,9 +250,14 @@ export default function Tile({ cam, expandable = true }) {
         })
         hls.on(Hls.Events.ERROR, (_e, data) => {
           if (disposed || !data.fatal) return
-          if (data.type === Hls.ErrorTypes.MEDIA_ERROR && isHevc && !browserDecodesHevc()) {
-            // an H.265 stream this browser cannot decode: say so, once —
-            // retrying would fail the same way forever
+          if (
+            data.type === Hls.ErrorTypes.MEDIA_ERROR &&
+            isHevc &&
+            !browserDecodesHevc() &&
+            codecRejected(data)
+          ) {
+            // an H.265 stream this browser rejected the codec of: say so,
+            // once — retrying would fail the same way forever
             killPlayer()
             setState({ kind: 'blocked', word: HEVC_WORD, detail: HEVC_DETAIL })
             return
@@ -320,7 +355,9 @@ export default function Tile({ cam, expandable = true }) {
         <span className="tile-right">
           {badge && (
             <span className={`src-badge ${badge.cls}`} title={`${badge.title} — ${source.detail}`}>
-              {badge.cls === 'src-live' && <span className="dot" aria-hidden="true" />}
+              {/* the pulsing live dot only while video is actually playing —
+                  never on a tile that is blocked, retrying or stalled */}
+              {badge.cls === 'src-live' && state == null && <span className="dot" aria-hidden="true" />}
               {badge.text}
             </span>
           )}

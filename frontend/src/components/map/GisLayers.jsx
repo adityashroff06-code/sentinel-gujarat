@@ -130,7 +130,9 @@ export function CoverageLayer({ cams }) {
 const activityRadius = (n) => Math.min(38, 9 + 4.5 * Math.sqrt(n))
 
 /** Activity circles sized by plate reads in the window. `items` are
- *  {key, center, label, sightings, plates, alerts, lastSeen, byProv}. */
+ *  {key, center, label, sightings, plates, alerts, lastSeen, byProv};
+ *  `plates` is null where no exact distinct count exists (a bubble whose
+ *  reads span several cameras) and is then left out, never summed. */
 export function ActivityLayer({ items, hours }) {
   return items.map((a) => (
     <CircleMarker
@@ -144,7 +146,8 @@ export function ActivityLayer({ items, hours }) {
       <Tooltip direction="right" offset={[12, 0]} className="gis-tip">
         <b>{a.label}</b> · last {hours} h
         <br />
-        {plural(a.sightings, 'plate read')} · {plural(a.plates, 'distinct plate')} ·{' '}
+        {plural(a.sightings, 'plate read')} ·{' '}
+        {a.plates != null && <>{plural(a.plates, 'distinct plate')} · </>}
         {plural(a.alerts, 'alert')}
         {Object.keys(a.byProv).length > 0 && (
           <>

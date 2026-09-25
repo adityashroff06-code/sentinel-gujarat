@@ -114,7 +114,7 @@ export default function Search() {
   useEffect(() => {
     let live = true
     const q = queryFromParams(params)
-    setPlate(q.plate)
+    setPlate(q.plate.toUpperCase()) // as onChange shows a typed plate
     if (q.match) setMode(q.match) // no plate: keep the chosen mode
     setMinConf(q.min_confidence || 0)
     setProvenance(q.provenance || '')
@@ -242,7 +242,9 @@ export default function Search() {
                       // results for this very plate on screen: re-run them
                       // in the new mode; otherwise wait for Search
                       const p = normalise(plate)
-                      if (p && p === params.get('plate') && m.id !== mode) go({ mode: m.id })
+                      // (the URL may carry a hand-typed, non-normalised
+                      // plate: compare like with like)
+                      if (p && p === normalise(params.get('plate')) && m.id !== mode) go({ mode: m.id })
                     }}
                   >
                     {m.label}
