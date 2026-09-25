@@ -365,6 +365,14 @@ def test_rate_limit_dependency_returns_429(app):
     ):
         return {"detail": "ok"}
 
+    # A route registered after create_app() lands behind S3.2's SPA
+    # catch-all (/{spa_path:path}) and would be shadowed — move it ahead,
+    # as any real route registered inside create_app() naturally is.
+    spa_at = next((i for i, r in enumerate(app.router.routes)
+                   if "spa_path" in getattr(r, "path", "")), None)
+    if spa_at is not None:
+        app.router.routes.insert(spa_at, app.router.routes.pop())
+
     c = _client(app)
     for _ in range(3):
         assert c.get("/api/_test/limited", headers=VIEWER).status_code == 200
@@ -467,6 +475,15 @@ def test_route_walk_everything_else_rejects_unauthenticated(app):
     walked: list[tuple[str, str]] = []
     for route in _api_routes(app):
         if route.path in OPEN_PATHS or route.path.startswith("/assets"):
+            continue
+        if "spa_path" in route.path:
+            # S3.2's SPA catch-all serves the login SHELL (static index.html
+            # — rule 11's open login page) for client-side routes. It must
+            # never serve data: /api/* stays JSON and is walked below.
+            r = c.get("/map")
+            assert r.status_code in (200, 404)  # 404 when no dist is built
+            if r.status_code == 200:
+                assert r.headers["content-type"].startswith("text/html")
             continue
         concrete = re.sub(r"\{[^}]+\}", "1", route.path)
         for method in sorted(set(route.methods) - {"HEAD", "OPTIONS"}):
