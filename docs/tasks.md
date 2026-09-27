@@ -93,7 +93,7 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S6.2 | [Adi] Rehearsal, fallback footage of every screen | Sat 26 | 2 h | |
 | S6.3 | [Adi] Submit; verify every link from a private window | Sun 27 | 1 h | |
 | S7.0 | **4K read test: which clips, which resolution (gate)** — v2.6, lane A | Sun 27 night | 45 min | [x] done Mon 28 01:51 (lane A): gate passed; best width 3840 on all four clips (13270133 66 full / 43 distinct); own01 stays 1080p (2560 = 1.19x < 1.5x); watch MH02GB4920; ran 2.2 h, not 45 min, on a paging laptop |
-| S7.1 | **The analysis render** (F74) — lane A, after S7.0 | Sun 27 night | 2.5 h | |
+| S7.1 | **The analysis render** (F74) — lane A, after S7.0 | Sun 27 night | 2.5 h | [~] PARTIAL Mon 28 02:00: script + 37 tests; 13270133 rendered (53 plates, 8/10 exact); 3 clips rendering, write-off open |
 | S7.2 | **Evidence visuals: vehicle thumbnail on every read, full frame on a hit only** (F73) — lane B | Sun 27 night | 2.5 h | [x] done Mon 28 ~02:45 (lane B): live hit ALERT-20260927-0013 (GJ11S7924, cam06), evidence SHA-256 = certutil; review gate 14 findings, 12 fixed incl. a HIGH SMB/NTLM path in /evidence + /crops, 2 documented (F79); F78 watchlist-delete 500 fixed |
 | S7.3 | **The alert moment: global toast with the evidence** — lane B, after S7.2 | Sun 27 night | 1.25 h | [~] code built + lint/build clean; smoke result, review gate, live acceptance open (RTSP 401 on all sandbox cameras since 01:44 IST) |
 | S7.4 | [Adi + Claude] Video-1 dry run with the new pieces (replaces S5.4's dry run) | Mon 28 08:30 | 1.5 h | |
@@ -558,7 +558,7 @@ Record the pick in the S7.6a progress block. Every later task, recording and the
 **Gate:** if no width yields ≥ 5 distinct full plates on any clip, S7.1 still runs, but on `13270133` and `13172888` only. Its HUD must then say "plates read: N" truthfully, with no padding.
 *Write-off:* progress block; `data/measurements/read-test-*` committed; commit `S7.0: <n> plates at <width> on <clip>; own01 = <file>`.
 
-### S7.1 — The analysis render (F74) `[ ]`
+### S7.1 — The analysis render (F74) `[~]`
 *Lane A, after S7.0. Owns `scripts/render_analysis.py`, `tests/test_render_analysis.py` and `data/measurements/render-*.json`. **Must not edit anything under `ml/`**: it imports from it. Budget 2.5 h.*
 *Read first:* `docs/decisions.md` F74; `ml/anpr/pipeline.py` (`AnprPipeline.process`, `consensus`, `_commit`); `ml/anpr/detect.py` (`Detector.detect`, which letterboxes any frame to 640 and returns source-pixel boxes); `ml/anpr/track.py`; `ml/anpr/ocr.py` (`PlateOcr.read(crop, offset=, frame_h=)`); `frontend/src/styles/tokens.css` (colours, so the render looks like the product).
 *Build:* `scripts/render_analysis.py <clip> --out <mp4> [--json <path>] [--start S --end S] [--detect-every 2] [--ocr-gap-ms 300] [--ocr-max 6] [--min-vehicle-w 140] [--watch PLATE,PLATE]`

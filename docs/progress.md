@@ -2427,3 +2427,41 @@ Next:      [Adi] check the 401s (`python launch.py status`; if still 0
            Wall to data/screens/s73-toast-*.png (no credential visible),
            remove the entry (it is deactivated, F78). Tick S7.3.
 ```
+
+```
+## S7.1 — PARTIAL (lane A; the analysis render, F74)
+When:      2026-09-27T19:49Z-20:30Z (01:19-02:00 IST), laptop lane A
+Observed:  scripts/render_analysis.py built as the task says (real
+           Detector/Tracker/PlateOcr/consensus; commit_track = a copy of
+           AnprPipeline._commit; 1920x1080 annotated MP4 via config.ffmpeg()
+           pipe; JSON + PNG still; HUD label burned into every frame).
+           Deviations (reason: OCR 1.7-2.5 s/crop at 4K on the paging
+           laptop): --min-vehicle-w 240 (S7.0: smallest vehicle behind a
+           full read = 246 px), --ocr-gap-ms 500, --ocr-max 4, new
+           --ocr-track-max 8, new --ocr-width (unused: 3840 is best).
+           tests/test_render_analysis.py 37 passed (fakes; also passes on
+           lane B's S7.2 ml/). Review: a 20-agent workflow, 9 confirmed
+           findings fixed with regression tests (3-digit #000 token crash
+           on non-16:9, hold-before-interpolate blink, mm:60.0 clock, chips
+           over the label band, partials missing from the strip, 2 test gaps).
+           13270133 RENDER: 1716 frames in = 1716 out, 57.200 s = source
+           57.200 s, h264 High 1920x1080 yuv420p 30/1, full decode 0 errors;
+           53 distinct full plates (>= S7.0's 43 at 3840); 220 tracks; 910
+           OCR crops, 1666 ms mean; runtime 2040 s (overlapped w3840);
+           watch MH02GB4920 -> WATCHLIST HIT on 5 tracks (the car's track
+           is re-created in the jam). PRECISION SPOT CHECK: 8/10 exact
+           (10 evenly spaced full commits vs their crops; wrong: 001
+           MH01EN2768 is MH01EW2768, 042 MH02FI3843 is MH02FX3843).
+           Still 2.8 MB > 1.5 MB: not copied to deliverables/deck/img.
+           Outputs: D:\projects\sentinel-footage\renders\13270133.{mp4,png},
+           13270133-reads\ (spot-check crops), data/measurements/render-13270133.json.
+Done so far: script + tests + 13270133 render committed in this commit.
+Next:      The renders of 13269027, 13172888, 13105330 were running
+           detached at 02:00 IST (data/logs/render.log; runner
+           scratchpad render_b.sh) - check they ended rc=0, commit their
+           render-*.json; spot-check 10 reads each (<clip>-reads\); play
+           each MP4 in Chrome + VLC; view frames at start/middle/end for
+           the label; add the Part D row to docs/architecture.md; tick
+           S7.1 and rewrite Current state (lane A: S7.4 watches MH02GB4920
+           on own01.mp4 1080p). Keep the CPU free during S7.5 recording.
+```
