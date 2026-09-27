@@ -290,6 +290,14 @@ export default function RoutePage() {
                   >
                     {s.sequence}
                   </div>
+                  {/* S7.2 (F73): the stop's vehicle thumbnail beside the crop */}
+                  {s.vehicle_url && (
+                    <img
+                      className="vehicle-thumb"
+                      src={s.vehicle_url}
+                      alt={`vehicle at ${s.camera_id}`}
+                    />
+                  )}
                   {s.crop_url && (
                     <img className="crop-thumb" src={s.crop_url} alt={`crop at ${s.camera_id}`} />
                   )}

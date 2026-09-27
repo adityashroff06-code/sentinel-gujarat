@@ -248,7 +248,7 @@ def test_watchlist_crud_and_roles(seeded) -> None:
     wid = row["watchlist_id"]
     assert c.delete(f"/api/watchlist/{wid}", headers=VIEWER).status_code == 403
     r = c.delete(f"/api/watchlist/{wid}", headers=ADMIN)
-    assert r.status_code == 200 and r.json() == {"deleted": wid}
+    assert r.status_code == 200 and r.json() == {"deleted": wid, "deactivated": False}
     assert c.delete(f"/api/watchlist/{wid}", headers=ADMIN).status_code == 404
 
     bad = dict(body, plate="???")

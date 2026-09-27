@@ -45,6 +45,12 @@ class PlateRead:
     bbox: tuple[int, int, int, int]  # [x, y, w, h] in SOURCE-frame pixels
     kind: str          # full | partial
     crop: np.ndarray | None = None   # the plate region, cut when it was read
+    # Evidence visuals (S7.2, F73) — set by AnprPipeline.process, which
+    # holds the vehicle box and the frame; ``read`` below NEVER fills
+    # them, so this module stays frame-free (ml/CLAUDE.md).
+    vehicle_px: np.ndarray | None = None  # vehicle crop ≤ 240 px, plate box drawn
+    evidence: object | None = None        # ml.anpr.pipeline.EvidenceJpeg
+    vehicle_xyxy: tuple[int, int, int, int] | None = None  # source pixels
 
 
 def _enhance(crop: np.ndarray) -> tuple[np.ndarray, float]:

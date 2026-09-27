@@ -801,7 +801,7 @@
      "analytics"
     ],
     "summary": "Delete Watchlist",
-    "description": "Remove a watchlist entry; 404 when it does not exist. Evaluator or\nadmin (F41: watchlist add and remove).",
+    "description": "Remove a watchlist entry; 404 when it does not exist. Evaluator or\nadmin (F41: watchlist add and remove). An entry that has fired alerts\nis deactivated instead (``active = 0``: the matcher and the \"plates to\ntry\" ignore it) \u2014 every alert keeps the row it references, and the\nDELETE no longer fails on that foreign key (F78).",
     "operationId": "delete_watchlist_api_watchlist__watchlist_id__delete",
     "parameters": [
      {
@@ -1842,7 +1842,7 @@
      "users"
     ],
     "summary": "Create User",
-    "description": "Create an account; 409 on a duplicate username.",
+    "description": "Create an account; 409 on a duplicate username \u2014 including a name\nthat differs from an existing one only by case (F76: the login lookup\nis COLLATE NOCASE, so case variants would collide).",
     "operationId": "create_user_api_users_post",
     "requestBody": {
      "content": {
@@ -2080,6 +2080,53 @@
      }
     }
    }
+  },
+  "/evidence/{evidence_path}": {
+   "get": {
+    "tags": [
+     "crops"
+    ],
+    "summary": "Evidence",
+    "description": "Serve a watchlist hit's evidence frame (decision F73) \u2014 the full\nannotated frame written only when an alert fired; its SHA-256 lives\nin the audit trail. Same auth and traversal guard as ``/crops``;\nnever cached \u2014 evidence, not a page asset.",
+    "operationId": "evidence_evidence__evidence_path__get",
+    "parameters": [
+     {
+      "name": "evidence_path",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Evidence Path"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "A watchlist hit's annotated full frame (F73)",
+      "content": {
+       "application/json": {
+        "schema": {}
+       },
+       "image/jpeg": {
+        "schema": {
+         "type": "string",
+         "format": "binary"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -2275,6 +2322,28 @@
        }
       ],
       "title": "Crop Url"
+     },
+     "evidence_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Evidence Url"
+     },
+     "evidence_sha256": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Evidence Sha256"
      }
     },
     "type": "object",
@@ -3944,6 +4013,17 @@
       ],
       "title": "Crop Url"
      },
+     "vehicle_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Vehicle Url"
+     },
      "elapsed_from_previous_s": {
       "anyOf": [
        {
@@ -4198,6 +4278,17 @@
        }
       ],
       "title": "Crop Url"
+     },
+     "vehicle_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Vehicle Url"
      },
      "match_type": {
       "anyOf": [
@@ -4534,6 +4625,11 @@
      "deleted": {
       "type": "integer",
       "title": "Deleted"
+     },
+     "deactivated": {
+      "type": "boolean",
+      "title": "Deactivated",
+      "default": false
      }
     },
     "type": "object",

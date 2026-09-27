@@ -286,20 +286,25 @@ print(' '.join(out))
 # S6.1b: "is the demo up" in one command. argv[1] = this repo; then
 # name:pid pairs from data/launcher_pids.txt. Prints one line per pair -
 # "<name> <pid> <uptime_s>", or "gone" / "foreign" (a pid now held by a
-# process whose command line does not name this repo, e.g. reused after a
-# reboot) - and a last line for the Tailscale daemon behind the Funnel:
-# "tailscaled - <uptime_s>" / "none" / "denied".
+# process whose command line does not name this repo AND its entry point
+# - the repo path alone is not enough, because on this laptop any process
+# run by the repo's .venv python carries the repo in its executable path,
+# a reused pid included) - and a last line for the Tailscale daemon behind
+# the Funnel: "tailscaled - <uptime_s>" / "none" / "denied".
 _UPTIME_PY = """\
 import sys, time
 import psutil
 repo = sys.argv[1].replace('\\\\', '/').lower()
+markers = {'api': '-m backend.app', 'worker': '-m ml'}
 now = time.time()
 for arg in sys.argv[2:]:
     name, _, pid = arg.rpartition(':')
     try:
         p = psutil.Process(int(pid))
         cmdline = ' '.join(p.cmdline()).replace('\\\\', '/').lower()
-        state = str(int(now - p.create_time())) if repo in cmdline else 'foreign'
+        marker = markers.get(name)
+        ours = repo in cmdline and (marker is None or marker in cmdline)
+        state = str(int(now - p.create_time())) if ours else 'foreign'
     except (ValueError, psutil.NoSuchProcess, psutil.ZombieProcess):
         state = 'gone'
     except psutil.Error:

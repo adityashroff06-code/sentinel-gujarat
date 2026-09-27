@@ -24,6 +24,7 @@ import sqlite3
 from typing import Any
 
 from backend.core import plates
+from backend.core.config import REPO_ROOT
 
 #: Consecutive sightings on the same camera (same clock) within this window
 #: collapse into one stop (docs/api.md B2).
@@ -54,6 +55,23 @@ def crop_url(crop_path: str | None) -> str | None:
     if not crop_path:
         return None
     return f"/crops/{crop_path.replace(chr(92), '/').split('crops/')[-1]}"
+
+
+def vehicle_url(camera_id: str, sighting_id: int) -> str | None:
+    """URL of the read's vehicle thumbnail (F73) — the ``_v.jpg`` written
+    beside the plate crop; None when the file is absent (rows written
+    before S7.2, demo rows)."""
+    rel = f"{camera_id}/{sighting_id}_v.jpg"
+    return f"/crops/{rel}" if (REPO_ROOT / "data" / "crops" / camera_id
+                               / f"{sighting_id}_v.jpg").is_file() else None
+
+
+def evidence_url(frame_path: str | None) -> str | None:
+    """URL of a watchlist hit's evidence frame (F73) from the stored
+    ``sightings.frame_path``; None when no frame was stored."""
+    if not frame_path:
+        return None
+    return f"/evidence/{frame_path.replace(chr(92), '/').split('evidence/')[-1]}"
 
 
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -186,6 +204,7 @@ def reconstruct_route(
                 "match_distance": distance,
                 "suspect": bool(speed is not None and speed > SUSPECT_SPEED_KMH),
                 "crop_url": crop_url(r["crop_path"]),
+                "vehicle_url": vehicle_url(r["camera_id"], r["sighting_id"]),
                 "elapsed_from_previous_s": elapsed,
                 "implied_speed_kmh": speed,
             }

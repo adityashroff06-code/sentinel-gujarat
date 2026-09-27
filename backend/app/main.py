@@ -12,6 +12,7 @@ import is capped at 2 MB / 5,000 rows.
 
 from __future__ import annotations
 
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -35,6 +36,28 @@ from backend.services import health as health_service
 
 FRONTEND_DIST = config.REPO_ROOT / "frontend" / "dist"
 CROPS_DIR = config.REPO_ROOT / "data" / "crops"
+EVIDENCE_DIR = config.REPO_ROOT / "data" / "evidence"
+
+# Every stored crop, thumbnail and evidence frame is "<camera or folder>/
+# <name>.jpg". The shape is checked BEFORE the path is joined or resolved:
+# on Windows, joining a UNC or device path ("\\host\share\x.jpg",
+# "//?/C:/...") discards the base, and Path.resolve() then opens it — an
+# outbound SMB connection that leaks the service's NTLM hash. The
+# is_relative_to check after resolve() is too late for that.
+_MEDIA_PATH = re.compile(r"^[A-Za-z0-9_-]{1,64}/[A-Za-z0-9_.-]{1,128}\.jpg$")
+
+
+def _media_file(base: Path, rel: str, missing: str) -> Path:
+    """The file *rel* under *base*, or HTTPException 404. Refuses anything
+    but the stored ``<folder>/<name>.jpg`` shape before any filesystem call."""
+    if not _MEDIA_PATH.fullmatch(rel):
+        raise HTTPException(status_code=404, detail="not found")
+    target = (base / rel).resolve()
+    if not target.is_relative_to(base.resolve()):
+        raise HTTPException(status_code=404, detail="not found")
+    if not target.is_file():
+        raise HTTPException(status_code=404, detail=missing)
+    return target
 
 # --- public-exposure hardening (docs/api.md §9; task S3.0) ------------------
 
@@ -239,13 +262,21 @@ def create_app() -> FastAPI:
     )
     def crop(crop_path: str, _: str = Depends(auth.require_auth)):
         """Serve a plate/vehicle crop (auth: header, or the session cookie on GET)."""
-        # camera_id-derived names only; refuse traversal outside the folder.
-        target = (CROPS_DIR / crop_path).resolve()
-        if not str(target).startswith(str(CROPS_DIR.resolve())):
-            raise HTTPException(status_code=404, detail="not found")
-        if not target.is_file():
-            raise HTTPException(status_code=404, detail="crop not found")
-        return FileResponse(target)
+        return FileResponse(_media_file(CROPS_DIR, crop_path, "crop not found"))
+
+    @app.get(
+        "/evidence/{evidence_path:path}",
+        tags=["crops"],
+        responses={200: {"description": "A watchlist hit's annotated full frame (F73)", "content": {"image/jpeg": {"schema": {"type": "string", "format": "binary"}}}}},
+    )
+    def evidence(evidence_path: str, _: str = Depends(auth.require_auth)):
+        """Serve a watchlist hit's evidence frame (decision F73) — the full
+        annotated frame written only when an alert fired; its SHA-256 lives
+        in the audit trail. Same auth and traversal guard as ``/crops``;
+        never cached — evidence, not a page asset."""
+        target = _media_file(EVIDENCE_DIR, evidence_path, "evidence not found")
+        return FileResponse(target, media_type="image/jpeg",
+                            headers={"Cache-Control": "private, no-store"})
 
     if FRONTEND_DIST.is_dir():  # pragma: no cover — dist is not built in tests
         # Serve the built SPA (task S3.2): /assets/* as static files, and
@@ -263,7 +294,7 @@ def create_app() -> FastAPI:
 
         @app.get("/{spa_path:path}", include_in_schema=False)
         def spa(spa_path: str):
-            if spa_path.split("/", 1)[0] in ("api", "crops"):
+            if spa_path.split("/", 1)[0] in ("api", "crops", "evidence"):
                 raise HTTPException(status_code=404, detail="not found")
             if spa_path:
                 target = (FRONTEND_DIST / spa_path).resolve()

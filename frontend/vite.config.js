@@ -12,6 +12,7 @@ export default defineConfig({
     proxy: {
       '/api': { target: 'http://localhost:8000', changeOrigin: true },
       '/crops': { target: 'http://localhost:8000', changeOrigin: true },
+      '/evidence': { target: 'http://localhost:8000', changeOrigin: true },
     },
   },
 })

@@ -342,11 +342,22 @@ export default function Search() {
                       onClick={() => navigate(`/route/${encodeURIComponent(routePlate)}`)}
                     >
                       <td className="crop-cell">
-                        {r.crop_url ? (
-                          <img className="crop-thumb" src={r.crop_url} alt={`plate crop ${r.plate}`} />
-                        ) : (
-                          <span className="crop-none">no crop</span>
-                        )}
+                        {/* S7.2 (F73): the read's vehicle thumbnail (plate
+                            boxed) beside the plate crop, when stored */}
+                        <div className="read-visuals">
+                          {r.vehicle_url && (
+                            <img
+                              className="vehicle-thumb"
+                              src={r.vehicle_url}
+                              alt={`vehicle for ${r.plate}`}
+                            />
+                          )}
+                          {r.crop_url ? (
+                            <img className="crop-thumb" src={r.crop_url} alt={`plate crop ${r.plate}`} />
+                          ) : (
+                            !r.vehicle_url && <span className="crop-none">no crop</span>
+                          )}
+                        </div>
                       </td>
                       <td>
                         <StoredPlate plate={r.plate} registration={routePlate} />
@@ -488,6 +499,7 @@ function groupRows(rows, watch) {
         first: null,
         last: null,
         best: null,
+        bestVehicle: null,
       }
       by.set(key, g)
     }
@@ -504,6 +516,9 @@ function groupRows(rows, watch) {
     if (!g.first || r.seen_at < g.first) g.first = r.seen_at
     if (!g.last || r.seen_at > g.last) g.last = r.seen_at
     if (r.crop_url && (!g.best || r.confidence > g.best.confidence)) g.best = r
+    if (r.vehicle_url && (!g.bestVehicle || r.confidence > g.bestVehicle.confidence)) {
+      g.bestVehicle = r // the card's vehicle picture (F73)
+    }
   }
   const out = [...by.values()].map((g) => ({
     ...g,
@@ -646,10 +661,17 @@ function PlateGroups({ groups }) {
       {shown.map((g) => (
         <article key={g.key} className={`plate-group tier-${g.matchType || 'none'}`} data-plate={g.key}>
           <div className="group-crop">
+            {g.bestVehicle && (
+              <img
+                className="group-vehicle"
+                src={g.bestVehicle.vehicle_url}
+                alt={`vehicle carrying ${g.key}`}
+              />
+            )}
             {g.best ? (
               <img src={g.best.crop_url} alt={`best crop of ${g.key}`} />
             ) : (
-              <span className="crop-none">no crop</span>
+              !g.bestVehicle && <span className="crop-none">no crop</span>
             )}
           </div>
           <div className="group-id">

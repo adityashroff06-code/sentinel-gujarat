@@ -35,7 +35,7 @@ from typing import Any
 
 from backend.core import plates
 from backend.core.db import utcnow
-from backend.services.route import crop_url
+from backend.services.route import crop_url, vehicle_url
 
 #: Fuzzy candidates share this many canonical prefix characters (B9;
 #: mirrors backend.core.matcher and backend.services.route).
@@ -159,6 +159,7 @@ def search_sightings(
     total = con.execute("SELECT COUNT(*)" + base, params).fetchone()[0]
     for r in rows:
         r["crop_url"] = crop_url(r.get("crop_path"))
+        r["vehicle_url"] = vehicle_url(r["camera_id"], r["sighting_id"])
         r["match_type"], r["match_distance"] = _classify(r, q, qc, match, fuzzy)
     return {"match": match, "query": query, "total": total, "count": len(rows),
             "sightings": rows}

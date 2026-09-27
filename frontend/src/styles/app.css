@@ -1311,3 +1311,92 @@ tbody tr.selected { background: var(--surface-3); }
 .leaflet-pane path.route-casing { stroke: var(--route-casing); }
 .leaflet-pane path.route-line { stroke: var(--accent-strong); }
 .leaflet-pane path.route-line.is-gap { stroke: var(--text-muted); }
+
+/* ======================================================================
+   S7.2 — evidence visuals (decision F73): a vehicle thumbnail on every
+   read, and a watchlist hit's evidence frame with its lightbox.
+   ====================================================================== */
+
+.read-visuals { display: flex; align-items: center; gap: var(--s-2); }
+.vehicle-thumb {
+  display: block;
+  max-height: 96px;
+  max-width: 128px;
+  width: auto;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+.route-stop .vehicle-thumb { max-height: 56px; }
+.anpr-page .group-crop .group-vehicle {
+  display: block;
+  width: auto;
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  margin-bottom: var(--s-2);
+}
+
+/* the alert card's evidence thumbnail is a button into the lightbox */
+.evidence-thumb-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: zoom-in;
+  display: block;
+}
+.crop-thumb.evidence { height: 64px; }
+
+.evidence-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-4);
+  animation: evidence-in var(--t-med) var(--ease) 1; /* once, never loops */
+}
+@media (prefers-reduced-motion: reduce) {
+  .evidence-lightbox { animation: none; }
+}
+@keyframes evidence-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.evidence-frame {
+  background: var(--surface-1);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-2);
+  max-width: min(1320px, 94vw);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.evidence-frame img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(92vh - 64px);
+  object-fit: contain;
+  background: var(--surface-2);
+}
+.evidence-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  padding: var(--s-2) var(--s-3);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.evidence-why b { color: var(--text); }
+.evidence-sha { display: inline-flex; align-items: center; gap: var(--s-2); }
+.evidence-sha code {
+  user-select: all;
+  color: var(--text);
+  font-size: var(--fs-xs);
+  word-break: break-all;
+}
+.evidence-close { margin-left: auto; }

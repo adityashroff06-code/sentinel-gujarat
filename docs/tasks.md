@@ -94,7 +94,7 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S6.3 | [Adi] Submit; verify every link from a private window | Sun 27 | 1 h | |
 | S7.0 | **4K read test: which clips, which resolution (gate)** — v2.6, lane A | Sun 27 night | 45 min | |
 | S7.1 | **The analysis render** (F74) — lane A, after S7.0 | Sun 27 night | 2.5 h | |
-| S7.2 | **Evidence visuals: vehicle thumbnail on every read, full frame on a hit only** (F73) — lane B | Sun 27 night | 2.5 h | |
+| S7.2 | **Evidence visuals: vehicle thumbnail on every read, full frame on a hit only** (F73) — lane B | Sun 27 night | 2.5 h | [x] done Mon 28 ~02:45 (lane B): live hit ALERT-20260927-0013 (GJ11S7924, cam06), evidence SHA-256 = certutil; review gate 14 findings, 12 fixed incl. a HIGH SMB/NTLM path in /evidence + /crops, 2 documented (F79); F78 watchlist-delete 500 fixed |
 | S7.3 | **The alert moment: global toast with the evidence** — lane B, after S7.2 | Sun 27 night | 1.25 h | |
 | S7.4 | [Adi + Claude] Video-1 dry run with the new pieces (replaces S5.4's dry run) | Mon 28 08:30 | 1.5 h | |
 | S7.5 | [Adi] Recording and production, v2.7 run sheets (supersedes S5.4's recording) | Mon 28 10:30 | 3.5 h | |
@@ -597,7 +597,7 @@ Record the pick in the S7.6a progress block. Every later task, recording and the
 *Acceptance:* each chosen clip's MP4 plays in Chrome and VLC, 1920×1080, with the same duration as its source ± 1 frame. The JSON's distinct full plates are ≥ S7.0's count for that clip at the same width. **Spot-check 10 committed reads against their crops**, record how many are exactly right, and paste the number: this is the precision we can quote. The label is visible in every frame (scrub start, middle and end).
 *Write-off:* progress block with per-clip plates, precision, runtime and output paths. Add a row to `docs/architecture.md` **Part D** for the render: what it is (the pipeline on recorded stock footage, offline, full frame rate, labelled), what it proves (what detection, tracking and OCR produce on every frame) and what it does not prove (live throughput, where S4.1's `[measured]` rows still govern). Commit `S7.1: render — <clip> <n> plates (<k>/10 exact), …`.
 
-### S7.2 — Evidence visuals: a vehicle thumbnail on every read, a full frame on a hit only (F73) `[ ]`
+### S7.2 — Evidence visuals: a vehicle thumbnail on every read, a full frame on a hit only (F73) `[x]`
 *Lane B, after S7.6a. Owns `ml/anpr/{ocr,pipeline,sightings}.py`, `ml/worker.py`, `backend/app/main.py` (the `/evidence` route), `backend/app/routes_analytics.py`, `backend/services/{route,plate_search,reports}.py`, `frontend/src/{pages/Search.jsx,pages/Route.jsx,components/AlertCard.jsx}`, `docs/api.md`, and `tests/test_evidence.py`. Budget 2.5 h. **Restart the worker** (`python launch.py stop` then `start`) to load the change; that is expected tonight.*
 *Read first:* `docs/decisions.md` F73, F26, F46; root `CLAUDE.md`; `ml/CLAUDE.md` ("OCR on the crop, never a full frame" still holds: this task stores a frame, it never reads one); `backend/CLAUDE.md`; `frontend/CLAUDE.md` (tokens, four states, review gate); `docs/api.md` §2, §4, §7; `ml/anpr/sightings.py`; `backend/app/main.py` `crop()` (and the traversal fix in commit `69b2e4b`).
 

@@ -34,7 +34,7 @@ from backend.core import config, plates
 from backend.core import db as dbmod
 from backend.core.logging_setup import setup
 from backend.services import plate_search
-from backend.services.route import crop_url, reconstruct_route
+from backend.services.route import crop_url, evidence_url, reconstruct_route
 
 log = setup("api-analytics")
 
@@ -47,8 +47,19 @@ _SSE_KEEPALIVE_S = 15.0
 #: Generous — an analyst working a case, not a scraper; 429 over queueing.
 _limit_route = RateLimiter("route", limit=120, window_s=60.0)
 
+# The evidence sha (F73) lives in the audit trail (action='evidence.frame',
+# entity_id = the alert id), not on the alert row — the write path stays
+# append-only. audit has no index on action/entity_id and grows with every
+# audited query, so the lookup runs only for the few alerts whose sighting
+# has a frame (CASE is evaluated lazily); a whole-table scan per alert row
+# took 7.3 s for 200 alerts against 30,000 audit rows (S7.2 review).
 _ALERT_SELECT = (
-    "SELECT a.*, s.crop_path AS _crop_path, c.department, c.location_name"
+    "SELECT a.*, s.crop_path AS _crop_path, s.frame_path AS _frame_path,"
+    " CASE WHEN s.frame_path IS NOT NULL THEN"
+    "  (SELECT json_extract(au.after_json, '$.sha256') FROM audit au"
+    "    WHERE au.action = 'evidence.frame' AND au.entity_id = a.alert_id"
+    "    ORDER BY au.audit_id DESC LIMIT 1) END AS _evidence_sha256,"
+    " c.department, c.location_name"
     " FROM alerts a"
     " LEFT JOIN sightings s ON s.sighting_id = a.sighting_id"
     " LEFT JOIN cameras c ON c.camera_id = a.camera_id"
@@ -77,6 +88,8 @@ def _canonical_ts(value: str, param: str) -> str:
 def _alert_dict(row: sqlite3.Row) -> dict[str, Any]:
     d = dict(row)
     d["crop_url"] = crop_url(d.pop("_crop_path", None))
+    d["evidence_url"] = evidence_url(d.pop("_frame_path", None))
+    d["evidence_sha256"] = d.pop("_evidence_sha256", None)
     return d
 
 
@@ -180,20 +193,35 @@ def add_watchlist(
     norm = plates.normalise(entry.plate)
     if not norm:
         raise HTTPException(status_code=422, detail="plate is empty after normalisation")
-    try:
-        cur = con.execute(
-            "INSERT INTO watchlist (plate, plate_canonical, category, severity,"
-            " description, source_ref, active, added_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?)",
-            (norm, plates.canonical(norm), entry.category, entry.severity,
-             entry.description, entry.source_ref, dbmod.utcnow()),
+    existing = con.execute("SELECT * FROM watchlist WHERE plate = ?", (norm,)).fetchone()
+    if existing is not None and not existing["active"]:
+        # an entry removed after it fired alerts is kept inactive (F78);
+        # listing the plate again reactivates it with the new details
+        con.execute(
+            "UPDATE watchlist SET category = ?, severity = ?, description = ?,"
+            " source_ref = ?, active = 1, added_at = ? WHERE watchlist_id = ?",
+            (entry.category, entry.severity, entry.description, entry.source_ref,
+             dbmod.utcnow(), existing["watchlist_id"]),
         )
         con.commit()
-    except sqlite3.IntegrityError:
-        raise HTTPException(status_code=409, detail=f"'{norm}' is already on the watchlist")
+        watchlist_id = existing["watchlist_id"]
+    else:
+        try:
+            cur = con.execute(
+                "INSERT INTO watchlist (plate, plate_canonical, category, severity,"
+                " description, source_ref, active, added_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?)",
+                (norm, plates.canonical(norm), entry.category, entry.severity,
+                 entry.description, entry.source_ref, dbmod.utcnow()),
+            )
+            con.commit()
+        except sqlite3.IntegrityError:
+            raise HTTPException(status_code=409, detail=f"'{norm}' is already on the watchlist")
+        watchlist_id = cur.lastrowid
     row = dict(
-        con.execute("SELECT * FROM watchlist WHERE watchlist_id = ?", (cur.lastrowid,)).fetchone()
+        con.execute("SELECT * FROM watchlist WHERE watchlist_id = ?", (watchlist_id,)).fetchone()
     )
-    set_audit(request, entity="watchlist", entity_id=str(row["watchlist_id"]), after=row)
+    set_audit(request, entity="watchlist", entity_id=str(row["watchlist_id"]),
+              before=dict(existing) if existing is not None else None, after=row)
     return row
 
 
@@ -205,16 +233,28 @@ def delete_watchlist(
     _: str = Depends(require_evaluator),
 ):
     """Remove a watchlist entry; 404 when it does not exist. Evaluator or
-    admin (F41: watchlist add and remove)."""
+    admin (F41: watchlist add and remove). An entry that has fired alerts
+    is deactivated instead (``active = 0``: the matcher and the "plates to
+    try" ignore it) — every alert keeps the row it references, and the
+    DELETE no longer fails on that foreign key (F78)."""
     before = con.execute(
         "SELECT * FROM watchlist WHERE watchlist_id = ?", (watchlist_id,)
     ).fetchone()
     if before is None:
         raise HTTPException(status_code=404, detail="watchlist entry not found")
-    con.execute("DELETE FROM watchlist WHERE watchlist_id = ?", (watchlist_id,))
+    referenced = con.execute(
+        "SELECT 1 FROM alerts WHERE watchlist_id = ? LIMIT 1", (watchlist_id,)
+    ).fetchone() is not None
+    if referenced:
+        con.execute("UPDATE watchlist SET active = 0 WHERE watchlist_id = ?", (watchlist_id,))
+    else:
+        con.execute("DELETE FROM watchlist WHERE watchlist_id = ?", (watchlist_id,))
     con.commit()
-    set_audit(request, entity="watchlist", entity_id=str(watchlist_id), before=dict(before))
-    return {"deleted": watchlist_id}
+    after = (dict(con.execute("SELECT * FROM watchlist WHERE watchlist_id = ?",
+                              (watchlist_id,)).fetchone()) if referenced else None)
+    set_audit(request, entity="watchlist", entity_id=str(watchlist_id),
+              before=dict(before), after=after)
+    return {"deleted": watchlist_id, "deactivated": referenced}
 
 
 # --------------------------------------------------------------------- alerts

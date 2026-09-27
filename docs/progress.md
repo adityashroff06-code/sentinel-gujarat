@@ -33,7 +33,7 @@ Append a block after **every** task, in the format at the bottom. Record what wa
     - checklist 42/60;
     - the tag.
   - **Both videos are unrecorded**: no `own01` camera row exists, so the video-1 dry run never ran.
-- **Next task:** the pre-step is done (plan committed, `d26ee30`) and the lanes are running (from ~23:20 IST). **Lane B:** database pick DONE (`sentinel.db` = promoted `dryrun.db`, 618 sightings; platform restarted on the default, 5/5 alive) and **S7.6a DONE** — now **S7.2 → S7.3**. **Lane A:** S7.0 → S7.1 (its own Log blocks govern).
+- **Next task:** the pre-step is done (plan committed, `d26ee30`) and the lanes are running (from ~23:20 IST). **Lane B:** database pick DONE (`sentinel.db` = promoted `dryrun.db`, 618 sightings; platform restarted on the default, 5/5 alive), **S7.6a DONE**, **S7.2 DONE** (evidence visuals; the first real live watchlist alert, `ALERT-20260927-0013`, with its evidence frame and SHA-256; F78, F79) — now **S7.3**. Note for S7.4: removing a watchlist entry that has fired an alert now **deactivates** it (F78), and listing the plate again reactivates it. **Lane A:** S7.0 → S7.1 (its own Log blocks govern).
 - **S5.4's video-1 dry run ran 23:20–23:47 IST (Log block "S5.4 — video 1 dry run"; it supersedes "the dry run never ran" above):**
   - beats 2, 3, 7 and 8 pass through the real UI;
   - one pass gave **one** live read (`22BH0641B`, 0.87) and **no watchlist hit**, because own01 was sampled at ~0.26 fps with the CPU at 93–96 %;
@@ -2217,4 +2217,116 @@ Next:      S7.4 with the run-sheet corrections made in this commit
            for the take: S7.0's three plus 22BH0641B (the only plate own01
            read, 0.87) and MH02EZ1785. [Adi] Keep the take's CPU free: no
            Claude session or S7.1 render running while recording.
+```
+
+```
+## S7.2 — DONE (lane B; evidence visuals, F73) — plus F78 and a launch.py test fix
+When:      2026-09-28 00:05–02:10 IST, laptop lane B
+Observed:  BUILT as the task block says. ml: PlateRead gains vehicle_px /
+           evidence / vehicle_xyxy, set only in AnprPipeline.process (ocr.py
+           stays frame-free); the whole frame is JPEG-encoded (<= 1280 px,
+           q80, raw) only when a read becomes its track's best and the old
+           best drops it; record_sighting(vehicle_crop=) writes
+           data/crops/<cam>/<id>_v.jpg; worker._alert_job = create_alert,
+           then (only if it returned an alert) write_evidence: vehicle box
+           red 3 px, plate box amber, caption bar (alert id · plate · match
+           · conf · camera · IST), data/evidence/<cam>/<alert_id>.jpg,
+           SHA-256 of the written bytes, frame_path UPDATE, audit row
+           evidence.frame - one writer job, inside a SAVEPOINT. API:
+           GET /evidence/{path} (auth, is_relative_to guard, image/jpeg,
+           Cache-Control private, no-store); vehicle_url on search rows and
+           route stops; evidence_url + evidence_sha256 on alert rows (list
+           and SSE; sha from the audit row). UI: vehicle thumbnail beside the
+           crop in Search rows (<= 96 px) and the plate card (<= 200 px) and
+           on Route stops; AlertCard shows the evidence frame and opens a
+           lightbox (full frame, copyable SHA-256, "stored because: watchlist
+           match (<type>) · <alert id>"); demo rows fall back to the crop.
+           Docs in the same commit: api.md §2/§4/§7, HLD §1.4 row 2 + §4.3
+           step 4, architecture.md, README; WAN figures unchanged.
+           Deviation (reason: the change needs them; neither lane owns
+           them): backend/app/schemas.py (the response models must declare
+           the new fields or pydantic drops them), frontend/vite.config.js
+           (dev proxy for /evidence), launch.py (the unrelated failing
+           test), tests/test_analytics_api.py (the DELETE shape, F78).
+           registry-api.json re-exported (42 operations, 36 paths).
+           LIVE ACCEPTANCE (cam06, platform on data/sentinel.db, worker
+           restarted 00:54 IST to load the change):
+           - every new cam06 read has a _v.jpg: sightings 701-711 all have
+             one (701 = 11,685 B);
+           - watchlist: GJ11S7924 (6 reads today), GJ01RS9114, GJ03AZ0644
+             added stolen_vehicle/high at 19:32:32Z (read 701 of GJ11S7924
+             came 22 s before, so no alert - correct);
+           - LIVE ALERT ALERT-20260927-0013: GJ11S7924 exact, cam06, high,
+             fired_at 19:41:24Z (01:11:24 IST), sighting 708 (conf 0.93);
+             evidence data/evidence/cam06/ALERT-20260927-0013.jpg, 119,997 B;
+             audit sha256 08b8cc8886181eb1ae675cd9b5298cf3dc9df8988db8bd5787e8364b47ee67fb
+             = certutil -hashfile ... SHA256 (identical);
+           - data/evidence holds 1 file = 1 live watchlist alert;
+           - test entries removed afterwards: 331 and 332 deleted; 330
+             (GJ11S7924, it fired ALERT-...-0013) kept inactive per F78 -
+             PRAGMA foreign_key_check [] after.
+           TESTS: tests/test_evidence.py 14 (the task's five, incl.
+           test_full_frame_written_only_for_watchlist_hits, plus nine
+           regressions from the review and F78); smoke 98/98 (was 92:
+           evidence thumbnail on the alert card, lightbox portalled to
+           <body> with the 64-hex SHA-256 and the reason, a loaded Search
+           <img> for vehicle_url, the synthetic evidence undone before the
+           hero shots); npm build + lint clean.
+           SUITE: 431 passed, 0 failed, 447.9 s (428 before the review
+           fixes; the whole tests/ folder, lane A's test file included).
+           REVIEW GATE (F53): run as two Workflow fan-outs of lens agents
+           with two adversarial verifiers per finding - NOT the /code-review
+           and /security-review skills themselves (the protocol asks for
+           the skills that ran to be named: these did). Contract lens (5
+           findings; 2 confirmed 2-0, 3 unverified when the verifiers hit a
+           usage limit, checked by hand): all fixed - (1) a hit whose
+           top-confidence read misspelt the plate stored NO frame, silently
+           (the commit now borrows the track's held frame; EvidenceJpeg
+           carries its own boxes; a hit with no frame logs a warning);
+           (2) the smoke wrote synthetic files under real cam06 ids (now
+           data/evidence/smoke/ and sighting 990000001); (3) api.md's
+           route example lacked vehicle_url; (4) a failure between
+           frame_path and the audit insert committed half the evidence (now
+           a SAVEPOINT, and the file is removed); (5) a deduped read never
+           supplied a missing thumbnail. Correctness + security lenses (9
+           findings, all 9 upheld 2-0): 7 fixed - HIGH: /evidence and the
+           older /crops resolved the request path before the containment
+           check, so "%5C%5Chost%5Cshare%5Cx.jpg" made the server open an
+           outbound SMB connection (NTLM hash leak) for any signed-in
+           viewer - both now accept only "<folder>/<name>.jpg" before any
+           filesystem call (all 703 crop files and 667 stored crop_paths
+           checked to match); the evidence_sha256 audit lookup scanned the
+           whole audit table per alert row (7.3 s for 200 x 30k, measured
+           by the reviewer) - now only for alerts with a frame; the
+           lightbox inherited an acked card's 0.55 opacity and stacking
+           context - now a portal; a failed COMMIT after the frame was
+           written left an orphan full frame (x2 findings) - the worker
+           removes it unless the wait merely timed out; the smoke left a
+           synthetic frame on a demo alert for hero-command.png - undone
+           right after its checks; the Vite dev proxy lacked /evidence.
+           2 documented, not rebuilt (the same finding from both lenses):
+           media files are keyed by per-database ids in one shared data/
+           tree and vehicle_url comes from file existence - F79 (one
+           analysing database per checkout; nothing collides today).
+Surprise:  1. DELETE /api/watchlist/{id} answered 500 for any entry that had
+           fired an alert (alerts.watchlist_id FK, foreign_keys on) - S7.4's
+           reset step would have hit it on the Watchlist screen. Fixed (F78):
+           an entry with alerts is deactivated, re-adding reactivates it;
+           regression test_removing_a_watchlist_entry_that_fired_an_alert_
+           deactivates_it; test_analytics_api's exact-shape assertion now
+           includes deactivated.
+           2. The full suite had 1 failure unrelated to S7.2:
+           test_launch.py::test_uptime_reports_our_processes_and_refuses_
+           reused_pids - the uptime classifier counted any process run by
+           the repo's .venv python as ours (the repo path is in its
+           executable), so a reused pid read "up". launch.py's _UPTIME_PY
+           now also requires the entry point (-m backend.app / -m ml); the
+           live status line still reads "api up … | worker up …".
+           3. Every worker restart tonight got RTSP 401 on all five cameras
+           for ~5 min (00:54-00:59 IST, and again after 01:44 IST) and
+           recovered on backoff - the gateway refusing reconnects while the
+           old sessions age out, not our change (a 401 wave was also seen
+           25 Sep). So each restart costs ~5 min of pulls: restart only
+           when code must load, never just before a take.
+Next:      S7.3 (lane B): the alert toast.
 ```

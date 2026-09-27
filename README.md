@@ -76,7 +76,7 @@ One stream pull per camera feeds three pipelines, and each has a different answe
 | Pipeline | What it does | What it persists | In the demonstrated system |
 |---|---|---|---|
 | **1. Live view** | Relays video to the control room | nothing: a self-overwriting 20-second relay window | **Built** |
-| **2. Analytics** | Motion gate → detect → track → crop → OCR → watchlist match | a text sighting row and a plate crop of about 2 KB | **Built** |
+| **2. Analytics** | Motion gate → detect → track → crop → OCR → watchlist match | a text sighting row, a plate crop of about 2 KB and a ~10 KB vehicle thumbnail kept on the node; **on a watchlist hit only**, one full annotated frame with its SHA-256 in the audit trail | **Built** |
 | **3. Evidence** | Fixed-size rolling buffer per camera, promoted on a match | the promoted clip, its SHA-256 and an audit row | **Designed and validated separately, not built** |
 
 Watching is not storing. This is a civil-liberties position before it is a storage optimisation, and it is also what makes the design affordable at 80,000 cameras: carrying raw video to one place would need about 240 Gbps; carrying a text row and a plate crop per read needs about 23 Mbps `[model]`.

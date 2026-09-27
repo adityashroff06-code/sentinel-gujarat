@@ -225,6 +225,9 @@ class SightingOut(BaseModel):
     department: str | None = None
     location_name: str | None = None
     crop_url: str | None = None
+    # the read's vehicle thumbnail (<cam>/<id>_v.jpg, F73); null when the
+    # file is absent (rows written before S7.2, demo rows)
+    vehicle_url: str | None = None
     # how this row matched the plate query (null without one): exact |
     # ambiguity | fuzzy | contains; distance 0 for exact/ambiguity, the
     # confusion-weighted distance for fuzzy, null for contains (§6)
@@ -288,6 +291,8 @@ class RouteStopOut(BaseModel):
     match_distance: float
     suspect: bool
     crop_url: str | None = None
+    # the stop's vehicle thumbnail (F73); null when the file is absent
+    vehicle_url: str | None = None
     elapsed_from_previous_s: int | None = None
     implied_speed_kmh: float | None = None
 
@@ -338,6 +343,10 @@ class WatchlistOut(BaseModel):
 
 class WatchlistDeleteOut(BaseModel):
     deleted: int
+    # true when the entry has fired alerts: it is deactivated (active = 0,
+    # the matcher ignores it) instead of deleted, so every alert keeps the
+    # watchlist row it references (F78)
+    deactivated: bool = False
 
 
 class AlertOut(BaseModel):
@@ -364,6 +373,10 @@ class AlertOut(BaseModel):
     department: str | None = None
     location_name: str | None = None
     crop_url: str | None = None
+    # a watchlist hit's annotated full frame and its audit-trail SHA-256
+    # (F73); null for zone alerts, demo alerts and pre-S7.2 rows
+    evidence_url: str | None = None
+    evidence_sha256: str | None = None
 
 
 class EventOut(BaseModel):

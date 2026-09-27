@@ -29,15 +29,17 @@ DEDUPE_SEEN_S = 60.0
 DEDUPE_WALL_S = 600.0
 _CROP_MAX_WIDTH = 160
 _CROP_JPEG_QUALITY = 70
+_VEHICLE_MAX_WIDTH = 240  # F73: the pipeline already sizes it; enforced here too
 
 
-def _save_crop(camera_id: str, sighting_id: int, crop: np.ndarray) -> str | None:
+def _save_crop(camera_id: str, sighting_id: int, crop: np.ndarray,
+               *, suffix: str = "", max_width: int = _CROP_MAX_WIDTH) -> str | None:
     if crop is None or crop.size == 0:
         return None
-    if crop.shape[1] > _CROP_MAX_WIDTH:
-        scale = _CROP_MAX_WIDTH / crop.shape[1]
-        crop = cv2.resize(crop, (_CROP_MAX_WIDTH, max(1, int(crop.shape[0] * scale))))
-    rel = f"data/crops/{camera_id}/{sighting_id}.jpg"
+    if crop.shape[1] > max_width:
+        scale = max_width / crop.shape[1]
+        crop = cv2.resize(crop, (max_width, max(1, int(crop.shape[0] * scale))))
+    rel = f"data/crops/{camera_id}/{sighting_id}{suffix}.jpg"
     path = REPO_ROOT / rel
     path.parent.mkdir(parents=True, exist_ok=True)
     cv2.imwrite(str(path), crop, [cv2.IMWRITE_JPEG_QUALITY, _CROP_JPEG_QUALITY])
@@ -61,6 +63,7 @@ def record_sighting(
     track_id: str | None = None,
     crop: np.ndarray | None = None,
     frame_path: str | None = None,
+    vehicle_crop: np.ndarray | None = None,
 ) -> tuple[int, bool]:
     """Insert (or dedupe into) a sighting; returns ``(sighting_id, inserted)``.
 
@@ -70,6 +73,11 @@ def record_sighting(
     at write time (coercion never changes it). The caller owns *provenance* (``live`` for real pulls,
     ``test`` for replay, ``demo`` for the seeder — F26) and commits via
     its writer job; this function does not commit.
+
+    *vehicle_crop* (F73) is the read's vehicle thumbnail (plate box already
+    drawn by the pipeline); it is written beside the plate crop as
+    ``data/crops/<cam>/<id>_v.jpg`` with no schema change — the API derives
+    ``vehicle_url`` from the file's existence.
     """
     canonical = plates.canonical(plate)
     seen_iso, wall_iso = _iso(seen_at), _iso(wall_time)
@@ -83,10 +91,17 @@ def record_sighting(
     ):
         existing_wall = datetime.fromisoformat(row["wall_time"])
         if abs((wall_time.astimezone(timezone.utc) - existing_wall).total_seconds()) <= DEDUPE_WALL_S:
+            existing_id = int(row["sighting_id"])
             if confidence > row["confidence"]:
                 con.execute("UPDATE sightings SET confidence = ? WHERE sighting_id = ?",
-                            (confidence, row["sighting_id"]))
-            return int(row["sighting_id"]), False
+                            (confidence, existing_id))
+            # a row written without a thumbnail (e.g. just before a worker
+            # restart) takes the first one a later read brings (F73)
+            if vehicle_crop is not None and not (
+                    REPO_ROOT / f"data/crops/{camera_id}/{existing_id}_v.jpg").is_file():
+                _save_crop(camera_id, existing_id, vehicle_crop,
+                           suffix="_v", max_width=_VEHICLE_MAX_WIDTH)
+            return existing_id, False
 
     cur = con.execute(
         "INSERT INTO sightings (plate, plate_raw, plate_canonical, confidence,"
@@ -103,4 +118,7 @@ def record_sighting(
         if crop_path:
             con.execute("UPDATE sightings SET crop_path = ? WHERE sighting_id = ?",
                         (crop_path, sighting_id))
+    if vehicle_crop is not None:
+        _save_crop(camera_id, sighting_id, vehicle_crop,
+                   suffix="_v", max_width=_VEHICLE_MAX_WIDTH)
     return sighting_id, True

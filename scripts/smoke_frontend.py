@@ -361,6 +361,82 @@ def insert_live_alert():
         con.close()
 
 
+_EVIDENCE_FILES: list[Path] = []  # written by attach_evidence_visuals; cleaned in main()
+# The synthetic files land in the repo's shared data/ tree (the API serves
+# from there) while the hosted platform may be running on the same disk, so
+# they must never take a path a real row can resolve to: the evidence frame
+# goes under data/evidence/smoke/ (no real camera is called "smoke"), and
+# the thumbnail belongs to a temp-DB sighting whose id no real cam06 row
+# will reach.
+SMOKE_VEHICLE_SID = 990_000_001
+
+
+def attach_evidence_visuals(alert_row):
+    """S7.2 (F73): run the REAL ``ml.worker.write_evidence`` for the fresh
+    alert against the temp DB, and add one temp-DB cam06 sighting with a
+    vehicle thumbnail file, so the UI paths (the alert card's evidence
+    thumbnail and lightbox, the Search ``vehicle_url`` <img>) are exercised
+    end to end. undo_smoke_evidence() reverts all of it once Search has
+    been checked; main()'s cleanup removes the files again if a check
+    failed first."""
+    import cv2
+    import numpy as np
+
+    from backend.core import db as dbmod
+    from ml.anpr.pipeline import EvidenceJpeg
+    from ml.worker import write_evidence
+
+    frame = np.full((360, 640, 3), 32, dtype=np.uint8)
+    cv2.rectangle(frame, (200, 120), (420, 260), (60, 60, 160), -1)
+    ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+    assert ok
+    vehicle_path = CROPS_DIR / "cam06" / f"{SMOKE_VEHICLE_SID}_v.jpg"
+    vehicle_path.parent.mkdir(parents=True, exist_ok=True)
+    cv2.imwrite(str(vehicle_path), frame[120:260, 200:420])
+    _EVIDENCE_FILES.append(vehicle_path)
+    con = dbmod.connect()
+    try:
+        from backend.core import plates
+
+        now = dbmod.utcnow()
+        con.execute(
+            "INSERT INTO sightings (sighting_id, plate, plate_raw, plate_canonical,"
+            " confidence, camera_id, seen_at, wall_time, clock_source, provenance,"
+            " created_at) VALUES (?, 'GJ01AB1234', 'GJ01AB1234', ?, 0.93,"
+            " 'cam06', ?, ?, 'replay', 'test', ?)",
+            (SMOKE_VEHICLE_SID, plates.canonical("GJ01AB1234"), now, now, now))
+        rel = write_evidence(
+            con, alert=dict(alert_row), camera_id="smoke",
+            sighting_id=alert_row["sighting_id"], confidence=0.93,
+            evidence=EvidenceJpeg(jpeg=buf.tobytes(), scale=1.0,
+                                  plate_bbox=(260, 200, 120, 30),
+                                  vehicle_xyxy=(200, 120, 420, 260)))
+        con.commit()
+    finally:
+        con.close()
+    _EVIDENCE_FILES.append(REPO / rel)
+
+
+def undo_smoke_evidence(alert_row) -> None:
+    """Undo attach_evidence_visuals once its checks have run: drop the
+    extra temp-DB sighting, clear the demo sighting's frame_path and delete
+    both files now. Otherwise the later hero screenshots (hero-command.png
+    goes on the deck) would show a synthetic "evidence frame" on a demo
+    alert."""
+    from backend.core import db as dbmod
+
+    con = dbmod.connect()
+    try:
+        con.execute("DELETE FROM sightings WHERE sighting_id = ?", (SMOKE_VEHICLE_SID,))
+        con.execute("UPDATE sightings SET frame_path = NULL WHERE sighting_id = ?",
+                    (alert_row["sighting_id"],))
+        con.commit()
+    finally:
+        con.close()
+    for p in _EVIDENCE_FILES:
+        p.unlink(missing_ok=True)
+
+
 def check_anpr_search(page) -> None:
     """ANPR search lane (25 Sep), with the demo seed injected: the hero
     typed with an OCR look-alike (GJ01A81234 — 8 for B) in ANPR-tolerant
@@ -1044,6 +1120,52 @@ def main() -> int:
             )
             page.screenshot(path=str(SCREENS / "s33-alerts.png"), full_page=True)
 
+            # --- S7.2 evidence visuals (F73): thumbnail + lightbox --------
+            attach_evidence_visuals(new_alert)
+            page.reload()
+            page.wait_for_selector(card_sel, timeout=15000)
+            check(
+                page.locator(f"{card_sel} .evidence-thumb-btn img").count() == 1,
+                "alert card with evidence_url shows the evidence frame thumbnail",
+            )
+            page.click(f"{card_sel} .evidence-thumb-btn")
+            page.wait_for_selector(".evidence-lightbox", timeout=5000)
+            check(
+                page.evaluate(
+                    "document.querySelector('.evidence-lightbox').parentElement === document.body"),
+                "evidence lightbox is portalled to <body> (never faded by an acked card)",
+            )
+            sha_text = page.locator(".evidence-lightbox .evidence-sha code").inner_text().strip()
+            check(
+                len(sha_text) == 64,
+                f"evidence lightbox shows the 64-hex SHA-256 (got {len(sha_text)} chars)",
+            )
+            check(
+                "watchlist match" in page.locator(".evidence-lightbox .evidence-why").inner_text(),
+                "evidence lightbox says why the frame was stored",
+            )
+            page.keyboard.press("Escape")
+            page.wait_for_selector(".evidence-lightbox", state="detached", timeout=5000)
+            # the Search row for the same sighting renders the vehicle <img>
+            page.goto(f"{BASE}/search")
+            page.fill("#s-plate", "GJ01AB1234")
+            page.press("#s-plate", "Enter")
+            page.wait_for_selector(".search-table .vehicle-thumb", timeout=15000)
+            loaded_vehicle = page.locator(".search-table .vehicle-thumb").evaluate_all(
+                "imgs => imgs.filter(i => i.naturalWidth > 0).length"
+            )
+            check(
+                loaded_vehicle >= 1,
+                f"a Search row renders a loaded <img> for vehicle_url ({loaded_vehicle})",
+            )
+            undo_smoke_evidence(new_alert)
+            page.goto(f"{BASE}/alerts")
+            page.wait_for_selector(card_sel, timeout=15000)
+            check(
+                page.locator(f"{card_sel} .evidence-thumb-btn").count() == 0,
+                "the smoke's synthetic evidence is undone before the hero screenshots",
+            )
+
             # --- Live Wall: one pull per visible tile, paging destroys ---
             playlist_re = re.compile(r"/api/hls/([^/]+)/live\.m3u8")
             hls_re = re.compile(r"/api/hls/([^/]+)/")
@@ -1372,6 +1494,11 @@ def main() -> int:
         shutil.rmtree(_TMP, ignore_errors=True)
         # the throwaway crop written for the demo rows (attach_demo_crops)
         shutil.rmtree(CROPS_DIR / "smoke", ignore_errors=True)
+        # the evidence visuals written for the fresh alert (S7.2) — removed
+        # so data/evidence keeps exactly one file per real live alert (F73)
+        for p in _EVIDENCE_FILES:
+            p.unlink(missing_ok=True)
+        shutil.rmtree(REPO / "data" / "evidence" / "smoke", ignore_errors=True)
 
     print(f"\nscreenshots: {SCREENS}")
     print(f"SMOKE PASS — {len(_passed)} assertions green")

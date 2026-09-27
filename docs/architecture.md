@@ -50,7 +50,7 @@ CAMERA GRID ──── ONE pull per camera (HLS or RTSP/TCP) ────► I
 | Pipeline | Persists | Does not persist |
 |---|---|---|
 | 1 — Live view | nothing | all video passing through |
-| 2 — Analytics | sighting rows (text) + plate crop (~2 KB) | frames, full-frame JPEGs |
+| 2 — Analytics | sighting rows (text) + plate crop (~2 KB) + a ~10 KB vehicle thumbnail kept on the node, and — for a watchlist hit only — one full annotated frame, SHA-256 in the audit trail (F73) | frames of non-matching traffic; any full frame without a logged watchlist match |
 | 3 — Evidence | promoted clip + audit row | the rolling buffer (self-overwriting) |
 
 **The governing principle: watching is not the same as storing.** Video becomes permanent only where a specific, logged, auditable watchlist match justifies it. This is a civil-liberties position, not only an optimisation, and it maps onto the bonus criterion for privacy protection and auditability. State it in the deck.
