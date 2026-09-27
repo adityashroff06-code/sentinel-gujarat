@@ -98,7 +98,7 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S7.3 | **The alert moment: global toast with the evidence** — lane B, after S7.2 | Sun 27 night | 1.25 h | |
 | S7.4 | [Adi + Claude] Video-1 dry run with the new pieces (replaces S5.4's dry run) | Mon 28 08:30 | 1.5 h | |
 | S7.5 | [Adi] Recording and production, v2.7 run sheets (supersedes S5.4's recording) | Mon 28 10:30 | 3.5 h | |
-| S7.6 | S7.6a case-insensitive usernames (lane B, first; F76) · S7.6b [Adi] hosting go-live, the S3.5 remainder | Sun 27 night / Mon 28 09:00 | 20 min + 1 h | |
+| S7.6 | S7.6a case-insensitive usernames (lane B, first; F76) · S7.6b [Adi] hosting go-live, the S3.5 remainder | Sun 27 night / Mon 28 09:00 | 20 min + 1 h | [~] S7.6a [x] done Sun 27 night (lane B, incl. the database pick — sentinel.db = promoted dryrun.db, 618 sightings; auth 27 green); S7.6b open [Adi] |
 | S7.7 | [Adi + Claude] Close-out and submit (S5.5 remainder + S6.3) — **by 16:00 IST** | Mon 28 14:00 | 2 h | |
 
 Budgets total ≈ 53 h of sessions over Mon–Sat (v2.3 added about 6 h: S3.0, S3.5, S3.6, S3.7, S6.1b; v2.4 adds 15 min to S3.7 for the active-tier pick; v2.5 removes S4.2, S4.3 and the pick (≈ 6.25 h) and adds S3.3b (1.5 h), and the cloud lane runs beside the laptop lane (F57)). They are session budgets, not promises: when a session overruns, the cut order below decides what goes, never the documents.
@@ -704,8 +704,8 @@ If the watch plate is not read in two runs, take the plate `own01` did read with
 - **Watch every frame** of both exports for a credential (address bar, terminal, `.env`, password field, a URL with `user:pass@`).
 *Acceptance:* both links play from a private window on another network. Durations and links are written into `docs/progress.md` (links only; never a password).
 
-### S7.6 — Hosting: the login fix and the evaluator account `[ ]`
-**S7.6a — case-insensitive usernames (F76)** — *Lane B, first. Owns `backend/app/auth.py`, `backend/tools/users.py` and `tests/test_auth.py`. 20 min.*
+### S7.6 — Hosting: the login fix and the evaluator account `[~]` *(S7.6a done Sun 27 night; S7.6b is [Adi] Mon 09:00)*
+**S7.6a — case-insensitive usernames (F76)** `[x]` — *Lane B, first. Owns `backend/app/auth.py`, `backend/tools/users.py` and `tests/test_auth.py`. 20 min.*
 - The login lookup becomes `WHERE username = ? COLLATE NOCASE`.
 - `users add` refuses a name that differs from an existing one only by case.
 - `users passwd` and `users disable` match case-insensitively.

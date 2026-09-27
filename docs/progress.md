@@ -33,7 +33,7 @@ Append a block after **every** task, in the format at the bottom. Record what wa
     - checklist 42/60;
     - the tag.
   - **Both videos are unrecorded**: no `own01` camera row exists, so the video-1 dry run never ran.
-- **Next task:** [Adi] the Phase 7 pre-step (power plan, commit this plan). Then, in parallel: **S7.0** (lane A), and on lane B the **database pick** (promote `dryrun.db` to `sentinel.db`, the default) followed by **S7.6a**.
+- **Next task:** the pre-step is done (plan committed, `d26ee30`) and the lanes are running (from ~23:20 IST). **Lane B:** database pick DONE (`sentinel.db` = promoted `dryrun.db`, 618 sightings; platform restarted on the default, 5/5 alive) and **S7.6a DONE** — now **S7.2 → S7.3**. **Lane A:** S7.0 → S7.1 (its own Log blocks govern).
 - **Blockers:** none. The portal's cut-off time on the 28th is unknown: plan against 18:00 and check it in the morning (F77).
 
 ## Previous state (27 Sep 2026, Sunday morning — S6.1b code half done in the cloud)
@@ -2067,4 +2067,42 @@ Surprise:  The looped local feeds were never analysed after F67, so the
            archive clips could not have produced reads on the platform;
            the survey's own ceiling was the 1080p downscale.
 Next:      [Adi] Phase 7 pre-step; then S7.0 (lane A) and S7.6a (lane B).
+```
+
+```
+## S7.6a — DONE (lane B; includes lane B's first action, the database pick)
+When:      2026-09-27 23:20–23:59 IST, laptop lane B (Phase 7, F76/F77)
+Observed:  DATABASE PICK (the plan's default, executed as written):
+           platform stopped; backup_db.py verified snapshot of the closed
+           sentinel.db (472 rows verified, kept 2 periodic); both files
+           copied to data/backup/ as sentinel-pre-promote-20260927.db and
+           dryrun-pre-promote-20260927.db; no -wal/-shm existed; dryrun.db
+           copied over sentinel.db. Counts before the stop: dryrun 617
+           sightings (593 live, 279 plates, 59 cameras incl. own01
+           'active'), sentinel 472 (448 live, 250 plates, 58 cameras).
+           Fresh `python launch.py start`, no SENTINEL_DB override;
+           status now reads sightings 618 (279 unique plates, 24 demo) —
+           one write landed between the count and the stop — cameras 59
+           rows / 6 active tier, 5/5 sandbox cameras alive, feeds 28/28,
+           api :8000 healthy. own01 came over as an 'active' row with no
+           publisher running; this start's worker set is the 5 sandbox
+           cameras (own01 absent from worker stats). S7.4 owns own01.
+           S7.6a: login lookup is now `WHERE username = ? COLLATE NOCASE`
+           (auth.py); users CLI `add` refuses a case variant BEFORE
+           prompting for a password, `passwd`/`disable` match NOCASE
+           (tools/users.py). Deviation, reason recorded: POST /api/users
+           (routes_users.py, owned by neither lane) got the same guard,
+           409 on a case variant — with a NOCASE login lookup, a
+           case-variant row created through the API would make the login
+           match two rows. docs/api.md §9 +1 line (stored spelling is
+           canonical). Tests: 4 new F76 regressions; tests/test_auth.py
+           27 passed in 67 s.
+           NOTE: the running API (started 23:47 IST) predates this edit;
+           the fix goes live at S7.2's planned restart. Until then ADITYA
+           must be typed in capitals.
+Surprise:  dryrun.db was 145 live reads ahead of sentinel.db (617 vs 472),
+           not the 94 counted at 22:40 — cam06 kept reading at night. And
+           dryrun.db holds an own01 camera row ('active' tier) that the
+           22:40 review said did not exist; it rode in with the promote.
+Next:      S7.2 (lane B): evidence visuals, then S7.3.
 ```

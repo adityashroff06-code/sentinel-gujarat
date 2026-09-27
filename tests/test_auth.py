@@ -448,6 +448,76 @@ def test_users_cli_add_passwd_disable_list(app, monkeypatch, capsys):
     assert r.status_code == 401
 
 
+# ------------------------------------- F76: usernames match case-insensitively
+
+def test_login_username_is_case_insensitive(app):
+    """Regression (F76, found 27 Sep): 'ADITYA' stored, 'Aditya' typed with
+    the right password → 200. The throttle keys on the lower-cased name, so
+    the case-sensitive lookup locked the real account without matching it."""
+    con = dbmod.connect()
+    con.execute(
+        "INSERT INTO users (username, password_hash, role, active, created_at)"
+        " VALUES ('ADITYA', ?, 'admin', 1, ?)",
+        (PW_HASH, dbmod.utcnow()),
+    )
+    con.commit()
+    con.close()
+    c = _client(app)
+    r = c.post("/api/auth/login", json={"username": "Aditya", "password": PW})
+    assert r.status_code == 200, r.text
+    # the stored spelling is canonical: it is what the session carries
+    assert r.json()["username"] == "ADITYA"
+    assert c.get("/api/auth/me").json()["username"] == "ADITYA"
+    success = [x for x in _audit_rows() if x["action"] == "auth.login.success"]
+    assert success and success[-1]["actor"] == "ADITYA"
+    # the wrong password is still refused whatever the case
+    bad = _client(app).post(
+        "/api/auth/login", json={"username": "aditya", "password": WRONG})
+    assert bad.status_code == 401
+
+
+def test_users_add_refuses_case_variant(app, monkeypatch, capsys):
+    """F76: `users add` refuses a name that differs only by case, before
+    ever prompting for a password."""
+    import backend.tools.users as users_cli
+
+    def _never_prompt(prompt=""):
+        raise AssertionError("prompted for a password on a doomed add")
+
+    monkeypatch.setattr(users_cli.getpass, "getpass", _never_prompt)
+    assert users_cli.main(["add", "EVA", "--role", "viewer"]) == 1
+    err = capsys.readouterr().err
+    assert "'eva' already exists" in err and "case-insensitively" in err
+
+
+def test_users_passwd_and_disable_match_case_insensitively(app, monkeypatch):
+    """F76: `passwd` and `disable` find the account whatever case is typed."""
+    import backend.tools.users as users_cli
+
+    answers = iter(["case-Passw0rd", "case-Passw0rd"])
+    monkeypatch.setattr(users_cli.getpass, "getpass", lambda prompt="": next(answers))
+    assert users_cli.main(["passwd", "EVA"]) == 0
+    _login_as(app, "eva", "case-Passw0rd")
+
+    assert users_cli.main(["disable", "Eva"]) == 0
+    r = _client(app).post(
+        "/api/auth/login", json={"username": "eva", "password": "case-Passw0rd"})
+    assert r.status_code == 401
+
+
+def test_api_create_user_refuses_case_variant(app):
+    """F76: POST /api/users answers 409 for a case variant — otherwise the
+    NOCASE login lookup would match two rows."""
+    c = _login_as(app, "ada")
+    r = c.post(
+        "/api/users",
+        json={"username": "EVA", "password": "brand-new-Pw1", "role": "viewer"},
+        headers=ORIGIN,
+    )
+    assert r.status_code == 409
+    assert "case-insensitively" in r.json()["detail"]
+
+
 # ------------------------------------------------------------------ route walk
 
 OPEN_PATHS = {"/", "/api/health", "/api/auth/login"}

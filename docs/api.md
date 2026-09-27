@@ -366,6 +366,7 @@ CREATE INDEX idx_sessions_user ON sessions(user_id, expires_at);
 ```
 
 - **Passwords** are never stored, logged, returned or placed in `.env`. Accounts come from `python -m backend.tools.users add <username> --role <role>`, which prompts for the password. The same tool has `passwd`, `disable` and `list` (names and roles only).
+- **Usernames match case-insensitively** (F76): the login lookup, `users add`'s duplicate check, `passwd`, `disable` and `POST /api/users` all compare `COLLATE NOCASE`; creating a name that differs from an existing one only by case is refused (409 / exit 1). The stored spelling is canonical — it is what sessions, audit rows and `/api/auth/me` carry.
 - **`audit.actor` is the username** once a session exists (the role alone is kept for key-authenticated calls). Login success, login failure and logout each write an audit row; a failure row never contains the password or the attempted value.
 - **Login throttle:** 5 failures for one username, or from one address, lock further attempts for 15 minutes; the lock is in the database, so a restart does not clear it.
 - **Rate limits** on the expensive reads — the route query, the report exports and the HLS relay — per session, returning `429` rather than queueing.

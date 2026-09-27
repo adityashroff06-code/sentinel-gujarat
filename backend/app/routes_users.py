@@ -95,7 +95,19 @@ def create_user(
     con: sqlite3.Connection = Depends(get_db),
     _: str = Depends(require_admin),
 ):
-    """Create an account; 409 on a duplicate username."""
+    """Create an account; 409 on a duplicate username — including a name
+    that differs from an existing one only by case (F76: the login lookup
+    is COLLATE NOCASE, so case variants would collide)."""
+    clash = con.execute(
+        "SELECT username FROM users WHERE username = ? COLLATE NOCASE",
+        (body.username,),
+    ).fetchone()
+    if clash is not None:
+        raise HTTPException(
+            status_code=409,
+            detail=f"user '{clash['username']}' already exists"
+                   " (usernames match case-insensitively)",
+        )
     try:
         con.execute(
             "INSERT INTO users (username, password_hash, role, active, created_at)"

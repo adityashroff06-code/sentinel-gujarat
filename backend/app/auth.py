@@ -363,9 +363,12 @@ def login(body: LoginIn, request: Request, response: Response):
                 detail="too many failed logins; locked for 15 minutes",
                 headers={"Retry-After": str(_LOCK_MINUTES * 60)},
             )
+        # COLLATE NOCASE (F76): the throttle keys on the lower-cased name,
+        # so a case-sensitive lookup here let a mistyped case lock out the
+        # real account without ever matching it.
         user = con.execute(
             "SELECT user_id, username, password_hash, role, active FROM users"
-            " WHERE username = ?",
+            " WHERE username = ? COLLATE NOCASE",
             (username,),
         ).fetchone()
         stored = user["password_hash"] if user is not None else _get_dummy_hash()

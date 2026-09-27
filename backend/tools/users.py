@@ -39,7 +39,20 @@ def prompt_password() -> str:
 
 
 def add(con: sqlite3.Connection, username: str, role: str) -> int:
-    """Create *username* with *role*; prompts for the password."""
+    """Create *username* with *role*; prompts for the password. Refuses a
+    name that differs from an existing one only by case (F76: the login
+    lookup is COLLATE NOCASE, so case variants would collide) — checked
+    before the prompt, so a doomed add never asks for a password."""
+    existing = con.execute(
+        "SELECT username FROM users WHERE username = ? COLLATE NOCASE", (username,)
+    ).fetchone()
+    if existing is not None:
+        print(
+            f"user '{existing['username']}' already exists"
+            " (usernames match case-insensitively)",
+            file=sys.stderr,
+        )
+        return 1
     password_hash = passwords.hash_password(prompt_password())
     try:
         con.execute(
@@ -56,7 +69,10 @@ def add(con: sqlite3.Connection, username: str, role: str) -> int:
 
 
 def _user_id(con: sqlite3.Connection, username: str) -> int | None:
-    row = con.execute("SELECT user_id FROM users WHERE username = ?", (username,)).fetchone()
+    """Resolve a username to its id, matching case-insensitively (F76)."""
+    row = con.execute(
+        "SELECT user_id FROM users WHERE username = ? COLLATE NOCASE", (username,)
+    ).fetchone()
     return None if row is None else int(row["user_id"])
 
 
