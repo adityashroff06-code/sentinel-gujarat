@@ -34,6 +34,12 @@ Append a block after **every** task, in the format at the bottom. Record what wa
     - the tag.
   - **Both videos are unrecorded**: no `own01` camera row exists, so the video-1 dry run never ran.
 - **Next task:** the pre-step is done (plan committed, `d26ee30`) and the lanes are running (from ~23:20 IST). **Lane B:** database pick DONE (`sentinel.db` = promoted `dryrun.db`, 618 sightings; platform restarted on the default, 5/5 alive) and **S7.6a DONE** — now **S7.2 → S7.3**. **Lane A:** S7.0 → S7.1 (its own Log blocks govern).
+- **S5.4's video-1 dry run ran 23:20–23:47 IST (Log block "S5.4 — video 1 dry run"; it supersedes "the dry run never ran" above):**
+  - beats 2, 3, 7 and 8 pass through the real UI;
+  - one pass gave **one** live read (`22BH0641B`, 0.87) and **no watchlist hit**, because own01 was sampled at ~0.26 fps with the CPU at 93–96 %;
+  - the own01 tile got the worker's tee only for the clip's last ~18 s, because the wall was opened before the worker joined;
+  - `sentinel.db` now carries the own01 row (reset to `registered`, which can't be deleted) and that one read, via lane B's promotion.
+  - **S7.4 and the take must use a new camera id** (`own02`, then `own03`); the corrected steps are in `docs/demo-script.md` v2.7 "Dry-run findings".
 - **Blockers:** none. The portal's cut-off time on the 28th is unknown: plan against 18:00 and check it in the morning (F77).
 
 ## Previous state (27 Sep 2026, Sunday morning — S6.1b code half done in the cloud)
@@ -2105,4 +2111,110 @@ Surprise:  dryrun.db was 145 live reads ahead of sentinel.db (617 vs 472),
            dryrun.db holds an own01 camera row ('active' tier) that the
            22:40 review said did not exist; it rode in with the promote.
 Next:      S7.2 (lane B): evidence visuals, then S7.3.
+```
+
+```
+## S5.4 — video 1 dry run — PARTIAL (beats 2, 3, 7, 8 pass; beats 4–6 do
+##        not: no watchlist hit, the own01 tile never played) — feeds S7.4
+When:      2026-09-27 12:30–00:10 IST (runs 23:20–23:47 IST), laptop session
+           outside the Phase 7 lanes; driven through the real UI (headed
+           Chrome attached over CDP; Adi signed in, no password handled)
+Observed:  SETUP. main 2c07ceb clean. scripts/backup_db.py first live run:
+           data/backup/sentinel-20260927T070343Z.db, 3.4 MB, integrity ok,
+           all 10 tables equal to live (sightings 472, watchlist 25);
+           copied to data/dryrun.db. own01.mp4 made with run-sheet step 1
+           (49 s): 1920x1080, 87.2 s, H.264 High, 30 fps, 2616 frames,
+           0 B-frames (44 I + 2572 P). Started with SENTINEL_DB=data/
+           dryrun.db SENTINEL_ACTIVE_CAMERAS=6 (both processes' env read
+           back; sentinel.db untouched). status: workers live, feeds
+           28/28, uptime printed; tunnel "tailscale not installed" - the
+           Funnel is not on, so nothing to paste into S6.1b.
+           SIGN-IN cost ~10 h: 08:31Z sign-in landed in launch.py's
+           default-browser tab, then "Aditya" x5 locked it (F76); after
+           the lock, ADITYA was refused as a wrong password, so Adi reset
+           it (backend.tools.users passwd, both DBs, ~23:15 IST). Clearing
+           the lock row and setting a password myself were both refused
+           by the Claude Code permission classifier - not done.
+           BEAT 2 (17:50:23Z): own01 stored exactly as typed (Police,
+           "Own camera 1 — stock traffic clip, seeded coordinates",
+           23.0258/72.5873, rtsp, rtsp://127.0.0.1:8556/stream/own01,
+           active, manual, notes). Cameras row and Map pin + record panel
+           shown. Hot-add: "worker started: own01" 10-11 s after the
+           add (the DB keeps whole seconds).
+           BEAT 3: MH02EX1995 (id 276), MH02FG7423 (277), stolen/high.
+           PASS 1. Command 23:26:28.9 IST; stream up T0 = 23:26:30.8.
+           Before T0 each pull on the closed port cost 17.0-19.4 s (mean
+           ~18 s; the 15 s timeout that fires is the ffprobe size probe,
+           error -138) then waited 2.7, 4.1, 9.7, 10.7 s, then base 30 s
+           (26.0-41.0 s); the last wait was 31.6 s, so "pull started"
+           came at T0+34.7 s, 4.7 s after the 30 s pre-roll.
+           Tile: the wall was open before T0, so the relay chose mediamtx
+           (badge LOCAL FEED) - it always asks the wall's mediamtx on
+           8888, where a feed published on 8556 does not exist -> "Local
+           feed offline — retrying in 36 s" (Tile.jsx retries 2-45 s,
+           15-45 s once capped, and each retry re-asks the relay). Not
+           playing at T0+60 s, when the harness left the wall; the relay
+           log then shows a retry served from the fresh tee (live.m3u8
+           200, segments 8-16, ~18 s of video) until the tee went stale
+           after the pull ended (23:28:12.5) - so the tile got the clip's
+           last ~18 s, not observed on screen. At the default 4-up grid
+           own01 (6th analysed) is on page 2.
+           Reads: pull ended "after 14 frames" - 14 frames in the ~53 s
+           the stream was up after joining (0.26 fps; target 3), 262
+           detections (~19 vehicles a frame), 28 OCR attempts (the
+           2-a-frame cap), 155 tracks, 1 full read -> ONE sighting:
+           22BH0641B (raw 228H06418) conf 0.87 car, seen_at 17:57:43Z
+           (T0+72 s), stored 17:58:06Z (T0+96 s: committed when its track
+           died), live, rtsp-live. NO ALERT: neither watch plate was read.
+           Load: CPU 93-96 % (3 samples ~23:30 IST); worker interpreter
+           ~63 % of all 8 logical CPUs, this Claude app ~31 %, mediamtx
+           ~11 %, each ffmpeg pull 2-10 %. The reader keeps only the
+           latest frame (ml/ingest/rtsp.py): no backlog, the vehicles
+           between samples are simply never seen.
+           BEAT 7: /route/GJ01AB1234 200, 4 stops on cam06/cam09/cam10,
+           all demo, 4 DEMO badges. BEAT 8: detection report HTML lists
+           own01's row: 22BH0641B, 0.87, car, own01, Police, rtsp-live,
+           live.
+           PASS 2 (fallback test: +22BH0641B id 303 - also read 4x on
+           local01; +MH02EZ1785 id 304 - 12 live reads from this clip on
+           local01, 25 Sep 11:09-11:35 IST, S3.4; wall to open
+           only once the tee is written): T0 = 23:44:18 IST, and nothing
+           ran - lane B had promoted dryrun.db over sentinel.db and
+           restarted without overrides at ~23:38, so the worker set is
+           the 5 sandbox cameras (.env cap) and own01 was never pulled.
+           Ids 303/304 went into sentinel.db (the API was on it by then).
+           RESET through the UI (audit 1147-1151, 18:23:40-47Z): own01
+           tier -> registered (there
+           is no camera DELETE; re-adding own01 answers 409); watchlist
+           276, 277, 303, 304 removed (25 left). Both passes' publishers
+           stopped by pid; 8556 closed. `python launch.py status`, no
+           override: workers live 5/5, feeds 28/28, watchlist 25, 59
+           cameras / 5 active. sentinel.db keeps, via the promotion,
+           own01's row, its one live read, 27 object events and the dry
+           run's audit rows. data/dryrun.db left in place.
+Surprise:  (1) Throughput, not OCR, decides video 1: at ~0.26 fps a
+           57 s clip gives about one read per pass, so a named watch
+           plate is unlikely in any single take; S7.0's offline test
+           (full frame rate) will over-predict live reads. (2) The
+           copy-DB design was overtaken by R7's promotion: the dry run's
+           pass is now in the evidence DB. (3) The v2.6 reset "delete
+           own01" does not exist, so every run on sentinel.db needs a new
+           camera id. (4) status printed feeds 1/28 once under load: its
+           1 s DESCRIBE probe timed out; 28/28 with 5 s, and on re-run.
+           (5) Harness only: a kill-by-command-line matched itself
+           (substring of the joined argv) and was rewritten element-wise
+           with self and ancestors excluded - nothing else was killed; a
+           covered Chrome window stops painting (a 39.8 s page load, a
+           screenshot timeout); the CSP refuses Playwright's string
+           predicates (no unsafe-eval), as it should. (6) The Add form
+           has no ownership field: own01 is stored ownership='government'
+           while its notes say "private camera" - true of every camera
+           added through the form. (7) data/dryrun.db was not reset (it
+           stopped being the platform DB at 23:37): it still has own01
+           'active' and watchlist 276/277 - reference only.
+Next:      S7.4 with the run-sheet corrections made in this commit
+           (docs/demo-script.md v2.7 "Dry-run findings"). Watch plates
+           for the take: S7.0's three plus 22BH0641B (the only plate own01
+           read, 0.87) and MH02EZ1785. [Adi] Keep the take's CPU free: no
+           Claude session or S7.1 render running while recording.
 ```

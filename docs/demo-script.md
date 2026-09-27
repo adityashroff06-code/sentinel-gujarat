@@ -37,6 +37,30 @@ v2.6's `own01` mechanics are unchanged (a stock clip onboarded on camera and pub
 - S7.2 and S7.3 are on `main`, and the platform was restarted after they merged.
 - Chime on (header toggle). Sign in **before** starting the recorder, or show the login and sign in with the password masked.
 - Video 1 setup: v2.6 steps 2–3 (`SENTINEL_ACTIVE_CAMERAS=6`, restart; reset after every dry run). Step 1's file is **the one S7.0 names** (`own01.mp4` at 1080p, or `own01-1440.mp4`). The watch plate is **the one S7.0 and S7.4 name** (v2.6's default was `MH02EX1995` at ~41 s of the clip, i.e. ~71 s after publishing with the 30 s pre-roll).
+- **Dry-run findings (S5.4, 27 Sep 23:20–23:47 IST; `docs/progress.md` Log). These correct v2.6 for S7.4 and the take:**
+  1. **A new camera id every run.** `own01` already exists in `sentinel.db`: it came over with lane B's promotion of `dryrun.db`, and is now `registered`. The platform has **no camera delete**, and **Add camera** answers `409 already exists` for a taken id.
+     - Use `own02` for S7.4 and `own03` for the take (or the next unused id).
+     - Use the same id in the form, in the RTSP template `rtsp://127.0.0.1:8556/stream/<id>`, and in the publish command's `<id>=D:\projects\sentinel-footage\own01.mp4`.
+     - The reset after a run is: tier → `registered`, and remove the test watchlist rows.
+  2. **Check the cap before publishing.** Within about 10 s of **Add camera**, `data/worker_stats.json` must list the new id.
+     - On 27 Sep a start without `SENTINEL_ACTIVE_CAMERAS=6` ran only the five sandbox cameras, and the new camera was never pulled.
+  3. **Start the feed within about 60 s of clicking Add camera.** The worker retries a feed that isn't up yet with a growing wait:
+     - on Windows each failed attempt costs 17–19 s;
+     - then the wait grows 2.7 s, 4.1 s, 9.7 s … up to a 30 s base (×0.5–1.5).
+     - On 27 Sep the worker joined at T0 + 34.7 s, 4.7 s after the black pre-roll had ended. Started within ~60 s, the wait is still short.
+  4. **Open the Live Wall after adding the camera, and about 45 s after starting the feed.**
+     - The wall reads the camera list only when it opens, so a camera added after that appears only after a reload.
+     - A tile opened before the worker joins falls back to mediamtx and shows *"Local feed offline — retrying in NN s"*. The relay always asks the wall's mediamtx on 8888, and the take's feed is published on 8556, so it isn't there.
+     - The tile retries every 2–45 s and switches to the worker's tee on the next retry. On 27 Sep the tile had been open since before T0, its wait had grown to 36 s, and it got only the clip's last ~18 s.
+     - If you see that message, press **F5** once: it retries at once.
+     - Pick **Analysed**, then grid **9**: the sixth analysed camera is on page 2 of the default 4-up grid.
+  5. **Expect few reads, late.** With six cameras live and the CPU at 93–96 %, the worker sampled `own01` at ~0.26 fps (target 3).
+     - The whole pass gave **one** read: `22BH0641B`, conf 0.87.
+     - It was stored 23 s after the vehicle passed. At this rate a track rarely gets the two agreeing reads that commit early, so a single read commits only when its track ends.
+     - Neither `MH02EX1995` nor `MH02FG7423` was read.
+     - So during the take, no Claude Code session and no S7.1 render may be running. The Claude app alone took ~31 % CPU during the dry run.
+     - Watch several plates: S7.0's three, plus `22BH0641B` (read 4× from this clip on `local01`, 25 Sep, and once on the dry run) and `MH02EZ1785` (read 12× on `local01`, 25 Sep).
+     - An alert follows its read, so expect it roughly 20–30 s after the vehicle passes (based on one observation: 23 s).
 
 ## Video 1 — our own feed (≤ 3:00)
 
@@ -45,9 +69,9 @@ v2.6's `own01` mechanics are unchanged (a stock clip onboarded on camera and pub
 | 0 | 0:00–0:08 | **Hook** | "Gujarat's plan covers about eighty thousand cameras across many departments. No control room can watch them all. Sentinel watches for you — and only keeps what the law can justify." | Hook card: **"~80,000 cameras. No one can watch them all."** then the Sentinel wordmark |
 | 1 | 0:08–0:30 | **What the AI sees** | "This is Sentinel's own pipeline run on a recorded traffic clip at full frame rate. Every box, every track number and every plate you see comes from the same detector, tracker and plate reader that run live on the platform." | The S7.1 render, full screen, ~20 s of its densest stretch. **Leave its label visible.** Zoom once onto a plate label as it appears. Caption: *"Pipeline output on recorded stock footage — processed offline"* |
 | 2 | 0:30–0:35 | **Sign in** | "One platform, role-based access." | The header with user and role (already signed in) |
-| 3 | 0:35–0:58 | **Onboard a camera** | "Nothing is hard-coded. I'm onboarding a new camera now, through this form. The same works in bulk by CSV, or over the API." | Cameras → **Add camera** → `own01` as in v2.6 beat 2 → it appears in the table and as a pin on Map. Point at **Bulk import (CSV)** |
+| 3 | 0:35–0:58 | **Onboard a camera** | "Nothing is hard-coded. I'm onboarding a new camera now, through this form. The same works in bulk by CSV, or over the API." | Cameras → **Add camera** → v2.6 beat 2's fields under the run's **new id** (`own03` for the take: finding 1 above) → it appears in the table and as a pin on Map. Point at **Bulk import (CSV)** |
 | 4 | 0:58–1:10 | **The watchlist** | "Here's a representative watchlist. I'm adding a stolen vehicle to it now." | Watchlist → add the S7.0 plate (`stolen_vehicle`, high) |
-| 5 | 1:10–1:25 | **It is live** | "That camera is now a live feed — a different system from the government grid, in the same viewer. It replays a stock traffic clip once through; we didn't film it." | Start the feed off camera (v2.6 beat 4 command). Live Wall → the `own01` tile beside the sandbox tiles |
+| 5 | 1:10–1:25 | **It is live** | "That camera is now a live feed — a different system from the government grid, in the same viewer. It replays a stock traffic clip once through; we didn't film it." | Start the feed off camera (v2.6 beat 4 command, with the run's id), within ~60 s of beat 3. **About 45 s later**: Live Wall → **Analysed** → grid **9** → the new tile, playing from the worker's tee, beside the sandbox tiles. If it says *Local feed offline*, press F5 once (findings 3–4) |
 | 6 | 1:25–2:05 | **Detection, then the hit** | "Every plate the pipeline reads lands here, with the vehicle it came from. … There — the watchlisted vehicle. The alert fires from that live read, and it reaches every screen." | Search filtered to `own01`: rows filling with **vehicle thumbnails**, plate crops, confidences, `LIVE`. Then the **toast + chime** (zoom in on it) → **View** → the evidence frame lightbox |
 | 7 | 2:05–2:18 | **Evidence, only on a hit** | "This full frame was stored for one reason: a watchlist match. Its SHA-256 is in the audit trail. Reads that don't match never keep a frame — watching is not storing." | The lightbox: the frame with the vehicle and plate boxes, the caption bar, the SHA-256. Caption: *"Full frame stored only on a watchlist hit · SHA-256 audited"* |
 | 8 | 2:18–2:35 | **The route** | "Where else has a vehicle been? Our clip is one location, so for the multi-camera route this is our injected demonstration vehicle — badged DEMO." | Route → `GJ01AB1234` with the numbered pins, departments crossed and the timeline; keep the DEMO badge in shot |
@@ -95,11 +119,11 @@ These supersede the v2.3 tables below for recording: S3.6 closed without filming
 
 ## Video 1 — our own feed (≤ 3 min)
 
-**One-time setup, then a full dry run before the real take** (a laptop Claude session can do both; nothing here has run yet):
+**One-time setup, then a full dry run before the real take** (a laptop Claude session can do both). Step 1 and a first dry run ran on 27 Sep; the corrections are in v2.7 "Dry-run findings":
 
 1. A 1080p copy of stock clip `13270133_3840_2160_30fps.mp4` (the source of `local01`; the wall's copy is 720p, too small for its ~45 px plates) with 30 s of black in front, so the worker is connected before the first vehicle: `<ffmpeg> -i D:\projects\sentinel-footage\raw\13270133_3840_2160_30fps.mp4 -vf "scale=-2:1080,tpad=start_duration=30:color=black" -r 30 -c:v libx264 -preset veryfast -crf 20 -bf 0 -g 60 -an D:\projects\sentinel-footage\own01.mp4` (`<ffmpeg>` = the path printed by `.venv\Scripts\python -c "from backend.core import config; print(config.ffmpeg())"`). The offline scoring (`data/footage_analysis.json`) read, in the clip's own time: `MH02F15860`/`MH02EZ1785` at ~9 s, `MH02FG7423` at ~25 s, **`MH02EX1995` at ~41 s (conf 0.90)**, `MH02FG5664` at ~49 s. With the pre-roll add 30 s to each.
 2. `.env`: `SENTINEL_ACTIVE_CAMERAS=6` (the five analysed sandbox cameras plus `own01`), then `python launch.py stop` and `python launch.py start` (the cap is read at start).
-3. After every dry run: delete `own01` (Cameras → edit, or set its tier to `registered`) and remove the test watchlist entries, so the real take starts clean. Its reads stay as `live` reads on camera `own01` — one pass each, which is what F56 requires.
+3. After every dry run: set the camera's tier to `registered` (Cameras → Edit) and remove the test watchlist entries, so the real take starts clean. Its reads stay as `live` reads on that camera, one pass each, which is what F56 requires. *Corrected 27 Sep (S5.4 dry run):* there is no camera delete, and the id stays taken (a re-add answers 409), so the next run onboards a **new** id. See v2.7 "Dry-run findings".
 
 | # | Beat | Says | Shows |
 |---|---|---|---|
@@ -112,7 +136,7 @@ These supersede the v2.3 tables below for recording: S3.6 closed without filming
 | 7 | **The route** | "Where else has it been? Our own camera is one location, so for the multi-camera route this is our **injected demonstration vehicle**, badged DEMO." | Route → `GJ01AB1234`: numbered pins on three cameras, the timeline with DEMO crops and timestamps. Keep the DEMO badge in shot |
 | 8 | **The report** | "Exported with timestamps and where every row came from." | Reports → Detection report (HTML), provenance column visible, `own01` rows `live` |
 
-If `own01` produces no watchlist hit in the take (OCR misreads the same plate differently pass to pass — F58), use a plate it did read as the next take's watchlist entry, from Search.
+If `own01` produces no watchlist hit in the take (OCR misreads the same plate differently pass to pass — F58), use a plate it did read as the next take's watchlist entry, from Search. On 27 Sep the dry run's only read was `22BH0641B` (0.87). At ~0.26 fps the same plate is not guaranteed to be read again, so watch several plates (v2.7 finding 5).
 
 ## Video 2 — the government-provided feed (≤ 3 min)
 
