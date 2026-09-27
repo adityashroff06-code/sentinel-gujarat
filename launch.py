@@ -43,6 +43,7 @@ import socket
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 import webbrowser
 import zipfile
@@ -94,7 +95,8 @@ modes:
   stop          graceful stop (data/stop), then kill only the recorded PID trees
                 (API, worker, then the local feeds' publisher)
   status        worker stats, database counts, whether :8000 answers,
-                feeds: N/28 publishing
+                feeds: N/28 publishing, uptime of the API and worker
+                processes, and whether the Tailscale Funnel serves :8000
   demo          inject the labelled demo route + alerts (backend.tools.demo_seed inject)
   demo-clear    remove only the demo rows (backend.tools.demo_seed purge)
   replay-start  second system (F9/F19/F58), detached: no args = the register
@@ -279,6 +281,39 @@ for arg in sys.argv[2:]:
     if script in cmdline.replace('\\\\', '/').lower():
         out.append(arg)
 print(' '.join(out))
+"""
+
+# S6.1b: "is the demo up" in one command. argv[1] = this repo; then
+# name:pid pairs from data/launcher_pids.txt. Prints one line per pair -
+# "<name> <pid> <uptime_s>", or "gone" / "foreign" (a pid now held by a
+# process whose command line does not name this repo, e.g. reused after a
+# reboot) - and a last line for the Tailscale daemon behind the Funnel:
+# "tailscaled - <uptime_s>" / "none" / "denied".
+_UPTIME_PY = """\
+import sys, time
+import psutil
+repo = sys.argv[1].replace('\\\\', '/').lower()
+now = time.time()
+for arg in sys.argv[2:]:
+    name, _, pid = arg.rpartition(':')
+    try:
+        p = psutil.Process(int(pid))
+        cmdline = ' '.join(p.cmdline()).replace('\\\\', '/').lower()
+        state = str(int(now - p.create_time())) if repo in cmdline else 'foreign'
+    except (ValueError, psutil.NoSuchProcess, psutil.ZombieProcess):
+        state = 'gone'
+    except psutil.Error:
+        state = 'foreign'
+    print(name, pid, state)
+state = 'none'
+for p in psutil.process_iter(['name']):
+    if (p.info.get('name') or '').lower() in ('tailscaled', 'tailscaled.exe'):
+        try:
+            state = str(int(now - p.create_time()))
+        except psutil.Error:
+            state = 'denied'
+        break
+print('tailscaled', '-', state)
 """
 
 _DB_STATUS_PY = """\
@@ -981,11 +1016,165 @@ def _feeds_line() -> None:
         f" (rtsp://127.0.0.1:{RTSP_PORT}/stream/<id>){tail}")
 
 
+def _fmt_uptime(seconds: int) -> str:
+    """Compact human uptime: '42 s', '7 min 05 s', '3 h 07 min', '2 d 04 h'."""
+    seconds = max(0, int(seconds))
+    d, rem = divmod(seconds, 86400)
+    h, rem = divmod(rem, 3600)
+    m, s = divmod(rem, 60)
+    if d:
+        return f"{d} d {h:02d} h"
+    if h:
+        return f"{h} h {m:02d} min"
+    if m:
+        return f"{m} min {s:02d} s"
+    return f"{s} s"
+
+
+def _uptimes(vp: Path, pids: dict[str, int]) -> dict[str, str] | None:
+    """Run _UPTIME_PY: name -> uptime seconds (as text), 'gone', 'foreign';
+    plus 'tailscaled' -> seconds / 'none' / 'denied'. None if the venv
+    one-liner failed (psutil missing)."""
+    r = subprocess.run([str(vp), "-c", _UPTIME_PY, str(ROOT),
+                        *[f"{name}:{pid}" for name, pid in pids.items()]],
+                       cwd=str(ROOT), capture_output=True, text=True, check=False)
+    if r.returncode != 0:
+        return None
+    out: dict[str, str] = {}
+    for line in r.stdout.splitlines():
+        parts = line.split()
+        if len(parts) == 3:
+            out[parts[0]] = parts[2]
+    return out
+
+
+def _uptime_state(state: str | None) -> str:
+    if state is None:
+        return "unknown"
+    if state.isdigit():
+        return f"up {_fmt_uptime(int(state))}"
+    if state == "foreign":
+        return "NOT RUNNING (pid now belongs to another process)"
+    return "NOT RUNNING (process gone)"
+
+
+def _uptime_line(vp: Path | None) -> str | None:
+    """Say the uptime of every process in data/launcher_pids.txt; return the
+    tailscaled state for the tunnel line (None if unknown)."""
+    pids = _read_pidfile(PIDFILE)
+    if vp is None:
+        say("uptime   : needs .venv (psutil) - run `python launch.py start` once")
+        return None
+    got = _uptimes(vp, pids)
+    if got is None:
+        say("uptime   : psutil query failed in .venv")
+        return None
+    if not pids:
+        say("uptime   : no API or worker recorded (data/launcher_pids.txt absent)"
+            " - `python launch.py start`")
+    else:
+        say("uptime   : " + " | ".join(
+            f"{name} {_uptime_state(got.get(name))} (pid {pid})"
+            for name, pid in pids.items()))
+    return got.get("tailscaled")
+
+
+def _tailscale_exe() -> str | None:
+    found = shutil.which("tailscale")
+    if found:
+        return found
+    if IS_WIN:
+        default = Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Tailscale" / "tailscale.exe"
+        if default.exists():
+            return str(default)
+    return None
+
+
+def _parse_funnel(out: str) -> list[tuple[str, list[str]]]:
+    """(public https URL, proxy targets) for every host the Funnel exposes,
+    from `tailscale funnel status --json` (a ServeConfig: AllowFunnel and
+    Web[host:port].Handlers[path].Proxy). Plain-text output (older clients)
+    is read for 'https://... (Funnel on)' and '|-- / proxy <target>' lines.
+    [] = nothing exposed to the internet."""
+    try:
+        cfg = json.loads(out)
+    except ValueError:
+        cfg = None
+    found: list[tuple[str, list[str]]] = []
+    if isinstance(cfg, dict):
+        web = cfg.get("Web") or {}
+        for hostport, on in (cfg.get("AllowFunnel") or {}).items():
+            if not on:
+                continue
+            host, _, port = hostport.rpartition(":")
+            url = f"https://{host}" + ("" if port in ("", "443") else f":{port}")
+            handlers = (web.get(hostport) or {}).get("Handlers") or {}
+            found.append((url, [h.get("Proxy", "") for h in handlers.values()
+                                if isinstance(h, dict) and h.get("Proxy")]))
+        return found
+    current: tuple[str, list[str]] | None = None
+    for raw in out.splitlines():
+        line = raw.strip()
+        if line.startswith("https://") and "(Funnel on)" in line:
+            current = (line.split()[0], [])
+            found.append(current)
+        elif current is not None and " proxy " in f" {line} ":
+            current[1].append(line.split(" proxy ", 1)[1].strip())
+        elif line.startswith("https://"):
+            current = None
+    return found
+
+
+def _https_health(url: str) -> str:
+    """GET <url>/api/health; 'HTTP <status>' or the failure's type."""
+    try:
+        with urllib.request.urlopen(f"{url}/api/health", timeout=5) as resp:
+            return f"/api/health {resp.status}"
+    except urllib.error.HTTPError as exc:
+        return f"/api/health {exc.code}"
+    except Exception as exc:  # noqa: BLE001 - reported, status stays best-effort
+        return f"/api/health failed ({type(exc).__name__})"
+
+
+def _tunnel_line(daemon: str | None) -> None:
+    """'tunnel   : ...' - does a Tailscale Funnel publish :API_PORT, does the
+    public URL answer (from this machine: tailnet routing, so the phone on
+    mobile data stays the real test - runbook-hosting.md section 5), and
+    how long the tailscaled daemon has been up."""
+    exe = _tailscale_exe()
+    if exe is None:
+        say("tunnel   : tailscale not installed (runbook-hosting.md section 0)")
+        return
+    try:
+        r = subprocess.run([exe, "funnel", "status", "--json"], capture_output=True,
+                           text=True, timeout=10, check=False)
+        out = r.stdout if r.returncode == 0 else ""
+        if not out.strip():
+            r = subprocess.run([exe, "funnel", "status"], capture_output=True,
+                               text=True, timeout=10, check=False)
+            out = r.stdout
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        say(f"tunnel   : `tailscale funnel status` failed ({type(exc).__name__})")
+        return
+    daemon_txt = (f"; tailscaled {_uptime_state(daemon)}"
+                  if daemon and daemon.isdigit() else "")
+    ours = [(url, proxies) for url, proxies in _parse_funnel(out)
+            if any(f":{API_PORT}" in p for p in proxies)]
+    if not ours:
+        say(f"tunnel   : NO FUNNEL publishing :{API_PORT} - the public URL is down"
+            f" (`tailscale funnel --bg {API_PORT}`){daemon_txt}")
+        return
+    for url, _proxies in ours:
+        say(f"tunnel   : funnel ON {url} -> :{API_PORT}; {_https_health(url)}"
+            f"{daemon_txt}")
+
+
 def status() -> int:
     _stats_highlights()
     _db_counts()
     _api_line()
     _feeds_line()
+    _tunnel_line(_uptime_line(venv_python()))
     say(f"pids     : launcher {'recorded' if PIDFILE.exists() else 'none'};"
         f" replay {'recorded' if REPLAY_PIDFILE.exists() else 'none'}"
         " (data/launcher_pids.txt, data/replay_pids.txt)")

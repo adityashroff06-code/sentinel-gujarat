@@ -37,19 +37,21 @@ Then restart the API (`python launch.py stop` / `start`).
 - **Windows Update**: pause until **14 Oct 2026** (Settings → Windows Update → Pause). An overnight forced reboot is the most likely outage.
 - **Task Scheduler** (`taskschd.msc`) — three tasks, each "Run only when user is logged on", trigger **At log on**, restart on failure every 1 minute up to 3 times:
   1. `Sentinel Tunnel` — `tailscale` `funnel --bg 8000` (Start in: anywhere).
-  2. `Sentinel Platform` — `python` `launch.py start` (Start in: `D:\projects\sentinel-gujarat`). `start` is idempotent: it re-seeds, skips finished setup, restarts dead processes.
-  3. `Sentinel Watchdog` (added by S6.1b) — the restart watchdog + nightly `scripts/backup_db.py` snapshot.
+  2. `Sentinel Platform` — `python` `launch.py start` (Start in: `D:\projects\sentinel-gujarat`). `start` re-seeds and skips finished setup; if a previous run is recorded it **stops all of it first** (API, worker, feeds) and starts everything fresh — right for a logon trigger, too heavy for a restart-one-process watchdog.
+  3. `Sentinel Backup` (S6.1b) — trigger **daily at 03:00** (and At log on): `D:\projects\sentinel-gujarat\.venv\Scripts\python.exe` `scripts\backup_db.py` (Start in: `D:\projects\sentinel-gujarat`). Writes `data\backup\sentinel-<UTC stamp>.db` with `VACUUM INTO` while the platform runs, opens it read-only, checks `integrity_check` and the table list, prints its row counts beside the live ones, keeps the newest 7 (`--keep N`). Exit 1 = the copy failed or did not verify (the bad copy is removed). `migrate()` also writes `data\backup\sentinel-pre-v<N>.db` before any schema change; neither kind is ever committed.
+  4. `Sentinel Watchdog` — **not built yet.** Do not point it at `launch.py start`: `start` stops every recorded process (worker included) before it starts again, so it restarts the whole platform, not only the process that died.
 - Auto-logon after reboot (netplwiz) is Adi's call; without it the URL waits for a manual login after power loss.
 
 ## 4. Where everything is when it breaks
 
 | Symptom | Look at | Likely fix |
 |---|---|---|
-| URL dead, laptop up | `tailscale funnel status`; `data\logs\api.launcher.log` | re-run the Funnel task; `python launch.py start` |
+| Is the demo up at all? | `python launch.py status` — one screen: worker stats, DB counts, `api` on :8000, `feeds N/28`, **`uptime`** of the API and worker processes (a pid now owned by another process reads NOT RUNNING), and **`tunnel`**: whether a Funnel publishes :8000, its URL, that URL's `/api/health` from this machine, and the tailscaled uptime | the row below that matches |
+| URL dead, laptop up | `launch.py status` → `tunnel   : NO FUNNEL publishing :8000`; `tailscale funnel status`; `data\logs\api.launcher.log` | re-run the Funnel task; `python launch.py start` |
 | Login page up, tiles black | `data\logs\worker.launcher.log`, `data\worker_stats.json` (stale `written_at` = worker down) | `python launch.py stop` then `start` |
 | Sandbox cameras down (their side) | Command screen's feed-status strip says "feed down" per camera | nothing — the `local01..local04` sample feeds (F58) keep the platform demonstrable; say so on camera if recording |
 | Everything slow / OCR lagging | `data\worker_stats.json` `fps_sustained`, `rss_mb` | reduce `SENTINEL_ACTIVE_CAMERAS` in `.env`, restart |
-| DB suspect | `data\backup\` (nightly + pre-migration snapshots) | stop, copy the newest snapshot over `data\sentinel.db`, start |
+| DB suspect | `data\backup\` (`sentinel-<stamp>.db` daily from `scripts\backup_db.py`, `sentinel-pre-v<N>.db` before a migration) | `python launch.py stop`, copy the newest snapshot over `data\sentinel.db` (delete `sentinel.db-wal`/`-shm` first), `start` |
 
 Logs rotate under `data\logs\` (one file per process: `api`, `worker`, `supervisor`, `ingest.<cam>`, `mediamtx`, `replay_publish`, plus the two `*.launcher.log` streams). The stats snapshot `data\worker_stats.json` rewrites every 10 s while the worker lives — its `written_at` is the platform's heartbeat.
 

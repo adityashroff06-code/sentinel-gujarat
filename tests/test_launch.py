@@ -400,3 +400,126 @@ def test_rtsp_publishing_is_a_describe_answered_200(lp, monkeypatch):
         raise ConnectionRefusedError
     monkeypatch.setattr(lp.socket, "create_connection", refused)
     assert not lp._rtsp_publishing("local03", port=8554)
+
+
+# ------------------------------------------------ status: uptime + tunnel (S6.1b)
+
+def test_fmt_uptime_is_compact_and_never_negative(lp):
+    assert lp._fmt_uptime(42) == "42 s"
+    assert lp._fmt_uptime(7 * 60 + 5) == "7 min 05 s"
+    assert lp._fmt_uptime(3 * 3600 + 7 * 60) == "3 h 07 min"
+    assert lp._fmt_uptime(2 * 86400 + 4 * 3600 + 59) == "2 d 04 h"
+    assert lp._fmt_uptime(-5) == "0 s"
+
+
+def test_uptime_reports_our_processes_and_refuses_reused_pids(lp, tmp_path,
+                                                              monkeypatch, capsys):
+    """A recorded pid counts as up only while its command line names this
+    repo (the api/worker run the repo's .venv python): after a reboot a
+    reused pid must read NOT RUNNING, not 'up 3 h'."""
+    vp = Path(sys.executable)          # the test venv's python has psutil
+    ours = _sleeper(tmp_path, str(lp.ROOT / ".venv" / "python"), "-m", "backend.app")
+    other = _sleeper(tmp_path)
+    gone = _sleeper(tmp_path)
+    gone.kill()
+    gone.wait()
+    pidfile = tmp_path / "launcher_pids.txt"
+    pidfile.write_text(f"api {ours.pid}\nworker {other.pid}\nml {gone.pid}\n",
+                       encoding="utf-8")
+    monkeypatch.setattr(lp, "PIDFILE", pidfile)
+    try:
+        got = lp._uptimes(vp, lp._read_pidfile(pidfile))
+        assert got["api"].isdigit()
+        assert got["worker"] == "foreign"
+        assert got["ml"] == "gone"
+        assert got["tailscaled"] in ("none", "denied") or got["tailscaled"].isdigit()
+
+        lp._uptime_line(vp)
+        out = capsys.readouterr().out
+        assert "api up " in out and f"(pid {ours.pid})" in out
+        assert "worker NOT RUNNING (pid now belongs to another process)" in out
+        assert "ml NOT RUNNING (process gone)" in out
+    finally:
+        ours.kill()
+        other.kill()
+
+
+def test_uptime_without_a_venv_or_a_pidfile_says_what_to_do(lp, tmp_path,
+                                                            monkeypatch, capsys):
+    monkeypatch.setattr(lp, "PIDFILE", tmp_path / "absent.txt")
+    assert lp._uptime_line(None) is None
+    assert "needs .venv" in capsys.readouterr().out
+    lp._uptime_line(Path(sys.executable))
+    assert "no API or worker recorded" in capsys.readouterr().out
+
+
+_FUNNEL_JSON = """{
+  "TCP": {"443": {"HTTPS": true}},
+  "Web": {"sentinel.tail1234.ts.net:443": {"Handlers": {"/": {"Proxy": "http://127.0.0.1:8000"}}},
+          "sentinel.tail1234.ts.net:8443": {"Handlers": {"/": {"Proxy": "http://127.0.0.1:5173"}}}},
+  "AllowFunnel": {"sentinel.tail1234.ts.net:443": true, "sentinel.tail1234.ts.net:8443": false}
+}"""
+
+_FUNNEL_TEXT = """\
+# Funnel on:
+#     - https://sentinel.tail1234.ts.net
+
+https://sentinel.tail1234.ts.net (Funnel on)
+|-- / proxy http://127.0.0.1:8000
+
+https://sentinel.tail1234.ts.net:8443 (tailnet only)
+|-- / proxy http://127.0.0.1:5173
+"""
+
+
+def test_parse_funnel_reads_json_and_plain_text(lp):
+    expected = [("https://sentinel.tail1234.ts.net", ["http://127.0.0.1:8000"])]
+    assert lp._parse_funnel(_FUNNEL_JSON) == expected   # 8443 not funnelled
+    assert lp._parse_funnel(_FUNNEL_TEXT) == expected   # tailnet-only skipped
+    assert lp._parse_funnel("No serve config\n") == []
+    assert lp._parse_funnel("{}") == []
+
+
+class _Done:
+    def __init__(self, stdout: str, returncode: int = 0):
+        self.stdout, self.returncode = stdout, returncode
+
+
+def test_tunnel_line_names_the_url_and_its_health(lp, monkeypatch, capsys):
+    monkeypatch.setattr(lp, "_tailscale_exe", lambda: "tailscale")
+    monkeypatch.setattr(lp, "API_PORT", 8000)
+    monkeypatch.setattr(lp.subprocess, "run", lambda *a, **k: _Done(_FUNNEL_JSON))
+    probed: list[str] = []
+    monkeypatch.setattr(lp, "_https_health",
+                        lambda url: probed.append(url) or "/api/health 200")
+    lp._tunnel_line("7200")
+    out = capsys.readouterr().out
+    assert probed == ["https://sentinel.tail1234.ts.net"]
+    assert ("tunnel   : funnel ON https://sentinel.tail1234.ts.net -> :8000;"
+            " /api/health 200; tailscaled up 2 h 00 min") in out
+
+
+def test_tunnel_line_says_plainly_when_the_url_is_down(lp, monkeypatch, capsys):
+    monkeypatch.setattr(lp, "_tailscale_exe", lambda: None)
+    lp._tunnel_line(None)
+    assert "tailscale not installed" in capsys.readouterr().out
+
+    monkeypatch.setattr(lp, "_tailscale_exe", lambda: "tailscale")
+    monkeypatch.setattr(lp, "API_PORT", 8000)
+    # --json unsupported (old client, rc 1) -> the plain-text call: no funnel
+    calls: list[list[str]] = []
+
+    def run(argv, **kw):
+        calls.append(argv)
+        return _Done("", 1) if "--json" in argv else _Done("No serve config\n")
+    monkeypatch.setattr(lp.subprocess, "run", run)
+    monkeypatch.setattr(lp, "_https_health", lambda url: pytest.fail("no URL to probe"))
+    lp._tunnel_line("none")
+    assert [c[-1] for c in calls] == ["--json", "status"]
+    assert "NO FUNNEL publishing :8000 - the public URL is down" in capsys.readouterr().out
+
+    # a funnel that publishes something else (the Vite port) is not ours
+    monkeypatch.setattr(lp.subprocess, "run", lambda *a, **k: _Done(
+        _FUNNEL_TEXT.replace(":8000", ":5173")))
+    lp._tunnel_line(None)
+    assert "NO FUNNEL publishing :8000" in capsys.readouterr().out

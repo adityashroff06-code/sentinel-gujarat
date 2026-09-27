@@ -89,7 +89,7 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S5.4 | [Adi + Claude] Demo video 1 (own feed) and video 2 (government feed) | Fri 25 | 2 h | [~] Claude half done Fri 25 (cloud): run sheets v2.6 in demo-script.md per F70 (a stock clip onboarded on camera and published once for the real hit; labelled demo route). Recording, the video-1 dry run and the upload are [Adi] (+ a laptop Claude session for the dry run) |
 | S5.5 | Submission checklist walk-through, credential sweep, tag `v2.0-submission` | Fri 25 | 1 h | [~] Fri 25 (cloud): README for judges, credential sweep clean (history, deliverables, images), checklist 42/60 ticked with observations, `frontend-dist.zip`, HLD NVDEC + backup wording, Part D re-walked. Open: laptop PDF renders, gap report re-run, the 18 boxes waiting on S3.5/S5.4/S6.3, the tag |
 | S6.1 | Soak + fault injection; fix blockers only (the 60 s network pull is Adi's step) | Sat 26 | 3 h | |
-| S6.1b | **Overnight hosted soak, database backups, restart watchdog** — new in v2.3 | Sat 26 | 1 h + overnight | |
+| S6.1b | **Overnight hosted soak, database backups, restart watchdog** — new in v2.3 | Sat 26 | 1 h + overnight | [~] Sun 27 (cloud): code half — `scripts/backup_db.py`, pre-migration snapshot in `migrate()`, `launch.py status` uptime + tunnel; 16 tests. Open: the Task Scheduler watchdog (laptop; `launch.py start` restarts everything, so it needs a restart-one-process mode), the overnight hosted run and its acceptance |
 | S6.2 | [Adi] Rehearsal, fallback footage of every screen | Sat 26 | 2 h | |
 | S6.3 | [Adi] Submit; verify every link from a private window | Sun 27 | 1 h | |
 
@@ -468,7 +468,7 @@ git rev-parse --short main origin/main
 *Build:* 2-hour live run (`python launch.py start`, detached — the session polls `/api/workers`, `data/worker_stats.json` and the logs; it never blocks a tool call on the run); inject, one at a time with ≥ 10 min between them: kill one ffmpeg child (`taskkill /PID <pid> /F` on a child recorded in the logs, not on an unrelated ffmpeg); **[Adi] pulls the network for 60 s** — Claude cannot, and the pull cuts Claude Code off too, so the session announces "pull now", Adi turns Wi-Fi off, waits 60 s, turns it on, and the session reads the logs and `/api/workers` afterwards (if Adi is absent, this injection is skipped and named in the progress block); corrupt a tee segment (overwrite one `data/hls/<cam>/seg*.ts` with zeros); `demo` + `demo-clear` twice; watch `/api/workers`, logs and RSS throughout. Fix only what blocks the demo; every fix gets its regression test; tag `v2.0.1` if anything changed. No features.
 *Acceptance:* the run ends with all workers alive, no orphan processes, alerts still delivered after every injection (the network pull included, when Adi did it).
 
-### S6.1b — Overnight hosted soak, database backups, restart watchdog `[ ]`
+### S6.1b — Overnight hosted soak, database backups, restart watchdog `[~]`
 *New in v2.3. A hosted URL has to survive the night, not two hours.*
 *Read first:* the S6.1 block above; `docs/runbook-hosting.md` (S3.5); `backend/CLAUDE.md` (the backup rule).
 *Build:*
