@@ -4,7 +4,15 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 
 ---
 
-## Current state (25 Sep 2026, ~23:35 IST — S3.6 closed (F70); S5.4 and S5.5 done to the limit of the cloud)
+## Current state (27 Sep 2026, Sunday — submit day; S6.1b code half done in the cloud)
+
+- **Nothing was recorded for Sat 26:** S6.1 (soak), S6.1b's overnight run and S6.2 (rehearsal) have no progress block; `origin/main` was still `f5886f6` (PR #6) this morning. The laptop queue in the block below is unchanged and still in order — S3.5 go-live, the two PDF renders + gap re-run, the video-1 dry run, both recordings, slide 18, the tag, **S6.3 submit** (deadline Mon 28; the checklist says before it).
+- **Done today (cloud, branch `claude/zealous-bardeen-82g5t2`):** S6.1b's code half — `scripts/backup_db.py` (verified read-only `VACUUM INTO` snapshots, newest 7 kept), `migrate()` snapshots a populated DB to `data/backup/sentinel-pre-v<N>.db` before any schema change, and `python launch.py status` now prints `uptime` (API + worker processes, reused pids read NOT RUNNING) and `tunnel` (does a Funnel publish :8000, its URL and `/api/health`, tailscaled uptime). 16 new tests; suite here 350 passed, the 24 failures identical on the unmodified tree (no ffmpeg / paddleocr in the container).
+- **Laptop, after merging:** the `tunnel` line has only been tested against captured `tailscale funnel status` output — run `python launch.py status` once with the Funnel on and paste the line into the S6.1b block. Add the `Sentinel Backup` scheduled task (`docs/runbook-hosting.md` §3.3) and run `.venv\Scripts\python scripts\backup_db.py` once by hand.
+- **Found:** the runbook said `launch.py start` "restarts dead processes"; it stops everything recorded (worker included) and starts fresh, so it cannot be S6.1b's restart-one-process watchdog. Runbook corrected; the watchdog is still open.
+- **Blockers:** none on our side.
+
+## Previous state (25 Sep 2026, ~23:35 IST — S3.6 closed (F70); S5.4 and S5.5 done to the limit of the cloud)
 
 - **Done tonight (cloud session, branch `claude/gallant-cerf-bm3204`, draft PR adityashroff06-code/sentinel-gujarat#5):** S3.6 closed by Adi's decision F70 (stock feeds are the local demo footage; the route stays the labelled demo vehicle). **S5.5 [~]:** README rewritten for the judges (session instructions moved to `docs/sessions.md`); credential sweep **clean** (full history, deliverable text incl. PDF/PPTX, all 15 tracked images, tracked `data/`); `docs/submission-checklist.md` walked — **42/60 ticked** against observations, 18 open with owners; `deliverables/frontend-dist.zip` built (15 files, no source maps); HLD §7.3 now names the **NVDEC** ceiling and §7.5 adds **backup**; Part D re-walked and four stale "own footage" rows amended to F70; deck slide 18 takes its links from `SENTINEL_DECK_VIDEO1/_VIDEO2/_URL`; `scripts/render_hld.py` renders any deliverable Markdown. **S5.4 [~]:** run sheets v2.6 in `docs/demo-script.md` (video 1: a stock clip onboarded on camera and published once for a real hit; video 2 unchanged in substance).
 - **Laptop queue, in order (merge PR #5 into `main` first):**
@@ -1953,4 +1961,46 @@ Observed:  Read github.com/adityashroff06-code/Sentinel_Repo's README (390
            pandoc + Chromium at GitHub width: 0 broken images.
            detection.jpg is the previous build's and is not used.
 Next:      laptop: capture_readme.py (Current state, item 4b).
+```
+
+```
+## S6.1b — PARTIAL (code half: backups + status; the watchdog and the
+##         overnight hosted run remain)
+When:      2026-09-27 (cloud session; Linux, python 3.11, no ffmpeg/paddle).
+Observed:  backend/core/db.py: snapshot(con, target) = VACUUM INTO
+           <target>.part then rename (a cut-off copy never looks good; an
+           existing target is never overwritten); migrate() snapshots to
+           backup/<stem>-pre-v<N>.db beside the file when a migration is
+           pending AND a version is already applied (fresh and :memory:
+           DBs are not copied); an existing pre-v<N> copy is kept; a
+           failed snapshot raises and nothing migrates.
+           scripts/backup_db.py: snapshot while the platform runs, open
+           it read-only, integrity_check + same table set, row counts
+           printed beside the live ones (a difference is reported as
+           "+N since the snapshot", not failed), newest 7 periodic
+           snapshots kept; pre-v<N> and pre-renormalise copies never
+           rotated; a copy that does not verify is removed, exit 1.
+           launch.py status: 'uptime   :' per recorded process via a venv
+           psutil one-liner (a pid whose command line does not name the
+           repo reads NOT RUNNING - reused after a reboot); 'tunnel   :'
+           from `tailscale funnel status --json` (plain-text fallback),
+           only a Funnel proxying :API_PORT counts, then GET <url>/api/
+           health (from this machine, i.e. tailnet routing - the phone on
+           mobile data stays the real test), plus tailscaled uptime.
+           Tests: tests/test_backup.py 10 (6 fail against the old db.py),
+           tests/test_launch.py +6. Full suite 350 passed, 2 skipped;
+           14 failed + 10 errors, the same 24 ids on the unmodified tree
+           (16x "ffmpeg not found", 3x paddleocr missing, the rest the
+           same harness).
+Surprise:  runbook-hosting.md said `launch.py start` restarts dead
+           processes; it stops every recorded process first, worker
+           included - so S6.1b's acceptance ("kill the API; back within
+           2 min without touching the worker") cannot be met by pointing
+           Task Scheduler at `start`. Runbook corrected; watchdog open.
+           The tunnel parser is written against Tailscale's ServeConfig
+           JSON (AllowFunnel, Web[host:port].Handlers[path].Proxy) and
+           the documented text form - not yet seen on the laptop.
+Next:      laptop: `launch.py status` with the Funnel on (paste the
+           tunnel line here), the Sentinel Backup task, one manual
+           backup_db.py run; then the overnight hosted run.
 ```
