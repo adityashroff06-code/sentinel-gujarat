@@ -93,3 +93,14 @@ Tick against an observation, never an intention.
 - [x] Pipeline 3 is stated as **designed and validated separately, not built**, in HLD §1, its pipeline table and Appendix B — nowhere claimed as running — *25 Sep: HLD §1.5 table, Appendix B; deck s3/s5/s16; diagram*
 - [x] Every row of `docs/architecture.md` Part D matches what the HLD says — *25 Sep: S5.1's row-by-row pass, re-walked 25 Sep: four rows still promised filmed own footage and an own-footage route — amended to F70 (stock feeds, labelled demo route), now matching HLD §1.5 rows 115/117, §2.7 and Appendix C*
 - [x] The own-footage cameras are disclosed as replayed footage filmed on a named date; cam06 is disclosed as a live pull from the organisers' gateway — *25 Sep: per F70 there is no filmed footage: the local feeds are disclosed as stock footage with seeded coordinates in every registry row, HLD §2.7 and Appendix C, deck s7; cam06 as a live pull from the organisers' gateway (HLD §2.7)*
+
+## The next-level pass (added 27 Sep — decisions F72–F77, `docs/tasks.md` Phase 7)
+
+- [ ] The 4K read test table is committed, and the render clips and `own01`'s resolution are chosen from it (S7.0, F75) — *open*
+- [ ] Each analysis render carries the label *"Sentinel pipeline output · recorded stock clip · processed offline at full frame rate"* in every frame, and its JSON and still are committed; a 10-read precision spot-check is recorded (S7.1, F74) — *open*
+- [ ] Every new live read has a vehicle thumbnail with the plate box; **no full frame exists for any read that did not fire a watchlist alert**; `data/evidence/` holds exactly one frame per live watchlist alert, each with its SHA-256 in the audit trail (S7.2, F73) — *open*
+- [ ] HLD §1.4 / §4.3, `docs/architecture.md` "What is stored" and the README name the node-local thumbnail and the hit-only evidence frame; the WAN figures are unchanged (S7.2) — *open*
+- [ ] A live watchlist alert raises the toast on Command and on the Live Wall, with the evidence frame (S7.3) — *open*
+- [ ] Usernames match case-insensitively, with a regression test, and the evaluator account is all lower case (S7.6a, F76) — *open*
+- [ ] Both videos follow `docs/demo-script.md` v2.7: hook, labelled render segment, a live hit with toast and evidence, end card with labelled numbers; each ≤ 3:00 (S7.5) — *open*
+- [ ] Submitted by 16:00 IST on 28 Sep; the portal's cut-off was checked that morning (S7.7, F77) — *open*

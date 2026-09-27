@@ -4,7 +4,7 @@ This file is the plan **and** the checklist. Each task is sized for one Claude C
 
 Status marks: `[ ]` open · `[x]` done · `[~]` partial (a `PARTIAL` block exists in progress.md) · `[!]` blocked (reason in progress.md) · `[-]` cut
 
-Revision: **v2.5, 24 Sep 2026** — Adi's direction of 24 Sep (decisions **F52–F57**): **working modules are ported from the previous build, not retyped** (F52); **the UI is ported, then taken through a design pass and a review gate** (F53, new task **S3.3b**); **the demo is Model 1 + Model 2 + Pipeline 1, with Pipeline 3 described, not built** — S4.2 and S4.3 are cut and GATE C moves to S3.6 (F54); the demo tier is **cam06 pulled live plus Adi's own footage** (F55), published once with the real gaps between shots (F56); and **two lanes** so the Phase 2 session on the laptop is never disturbed (F57). Nothing in Phase 2 (S2.3–S2.5) was edited, nothing done was re-opened. Previously: **v2.4, 23 Sep 2026 23:30 IST** — Adi's answers and one scope change (decision **F49**): **every camera in the catalogue gets a connection check, and the live tests, the active tier and the demo run on the best-working cameras that check picks — never on fixed camera ids**. Amended in place: S0.3 closed (Category 1, students), S0.5 recorded (its credential check moves to S5.5), S2.2's network pull set for Thu 24 on a picked camera, S3.7 gains the pick (`seed_registry --pick-active`), S3.1a, S3.4, S4.1 and S4.2 use it, S3.6 is 10 recordings of 60–90 s filmed Thu 24, S5.5 carries S0.5's check. Nothing done was re-opened. Previously: **v2.3, 22 Sep 2026 23:30 IST** — adds what the portal re-read and the demo review turned up (`claude/submission-verification-2026-09-22.md`, `claude/demo-gap-review-2026-09-22.md`): a **login with roles** and public-exposure hardening (S3.0), a **hosted URL over a tunnel** with evaluator credentials (S3.5), **ground truth from our own footage** (S3.6), the **`/api/ingest` catalogue shape** and a demo-feed onboarding runbook (S3.7), an **overnight hosted soak with backups and a restart watchdog** (S6.1b), and amendments inside S2.2, S2.5, S3.2, S3.3, S3.4, S5.1, S5.4 and S5.5. Nothing already done (S0.2–S2.1) is re-opened; the next task is still **S2.2**. Previously: v2.2, 22 Sep 2026 00:45 IST — v2.1 (21 Sep 01:30) re-based the calendar to Monday 21 Sep and applied 43 + 26 findings from two independent cold-start reviews (`docs/progress.md` R2); v2.2 applies the 7 findings of a third review (`docs/progress.md` R3): the repo already exists so S0.2 is a baseline commit, `.env` is Adi's step before S0.4, a `.claude/settings.json` permissions file, S1.1 pins copied from the old `.venv` (one OpenCV package), the old constitution renamed, the venv-`python` rule, and the two network pulls marked as Adi's.
+Revision: **v2.6, 27 Sep 2026 23:45 IST** — Adi's direction of 27 Sep (decisions **F72–F77**). A new **Phase 7, the next-level pass**, builds only what the two videos will show: a full-frame-rate **analysis render** of the best stock clips, with plates read from the 4K originals (S7.0, S7.1); **evidence visuals**, i.e. a vehicle thumbnail on every read and a full annotated frame with SHA-256 **only on a watchlist hit** (S7.2); **the alert moment**, a global toast with the evidence (S7.3); and **video production** (S7.5, `docs/demo-script.md` v2.7). It also fixes the case-sensitive login that locked the admin account on 27 Sep (S7.6a, F76). Two lanes run on the laptop tonight; code freezes at 10:30 IST on Mon 28, and the target is to submit by 16:00 IST (F77). Speed estimation and a live AI-view overlay are deferred to after shortlisting (F72). Nothing done was re-opened. S5.4's recording, S5.5's remainder, S6.2 and S6.3 are folded into S7.4–S7.7, and S6.1/S6.1b head the Phase 7 cut order. Previously: **v2.5, 24 Sep 2026** — Adi's direction of 24 Sep (decisions **F52–F57**): **working modules are ported from the previous build, not retyped** (F52); **the UI is ported, then taken through a design pass and a review gate** (F53, new task **S3.3b**); **the demo is Model 1 + Model 2 + Pipeline 1, with Pipeline 3 described, not built** — S4.2 and S4.3 are cut and GATE C moves to S3.6 (F54); the demo tier is **cam06 pulled live plus Adi's own footage** (F55), published once with the real gaps between shots (F56); and **two lanes** so the Phase 2 session on the laptop is never disturbed (F57). Nothing in Phase 2 (S2.3–S2.5) was edited, nothing done was re-opened. Previously: **v2.4, 23 Sep 2026 23:30 IST** — Adi's answers and one scope change (decision **F49**): **every camera in the catalogue gets a connection check, and the live tests, the active tier and the demo run on the best-working cameras that check picks — never on fixed camera ids**. Amended in place: S0.3 closed (Category 1, students), S0.5 recorded (its credential check moves to S5.5), S2.2's network pull set for Thu 24 on a picked camera, S3.7 gains the pick (`seed_registry --pick-active`), S3.1a, S3.4, S4.1 and S4.2 use it, S3.6 is 10 recordings of 60–90 s filmed Thu 24, S5.5 carries S0.5's check. Nothing done was re-opened. Previously: **v2.3, 22 Sep 2026 23:30 IST** — adds what the portal re-read and the demo review turned up (`claude/submission-verification-2026-09-22.md`, `claude/demo-gap-review-2026-09-22.md`): a **login with roles** and public-exposure hardening (S3.0), a **hosted URL over a tunnel** with evaluator credentials (S3.5), **ground truth from our own footage** (S3.6), the **`/api/ingest` catalogue shape** and a demo-feed onboarding runbook (S3.7), an **overnight hosted soak with backups and a restart watchdog** (S6.1b), and amendments inside S2.2, S2.5, S3.2, S3.3, S3.4, S5.1, S5.4 and S5.5. Nothing already done (S0.2–S2.1) is re-opened; the next task is still **S2.2**. Previously: v2.2, 22 Sep 2026 00:45 IST — v2.1 (21 Sep 01:30) re-based the calendar to Monday 21 Sep and applied 43 + 26 findings from two independent cold-start reviews (`docs/progress.md` R2); v2.2 applies the 7 findings of a third review (`docs/progress.md` R3): the repo already exists so S0.2 is a baseline commit, `.env` is Adi's step before S0.4, a `.claude/settings.json` permissions file, S1.1 pins copied from the old `.venv` (one OpenCV package), the old constitution renamed, the venv-`python` rule, and the two network pulls marked as Adi's.
 
 ---
 
@@ -92,6 +92,14 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S6.1b | **Overnight hosted soak, database backups, restart watchdog** — new in v2.3 | Sat 26 | 1 h + overnight | [~] Sun 27 (cloud): code half — `scripts/backup_db.py`, pre-migration snapshot in `migrate()`, `launch.py status` uptime + tunnel; 16 tests. Open: the Task Scheduler watchdog (laptop; `launch.py start` restarts everything, so it needs a restart-one-process mode), the overnight hosted run and its acceptance |
 | S6.2 | [Adi] Rehearsal, fallback footage of every screen | Sat 26 | 2 h | |
 | S6.3 | [Adi] Submit; verify every link from a private window | Sun 27 | 1 h | |
+| S7.0 | **4K read test: which clips, which resolution (gate)** — v2.6, lane A | Sun 27 night | 45 min | |
+| S7.1 | **The analysis render** (F74) — lane A, after S7.0 | Sun 27 night | 2.5 h | |
+| S7.2 | **Evidence visuals: vehicle thumbnail on every read, full frame on a hit only** (F73) — lane B | Sun 27 night | 2.5 h | |
+| S7.3 | **The alert moment: global toast with the evidence** — lane B, after S7.2 | Sun 27 night | 1.25 h | |
+| S7.4 | [Adi + Claude] Video-1 dry run with the new pieces (replaces S5.4's dry run) | Mon 28 08:30 | 1.5 h | |
+| S7.5 | [Adi] Recording and production, v2.7 run sheets (supersedes S5.4's recording) | Mon 28 10:30 | 3.5 h | |
+| S7.6 | S7.6a case-insensitive usernames (lane B, first; F76) · S7.6b [Adi] hosting go-live, the S3.5 remainder | Sun 27 night / Mon 28 09:00 | 20 min + 1 h | |
+| S7.7 | [Adi + Claude] Close-out and submit (S5.5 remainder + S6.3) — **by 16:00 IST** | Mon 28 14:00 | 2 h | |
 
 Budgets total ≈ 53 h of sessions over Mon–Sat (v2.3 added about 6 h: S3.0, S3.5, S3.6, S3.7, S6.1b; v2.4 adds 15 min to S3.7 for the active-tier pick; v2.5 removes S4.2, S4.3 and the pick (≈ 6.25 h) and adds S3.3b (1.5 h), and the cloud lane runs beside the laptop lane (F57)). They are session budgets, not promises: when a session overruns, the cut order below decides what goes, never the documents.
 
@@ -105,7 +113,8 @@ Budgets total ≈ 53 h of sessions over Mon–Sat (v2.3 added about 6 h: S3.0, S
 | **Thu 24** | S3.4, S3.5, S3.6, S4.1, S4.2 (hard stop 20:00) | **The public URL is live with evaluator credentials (S3.5)** and a real vehicle has produced a real alert and a real multi-camera route from our own footage (S3.6). **GATE B**: real plates read from the live sandbox; the 10-minute measurements are in progress.md. **GATE C**: a plate typed into the UI returns a timestamped route across ≥ 3 cameras — the demo vehicle qualifies; a harvested real one is bonus |
 | **Fri 25** | **GATE D at 09:00: documents start whatever the code state** — S5.1–S5.5; S4.3 only if its two conditions hold | Code freeze at end of day: tag `v2.0-submission` |
 | **Sat 26** | S6.1, S6.1b, S6.2 | Soak clean, including the overnight hosted run; fallback footage of every screen on disk; nothing new is built after today |
-| **Sun 27** | S6.3 | Submitted; every link verified from a private window. Mon 28 is buffer only |
+| **Sun 27** | S6.3 *(v2.6: moved to S7.7)*; **night: Phase 7 lanes A (S7.0 → S7.1) and B (S7.6a → S7.2 → S7.3)** | Render(s) on disk; evidence visuals and the toast on `main` with the review gate green |
+| **Mon 28** | S7.4 dry run 08:30 · S7.6b go-live 09:00 · **code freeze 10:30** · S7.5 recording and production 10:30–14:00 · S7.7 close-out 14:00 | **Submitted by 16:00 IST** (portal cut-off unknown: plan against 18:00, check it in the morning — F77); every link verified from a private window |
 
 **v2.5 (F57):** the Wed 23 and Thu 24 columns now run as two lanes. **Laptop:** S2.3 → S2.4 → S2.5 (GATE A′) → S3.4 → S4.1 (GATE B) → S3.6 (GATE C, Thu 20:00 — the own-footage route, or the labelled demo vehicle). **Cloud:** S3.0, S3.7, S3.2 now; S3.1a, S3.1b, S3.3, S3.3b once S2.5 is on `main`. S3.5 (hosting) runs on the laptop after S3.4, and only once Adi's Funnel trial has passed. GATE D does not move.
 
@@ -124,6 +133,8 @@ Budgets total ≈ 53 h of sessions over Mon–Sat (v2.3 added about 6 h: S3.0, S
 9. *(v2.3)* The third own-footage camera in S3.6 — two locations still make a real multi-camera route
 10. *(v2.3)* `/api/users` administration screens in S3.0 — the CLI creates accounts either way
 11. *(v2.5)* S3.3b's polish on anything beyond the five hero screens — never the review gate (F53)
+
+**v2.6:** Phase 7 carries its own cut order, at the top of that phase; it applies first.
 
 **Never cut:** registry + map, live wall, ANPR on live feeds, sightings search, watchlist screen, alerts over SSE, route reconstruction, the add-camera form, detection report, auth, any Phase 5 document — and, added in v2.3: **the login and the hardening (S3.0)**, **the hosted URL with working evaluator credentials (S3.5)** and **at least one real own-footage alert and route (S3.6)**.
 
@@ -484,6 +495,242 @@ Run the demo end to end twice with a timer; record fallback footage of every scr
 
 ### S6.3 — [Adi] Submit `[ ]`
 Submit before the deadline, not on it; open every link from a private window afterwards; record the submission time and links in `docs/progress.md`.
+
+---
+
+## Phase 7 — The next-level pass (Sun 27 night – Mon 28 Sep; v2.6, decisions F72–F77)
+
+*Why this phase exists:* the 27 Sep review found a platform that reads real plates but never shows it. 542 live reads of 255 plates are in the database (cam06: 418 reads, mean confidence 0.91), with 13,928 object detections and 658 line crossings. But the wall is a stream-copied relay with no boxes, a read is a table row with a 160 px crop, and all four alerts in the database are seeded. Shortlisting is decided on two ≤ 3-minute videos (upload 28 Sep; live round 12–13 Oct). This phase builds only what those videos will show (F72) and must not break the running platform.
+
+**Timetable (F77):** tonight, two Claude Code lanes on the laptop. **Lane A:** S7.0 → S7.1. **Lane B:** S7.6a → S7.2 → S7.3. Each lane is one Claude Code session. Both run in **the same working tree on `main`**, because the `.venv`, `models/` and `data/` are shared and a separate worktree would need all three rebuilt. They stay out of each other's way by **file ownership**: each block lists the paths it owns, a lane never edits a path the other lane owns, and **in Phase 7 a lane commits only its own paths** (`git add <owned paths>`, never `git add -A`; this overrides protocol step 13). When a commit is refused because `.git/index.lock` exists, wait 10 s and retry; never delete the lock while the other lane is running. **Code freeze at 10:30 IST on Mon 28**: anything not green by then is cut in the order below. S7.4 (dry run) runs at 08:30, S7.5 (recording and production) runs 10:30–14:00, and S7.7 (close-out and submit) runs 14:00–16:00. **Submit by 16:00 IST.** The portal's cut-off time is unknown, so check it on the morning of the 28th and plan against 18:00.
+
+**Before either lane starts — [Adi], 5 minutes:**
+1. Power plan: never sleep on AC, and lid close = do nothing. On 27 Sep the laptop slept from 14:04 to 22:13 IST, and nothing in `data/logs/` moved for 8 h.
+2. Commit this plan: `git add docs && git commit -m "R7: plan v2.6 — the next-level pass (F72–F77)"` then `git push`.
+3. Wait until the login lock has expired (22:50 IST on 27 Sep), then sign in as `ADITYA` in capitals (F76).
+
+**Lane B's first action, before S7.6a — pick the one database (10 min).** On 27 Sep the platform ran on `data/dryrun.db`: a copy made that day, with 94 more live reads than `data/sentinel.db`, started with a `SENTINEL_DB` override in the shell. Tonight's restarts would silently fall back to `sentinel.db`, so settle it first. The default:
+1. `python launch.py stop`.
+2. `.venv/Scripts/python scripts/backup_db.py`.
+3. Copy both `data/sentinel.db` and `data/dryrun.db` into `data/backup/` with a `-pre-promote-20260927` suffix.
+4. Delete `data/sentinel.db-wal`/`-shm` if present, then copy `data/dryrun.db` over `data/sentinel.db`.
+5. `python launch.py start` from a fresh shell **with no `SENTINEL_DB` override**.
+6. `python launch.py status`, and confirm the sightings count equals `dryrun.db`'s.
+
+Record the pick in the S7.6a progress block. Every later task, recording and the hosted URL uses `data/sentinel.db`.
+
+**Phase 7 cut order** (cut from the top; never cut the two videos, the evidence-on-hit rule or the labels):
+1. S6.1 soak with fault injection. The 27 Sep run is the evidence: 10 h, 0 worker restarts, and every pull recovered unaided after the 8 h sleep.
+2. S6.1b's remaining watchdog and the overnight hosted run.
+3. The README live screenshots (`capture_readme.py`).
+4. S7.3's chime (keep the toast).
+5. S7.1's third and fourth clips (keep the best two).
+6. S7.2's thumbnails in the detection report (keep them in Search and Route).
+7. The hosted URL (S7.6b). The brief lists it as optional, so the videos and documents are enough to submit without it.
+
+---
+
+### S7.0 — 4K read test: which clips, which resolution (gate) `[ ]`
+*Lane A. Owns `scripts/analyze_footage.py` and `data/measurements/read-test-*.{json,md}`. Budget 45 min. Decisions F74, F75.*
+*Read first:* `docs/decisions.md` F72–F75; `data/footage_analysis.json` (the 25 Sep 1080p survey: 27 reads across 28 clips); `scripts/analyze_footage.py`.
+*Context:* the clips in `D:\projects\sentinel-footage\raw\` are almost all 3840×2160 at 30 fps. The 25 Sep survey analysed them at ≤ 1920 px, using 8 frames per clip and the 3 largest vehicles per frame. The wall copies (`feeds\localNN.mp4`) are 720p and are **not analysed at all**: every `local*` row is `fps_tier='registered'`, a view-only relay (F67). At 1080p, the largest plate in most clips was 35–65 px wide; ~100 px is the target.
+*Build:*
+- Add flags to `scripts/analyze_footage.py`, keeping the defaults exactly as today so the 25 Sep command still reproduces:
+  - `--max-width` (default 1920)
+  - `--frames` (default 8)
+  - `--ocr-per-frame` (default 3)
+  - `--clips` (comma-separated file names; default all)
+  - `--label` (default `survey`; goes in the output file name)
+- Also record `vehicle_w_px` next to `plate_w_px`, and print the mean OCR time per crop at each width.
+- Run it on the four clips with ≥ 3 reads on 25 Sep (`13270133_3840_2160_30fps.mp4`, `13269027_3840_2160_30fps.mp4`, `13105330_3840_2160_30fps.mp4`, `13172888_3840_2160_30fps.mp4`) plus two zero-read controls (`13009546_3840_2160_30fps.mp4`, `12937197_3840_2160_30fps.mp4`), with `--frames 30 --ocr-per-frame 8`, at `--max-width 1920`, `2560` and `3840`:
+  ```
+  .venv/Scripts/python scripts/analyze_footage.py --dir D:/projects/sentinel-footage/raw --clips <six names> --frames 30 --ocr-per-frame 8 --max-width 3840 --label w3840 --out data/measurements/read-test-w3840.json
+  ```
+  Then the same for `w2560` and `w1920`.
+- Write `data/measurements/read-test-20260927.md`: one row per clip × width with full reads, distinct full plates, median and max plate width, detection ms, and OCR ms per crop.
+- If 2560 px beats 1920 px on `13270133` by ≥ 1.5× in full reads, re-encode `own01` at 2560 px wide as the **candidate**. Use the `ffmpeg` line in `docs/demo-script.md` v2.6 step 1 with `scale=-2:1440`, and write it to `D:\projects\sentinel-footage\own01-1440.mp4`. **Do not publish or onboard it here**: the live fps check is S7.4's first step, so tonight's lane B restarts and the dry run never collide with a test camera.
+*Acceptance:* the table exists with observed numbers. The progress block names:
+- the render clips for S7.1 (the 2–4 clips with the most distinct full plates at their best width);
+- the best width per clip;
+- `own01`'s candidate file and resolution (F75's offline half applied; S7.4 applies the live half);
+- the three plates the render and the dry run should watch for, i.e. the plates read most reliably, with frame times.
+
+**Gate:** if no width yields ≥ 5 distinct full plates on any clip, S7.1 still runs, but on `13270133` and `13172888` only. Its HUD must then say "plates read: N" truthfully, with no padding.
+*Write-off:* progress block; `data/measurements/read-test-*` committed; commit `S7.0: <n> plates at <width> on <clip>; own01 = <file>`.
+
+### S7.1 — The analysis render (F74) `[ ]`
+*Lane A, after S7.0. Owns `scripts/render_analysis.py`, `tests/test_render_analysis.py` and `data/measurements/render-*.json`. **Must not edit anything under `ml/`**: it imports from it. Budget 2.5 h.*
+*Read first:* `docs/decisions.md` F74; `ml/anpr/pipeline.py` (`AnprPipeline.process`, `consensus`, `_commit`); `ml/anpr/detect.py` (`Detector.detect`, which letterboxes any frame to 640 and returns source-pixel boxes); `ml/anpr/track.py`; `ml/anpr/ocr.py` (`PlateOcr.read(crop, offset=, frame_h=)`); `frontend/src/styles/tokens.css` (colours, so the render looks like the product).
+*Build:* `scripts/render_analysis.py <clip> --out <mp4> [--json <path>] [--start S --end S] [--detect-every 2] [--ocr-gap-ms 300] [--ocr-max 6] [--min-vehicle-w 140] [--watch PLATE,PLATE]`
+
+- **Decode** with `cv2.VideoCapture` at the source resolution. **Timing** is `frame_index / fps` from the container: this is a file, not a live feed, and there is no `CAP_PROP_FPS` trap for a file (feed-rules apply to live pulls). Say so in the docstring.
+- **Detect** on every `--detect-every`-th frame, with the shared `Detector` on the full-resolution frame (it letterboxes to 640 itself, so the model cost is the same at 4K and only the resize grows). **Track** with a `Tracker()` instance. On skipped frames, hold each track's last box. Linear interpolation between detections is allowed; extrapolation is not.
+- **OCR** (the offline budget, not the live one):
+  - vehicles only, box width ≥ `--min-vehicle-w` source px;
+  - ≥ `--ocr-gap-ms` of video time between reads per track;
+  - ≤ `--ocr-max` crops per detected frame, largest first;
+  - stop reading a track once it holds a committed full plate.
+  - Crops are cut from the **full-resolution** frame and passed to `PlateOcr.read(crop, offset=…, frame_h=H)`.
+- **Consensus and commit** use `ml.anpr.pipeline.consensus` and the same commit rule as `AnprPipeline._commit`: ≥ 2 agreeing reads, or a dying track holding ≥ 1 full read, with `plates.coerce` for full reads. Copy the rule (≈ 25 lines) with a comment naming its source, rather than editing `ml/`. A unit test proves it gives the same commits as `_commit` on the same reads.
+- **Draw on a 1920×1080 output frame** (downscaled from the source; coordinates scaled):
+  - vehicle and person boxes, 2 px, coloured by class from `tokens.css`;
+  - `#<track>` and the class label on each box;
+  - while a track is being read, its plate box in amber;
+  - once committed, a plate label above the vehicle: the plate in monospace upper case with its confidence, held for the rest of the track;
+  - a plate on `--watch` turns the vehicle box and label red and adds "WATCHLIST HIT".
+- **HUD:**
+  - top-left: *"SENTINEL · pipeline output · recorded stock clip · processed offline at full frame rate"*;
+  - top-right: clip time `mm:ss.f`, "vehicles in view N", "tracks N", "plates read N";
+  - bottom strip: the last five committed reads, each with its plate crop scaled to 48 px high, text and confidence.
+  - The label is burned into **every** frame.
+- **Encode** by piping raw BGR frames to `backend.core.config.ffmpeg()` (`-f rawvideo -pix_fmt bgr24 -s 1920x1080 -r <fps> -i - -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -movflags +faststart`). Never write frames to disk one by one.
+- **Write** `--json`: clip, source resolution, frames processed, detect ms mean/p90, OCR ms mean/p90 and crop count, wall-clock runtime, and every committed read (plate, raw, confidence, kind, track, first and last frame and time, plate width px). Also write one PNG still at the frame with the most labelled plates in view, beside the MP4.
+- **Outputs** go to `D:\projects\sentinel-footage\renders\<clip-stem>.mp4` (outside the repo, F74). The JSON goes to `data/measurements/render-<clip-stem>.json` (committed). Copy one still per clip to `deliverables/deck/img/render-<clip-stem>.png` only if it is ≤ 1.5 MB.
+- **Run** it on the S7.0 clips, one at a time, detached, with output to `data/logs/render.log`, and poll. Do not block a tool call on a render. If a clip takes more than 20 min, raise `--detect-every` or `--min-vehicle-w` and record why.
+
+*Tests* (`tests/test_render_analysis.py`, no GPU and no Paddle, using fakes for the detector and OCR):
+- the commit rule matches `_commit` on the same read sequences;
+- the HUD label is drawn on every frame of a 10-frame synthetic clip, checked by a pixel check in the label box;
+- the ffmpeg argv has no shell and uses `config.ffmpeg()`;
+- the JSON schema holds.
+
+*Acceptance:* each chosen clip's MP4 plays in Chrome and VLC, 1920×1080, with the same duration as its source ± 1 frame. The JSON's distinct full plates are ≥ S7.0's count for that clip at the same width. **Spot-check 10 committed reads against their crops**, record how many are exactly right, and paste the number: this is the precision we can quote. The label is visible in every frame (scrub start, middle and end).
+*Write-off:* progress block with per-clip plates, precision, runtime and output paths. Add a row to `docs/architecture.md` **Part D** for the render: what it is (the pipeline on recorded stock footage, offline, full frame rate, labelled), what it proves (what detection, tracking and OCR produce on every frame) and what it does not prove (live throughput, where S4.1's `[measured]` rows still govern). Commit `S7.1: render — <clip> <n> plates (<k>/10 exact), …`.
+
+### S7.2 — Evidence visuals: a vehicle thumbnail on every read, a full frame on a hit only (F73) `[ ]`
+*Lane B, after S7.6a. Owns `ml/anpr/{ocr,pipeline,sightings}.py`, `ml/worker.py`, `backend/app/main.py` (the `/evidence` route), `backend/app/routes_analytics.py`, `backend/services/{route,plate_search,reports}.py`, `frontend/src/{pages/Search.jsx,pages/Route.jsx,components/AlertCard.jsx}`, `docs/api.md`, and `tests/test_evidence.py`. Budget 2.5 h. **Restart the worker** (`python launch.py stop` then `start`) to load the change; that is expected tonight.*
+*Read first:* `docs/decisions.md` F73, F26, F46; root `CLAUDE.md`; `ml/CLAUDE.md` ("OCR on the crop, never a full frame" still holds: this task stores a frame, it never reads one); `backend/CLAUDE.md`; `frontend/CLAUDE.md` (tokens, four states, review gate); `docs/api.md` §2, §4, §7; `ml/anpr/sightings.py`; `backend/app/main.py` `crop()` (and the traversal fix in commit `69b2e4b`).
+
+*Build (ml):*
+- `PlateRead` gains two optional fields. `PlateOcr.read` never fills them, so the OCR module stays frame-free. `AnprPipeline.process` sets them right after `ocr.read`, because it holds both the vehicle box and `tick.frame`:
+  - `vehicle_px`: the vehicle crop the read came from, downscaled to ≤ 240 px wide, with the plate box drawn in amber, 2 px;
+  - `evidence`: a JPEG (quality 80, ≤ 1280 px wide) of the **whole frame** the read came from, **raw, with nothing drawn**, plus the scale.
+  - To bound memory and CPU, `evidence` is encoded only when the new read becomes the track's best (highest confidence), and the previous best drops it. A track holds at most one frame JPEG (~150 KB), and tracks die after 3 s.
+- `CommittedRead` carries `vehicle_px`, `evidence` and `vehicle_xyxy` from its backing read.
+- `record_sighting(..., vehicle_crop=None)` writes `data/crops/<cam>/<id>_v.jpg` (JPEG q70) beside the plate crop, with forward slashes.
+- `worker._handle_committed`: **only when `create_alert` returns an alert**,
+  1. decode `evidence`, draw the vehicle box (red, 3 px), the plate box (amber) and a caption bar (`<alert_id> · <plate> · <match_type> · conf 0.xx · <camera> · <IST time>`);
+  2. write `data/evidence/<cam>/<alert_id>.jpg`;
+  3. SHA-256 the written bytes;
+  4. `UPDATE sightings SET frame_path=…`;
+  5. `INSERT INTO audit (…, action='evidence.frame', entity='alert', entity_id=<alert_id>, after_json={"path":…, "sha256":…, "bytes":…})`.
+  All of it happens in the same writer job, after the alert commit (persist before you match, then evidence). A failure logs and continues; it never costs the alert.
+- **No other code path writes a full frame.**
+
+*Build (API):*
+- `GET /evidence/{path:path}` under `require_auth`, with the same resolve / `is_relative_to` guard as `/crops`, a JPEG content type and `Cache-Control: private, no-store`.
+- Sighting rows (Search, `GET /api/sightings`, route stops) gain `vehicle_url` (null when the `_v.jpg` file is absent).
+- Alert rows (`GET /api/alerts`, the SSE stream) gain `evidence_url` and `evidence_sha256` (from the audit row; null when absent).
+- `docs/api.md` Part A §2 / §4 / §7 updated **in the same commit**. Then `python -m backend.tools.export_openapi` → `deliverables/registry-api.json`.
+
+*Build (UI, tokens only, four states each):*
+- **Search:** each read row shows the vehicle thumbnail (≤ 96 px high) beside the plate crop, and the plate card shows it at ≤ 200 px.
+- **Route:** each timeline stop shows it too.
+- **AlertCard:** when `evidence_url` is present, the thumbnail is the evidence frame. Clicking it opens a lightbox with the full frame, the SHA-256 (monospace, copyable), and "stored because: watchlist match (`<match_type>`) · `<alert_id>`". Otherwise the crop shows as today.
+- `DEMO` rows keep their badge. Demo rows have no `_v.jpg`, so they fall back to the crop.
+
+*Tests* (`tests/test_evidence.py`):
+- `test_full_frame_written_only_for_watchlist_hits`: a non-hit read writes a `_v.jpg` and **no** file under `data/evidence/`, with `frame_path` NULL;
+- a hit writes exactly one evidence file whose SHA-256 equals the audit row's;
+- `/evidence` needs auth and refuses `..`;
+- `vehicle_url` is null when the file is missing;
+- memory: a track keeps ≤ 1 frame JPEG.
+- Smoke (`scripts/smoke_frontend.py`): a Search row renders an `<img>` for `vehicle_url`; an alert card with `evidence_url` opens the lightbox.
+
+*Docs in the same commit:*
+- `deliverables/HLD.md` §1.4 "What is stored" row 2: add "a ~10 KB vehicle thumbnail kept on the node" and "a full annotated frame for a watchlist hit only, SHA-256 in the audit trail".
+- HLD §4.3 step 4: the operator sees the evidence frame.
+- `docs/architecture.md` "What is stored" and the README table: the same wording.
+- The WAN figures in HLD §7.2 are **unchanged**, because the thumbnail does not cross the WAN (F73).
+
+*Acceptance*, on the running platform with cam06 reading:
+- new cam06 reads have `_v.jpg` files that show the vehicle with its plate boxed;
+- add a plate cam06 has read ≥ 3 times today to the watchlist (Search → *Most read live*; `stolen_vehicle`, high), and wait for a real live alert. Paste its alert id, the evidence path, the SHA-256 and `certutil -hashfile <file> SHA256` agreeing;
+- `data/evidence/` holds exactly as many files as there are live watchlist alerts;
+- remove the test watchlist entry afterwards.
+- Review gate (F53): build + lint + smoke + pytest green, `/code-review` and `/security-review`, with findings fixed or answered.
+*Write-off:* progress block; commit `S7.2: evidence — thumbnails on every read; full frame + SHA-256 only on <alert_id>`.
+
+### S7.3 — The alert moment: a global toast with the evidence (point 5) `[ ]`
+*Lane B, after S7.2. Owns `frontend/src/components/{Shell,AlertToast}.jsx`, `frontend/src/lib/poll.js` (read-only unless the hook needs a "since" cursor), and `frontend/src/styles/app.css` (toast rules). Budget 1.25 h.*
+*Read first:* `frontend/CLAUDE.md` ("a new alert animates in once (≤ 200 ms) and never loops"; tokens; no new dependency); `frontend/src/lib/poll.js` `useAlertStream`; `components/AlertCard.jsx`.
+*Build:*
+- `AlertToast`, mounted once in `Shell`, visible on every signed-in screen.
+- It shows **only alerts that arrive after the page loaded** (never the backlog), up to 3 stacked, top-right, 8 s each or until dismissed.
+- Each toast shows:
+  - a severity bar coloured from tokens, with the severity word;
+  - the evidence frame (from `evidence_url`) or the crop;
+  - the plate in monospace, category, match type, camera · department, the IST time and the provenance badge;
+  - two actions: **View** (opens the S7.2 lightbox) and **Route ›**.
+- Zone alerts show the zone and camera, with no route.
+- A **chime**: a WebAudio beep generated in code (two tones, ~250 ms; no audio file, no dependency), on high/critical only, with a mute toggle in the header that is remembered in `localStorage` inside try/catch. The browser only allows sound after a user gesture; the login click is one.
+- The toast animates in once (≤ 200 ms), with `prefers-reduced-motion` honoured, and never covers the Live Wall's grid controls at 1366×768.
+*Tests:*
+- smoke: sign in, then insert an alert with `backend.core.alerts.create_alert` against the smoke's temporary database (the smoke already does this for `/alerts`). A toast appears within 5 s, carries the plate, and is gone after 8 s. Backlog alerts at load (the seeded demo alerts) raise no toast.
+- `npm run build` and `lint` clean.
+*Acceptance:* in Chrome at 1920×1080, the S7.2 acceptance's live alert (or a fresh one) raises the toast on the Command screen and on the Live Wall, with the evidence frame visible in the toast. Paste a screenshot path under `data/screens/s73-toast-*.png`, and **check the screenshot shows no credential**.
+*Write-off:* progress block; commit `S7.3: alert toast + chime on every screen; evidence in the toast`.
+
+### S7.4 — Video-1 dry run with the new pieces `[ ]`
+*[Adi + a Claude Code session], Mon 28 08:30–10:00. Replaces S5.4's dry-run item.*
+*Read first:* `docs/demo-script.md` **v2.7** (video 1); the S7.0 progress block (`own01` file, the plates to watch).
+*Do:* follow v2.7's setup steps exactly.
+1. `SENTINEL_ACTIVE_CAMERAS=6`, then restart. **F75's live half:** if S7.0 named the 1440p candidate, note `fps_sustained` from `data/worker_stats.json`, run the dry run with `own01-1440.mp4`, and compare after 5 minutes. Keep 1440p only if every camera stays alive and `fps_sustained` is within 20 % of the 1080p figure; otherwise redo the run with the 1080p `own01.mp4`. Record the numbers.
+2. Onboard `own01` through the form.
+3. Add the S7.0 watch plate through the Watchlist screen.
+4. Publish `own01` once (`replay_publish.py --many own01=<file> --port 8556 --hls-port 0`).
+5. Confirm the live read, then the **alert, toast and evidence frame**, all from `provenance='live'` rows.
+6. Time every beat against the run sheet.
+7. Reset per v2.7 (delete `own01`'s registry row or set it to `registered`, and remove the test watchlist entries). `own01`'s reads stay, as F56 requires.
+
+If the watch plate is not read in two runs, take the plate `own01` did read with the highest confidence (from Search) as the next run's watchlist entry, and record which.
+*Acceptance:* one full uninterrupted dry run with a live hit, beats timed, ≤ 3:00 total. Progress block with the alert id, the plate, the confidence and the beat timings.
+
+### S7.5 — Recording and production (point 6) `[ ]`
+*[Adi], with Claude for any retakes of the script. Mon 28 10:30–14:00. Supersedes S5.4's recording item.*
+*Read first:* `docs/demo-script.md` v2.7 in full: the narration lines, the hook, the end card and the production rules.
+*Do:*
+- **Record** each video as several takes (OBS or Win+Alt+R, the Chrome window only, 1920×1080, 30 fps).
+  - Video 1 includes the S7.1 render segment. That is a file played full-screen in VLC or Chrome, **not** the Live Wall.
+  - Video 2 is recorded the first time Command's feed strip shows **cam06 READING** after S7.2 and S7.3 are on `main`.
+- **Edit** in any editor you know (Clipchamp ships with Windows 11), following v2.7's production rules:
+  - hook card, captions, zoom-ins and end card;
+  - trim dead air;
+  - never reorder a take;
+  - never cut between a read and its alert (the IST clock stays in shot);
+  - nothing added that the platform did not produce.
+- **Export** 1080p H.264, ≤ 3:00 each.
+- **Upload** unlisted (YouTube) or "Anyone with the link — Viewer" (Drive).
+- **Watch every frame** of both exports for a credential (address bar, terminal, `.env`, password field, a URL with `user:pass@`).
+*Acceptance:* both links play from a private window on another network. Durations and links are written into `docs/progress.md` (links only; never a password).
+
+### S7.6 — Hosting: the login fix and the evaluator account `[ ]`
+**S7.6a — case-insensitive usernames (F76)** — *Lane B, first. Owns `backend/app/auth.py`, `backend/tools/users.py` and `tests/test_auth.py`. 20 min.*
+- The login lookup becomes `WHERE username = ? COLLATE NOCASE`.
+- `users add` refuses a name that differs from an existing one only by case.
+- `users passwd` and `users disable` match case-insensitively.
+- Regression tests: `test_login_username_is_case_insensitive` (`ADITYA` stored, `Aditya` + the right password → 200), and `test_users_add_refuses_case_variant`.
+- `docs/api.md` §9: one line. The full `test_auth.py` must pass.
+- Commit `S7.6a: usernames match case-insensitively (F76)`.
+
+**S7.6b — go-live, the S3.5 remainder** — *[Adi] + a Claude session for the checks, Mon 28 ~09:00, in parallel with S7.4. Cut item 7.*
+1. The database was settled by lane B's first action (above Phase 7's S7.0). Confirm `launch.py status` shows the promoted database's counts (not the pre-promote `sentinel.db`'s).
+2. **Decide `local01`'s 124 looped reads** (66 plates, 25 Sep; one clip repeated by the loop, e.g. `MH02EZ1785` × 12). The default is to delete them after the snapshot (`DELETE FROM sightings WHERE camera_id='local01' AND provenance='live'`, plus their crops), because they inflate *Most read live*, which video 2 shows. Record the choice.
+3. `.venv\Scripts\python -m backend.tools.users add evaluator --role evaluator`, all lower case, with the password typed at the prompt and written only into the submission form.
+4. Run runbook §0: Tailscale Funnel, `SENTINEL_PUBLIC_HOST`, Windows Update paused, the power plan (done in the pre-step).
+5. Check from mobile data in a private window: login, Command, a playing tile, a toast from a demo alert, a crop, sign-out. Also `curl -sI <url>` for the five security headers.
+*Acceptance:* S3.5's acceptance, minus the reboot test if time is short (say so in the block).
+
+### S7.7 — Close-out and submit `[ ]`
+*[Adi + a Claude session], Mon 28 14:00–16:00. Folds in the S5.5 remainder and S6.3.*
+1. `.venv\Scripts\python scripts\render_hld.py` (HLD.pdf after the S7.2 edits), then `.venv\Scripts\python scripts\render_hld.py . %TEMP% departmental-systems-unaffected.md` (the Model 2 note's first PDF).
+2. `.venv\Scripts\python scripts\export_deliverables.py` for the gap report. The sandbox was 57/58 online at 22:31 IST on 27 Sep.
+3. Deck:
+   - slide 18 links: `set SENTINEL_DECK_VIDEO1=… & set SENTINEL_DECK_VIDEO2=… & set SENTINEL_DECK_URL=…` (leave the URL empty if S7.6b was cut), then `node deliverables\deck\build_deck.js`, then export the PDF from PowerPoint;
+   - if time allows, replace the wall/search images with a render still and an evidence-frame capture, and relabel them to match.
+4. Tick `docs/submission-checklist.md`, including the Phase 7 boxes, against observations. Then `git tag -a v2.0-submission -m "28 Sep submission"` and `git push --follow-tags`.
+5. Fill the portal form: both video links, the documents, the repo link (optional), and the URL + evaluator credentials (optional; in the form only). Submit. Then open every link from a private window.
+*Acceptance:* the submission confirmation is captured (screenshot kept outside the repo; no credential in it). `docs/progress.md` Current state says "submitted at HH:MM IST" with the links.
 
 ---
 

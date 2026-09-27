@@ -4,7 +4,39 @@ Append a block after **every** task, in the format at the bottom. Record what wa
 
 ---
 
-## Current state (27 Sep 2026, Sunday — submit day; S6.1b code half done in the cloud)
+## Current state (27 Sep 2026, 23:45 IST — plan v2.6: the next-level pass, Phase 7)
+
+- **Read this first:** `docs/tasks.md` → **Phase 7** (S7.0–S7.7) and `docs/decisions.md` F72–F77. Tonight two Claude Code lanes run on the laptop: **lane A** S7.0 → S7.1, **lane B** S7.6a → S7.2 → S7.3. Both work in the same tree on `main`, and each commits only its own paths. **Code freezes at 10:30 IST on Mon 28, and the target is to submit by 16:00 IST.**
+- **Where things stood at 22:40 IST** (a status review from a claude.ai session through the desktop bridge; the laptop shell was unavailable, so `git status` was **not** run):
+  - Local `main` = `2c07ceb` = `origin/main`. The S6.1b code half and F71 are merged. No `v2.0-submission` tag.
+  - **Platform:** up since 12:36 IST on **`data/dryrun.db`**, a copy of `sentinel.db` made 27 Sep, with 94 more live reads. It was not started on `sentinel.db`.
+    - Worker: 0 restarts, RSS 279 MB, 5/5 sandbox cameras alive.
+    - cam06 was reading at night: 47 live reads 22:13–22:37 IST.
+  - **The laptop slept 14:04–22:13 IST.** No log line for 8 h. All pulls and the 28 local publishers recovered unaided on wake, but the power plan is not set. Adi sets it before the lanes start.
+  - **Login:** the only account is `ADITYA` (admin); there is **no evaluator account**. Typing `Aditya` failed 5× and locked the account and `127.0.0.1` until 22:50 IST. The lookup is case-sensitive while the throttle lower-cases: F76, fixed in S7.6a.
+  - **Data:**
+    - 542 live reads of 255 plates. cam06 has 418 reads of 189 plates at mean confidence 0.91; `local01` has 124 reads of 66 plates (25 Sep, one looped clip).
+    - 13,928 object detections and 658 line crossings.
+    - **All 4 alerts are demo rows.**
+    - `frame_path` is empty everywhere, so no full frames are stored.
+  - **Why the stock clips yield few plates:**
+    - the 28 `local*` feeds are view-only (`registered`, F67) and are not analysed at all;
+    - their wall copies are 720p;
+    - the 25 Sep 1080p survey found 27 reads across 28 clips, 19 clips with none, and plates mostly 35–65 px wide;
+    - the live OCR budget is 3 fps sampling and ≤ 2 crops a frame.
+    - The originals in `D:\projects\sentinel-footage\raw\` are 4K, and `own01.mp4` (1080p) was made 27 Sep 12:35.
+  - **Deliverables still open from the 25 Sep queue** (now S7.7):
+    - HLD.pdf is older than HLD.md;
+    - `departmental-systems-unaffected.pdf` is missing;
+    - the gap report was captured during the outage;
+    - deck slide 18;
+    - checklist 42/60;
+    - the tag.
+  - **Both videos are unrecorded**: no `own01` camera row exists, so the video-1 dry run never ran.
+- **Next task:** [Adi] the Phase 7 pre-step (power plan, commit this plan). Then, in parallel: **S7.0** (lane A), and on lane B the **database pick** (promote `dryrun.db` to `sentinel.db`, the default) followed by **S7.6a**.
+- **Blockers:** none. The portal's cut-off time on the 28th is unknown: plan against 18:00 and check it in the morning (F77).
+
+## Previous state (27 Sep 2026, Sunday morning — S6.1b code half done in the cloud)
 
 - **Nothing was recorded for Sat 26:** S6.1 (soak), S6.1b's overnight run and S6.2 (rehearsal) have no progress block; `origin/main` was still `f5886f6` (PR #6) this morning. The laptop queue in the block below is unchanged and still in order — S3.5 go-live, the two PDF renders + gap re-run, the video-1 dry run, both recordings, slide 18, the tag, **S6.3 submit** (deadline Mon 28; the checklist says before it).
 - **Done today (cloud, branch `claude/zealous-bardeen-82g5t2`):** S6.1b's code half — `scripts/backup_db.py` (verified read-only `VACUUM INTO` snapshots, newest 7 kept), `migrate()` snapshots a populated DB to `data/backup/sentinel-pre-v<N>.db` before any schema change, and `python launch.py status` now prints `uptime` (API + worker processes, reused pids read NOT RUNNING) and `tunnel` (does a Funnel publish :8000, its URL and `/api/health`, tailscaled uptime). 16 new tests; suite here 350 passed, the 24 failures identical on the unmodified tree (no ffmpeg / paddleocr in the container).
@@ -2003,4 +2035,36 @@ Surprise:  runbook-hosting.md said `launch.py start` restarts dead
 Next:      laptop: `launch.py status` with the Funnel on (paste the
            tunnel line here), the Sentinel Backup task, one manual
            backup_db.py run; then the overnight hosted run.
+```
+
+```
+## R7 — DONE (plan v2.6: the next-level pass — Phase 7, F72–F77)
+When:      2026-09-27T18:15Z (23:45 IST), claude.ai session via the desktop
+           bridge (files staged read-only; the laptop shell did not start,
+           so no command ran on the laptop and git status was not seen).
+Observed:  Status review, then Adi's direction (23:09 IST): build items 1,
+           2, 5, 6 of the review — analysis render, evidence visuals,
+           the alert toast, video production — and write the tasks for
+           Claude Code. Adi chose "full frame on hits only" (F73) and
+           "not sure of the cut-off, plan for 6 PM" (F77).
+           Evidence read (copies of data/dryrun.db and sentinel.db, logs,
+           worker_stats.json): 542 live reads / 255 plates (cam06 418 /
+           189, mean conf 0.91; local01 124 / 66 on 25 Sep); 13,928
+           object_detected + 658 line_cross events; 4 alerts, all demo;
+           frame_path NULL on every row; users = ADITYA (admin) only;
+           login_attempts user:aditya + ip:127.0.0.1 locked to 17:20:47Z
+           after 5 failures typed 'Aditya'; no log line 14:04-22:13 IST
+           (sleep); worker up 36,022 s, 0 restarts, RSS 279 MB; platform
+           on data/dryrun.db (its -wal live, sentinel.db closed).
+           footage_analysis.json (25 Sep, <= 1920 px, 8 frames, 3 OCR a
+           frame): 27 reads / 28 clips; best 13270133 (11 reads), then
+           13269027, 13105330, 13172888 (max plate 109 px); 19 with none.
+           Written: decisions F72-F77; tasks.md v2.6 (Phase 7: S7.0-S7.7,
+           ledger, calendar, cut order); demo-script.md v2.7 (hook,
+           narration, captions, end card, production rules); this block
+           and Current state; submission-checklist Phase 7 boxes.
+Surprise:  The looped local feeds were never analysed after F67, so the
+           archive clips could not have produced reads on the platform;
+           the survey's own ceiling was the 1080p downscale.
+Next:      [Adi] Phase 7 pre-step; then S7.0 (lane A) and S7.6a (lane B).
 ```

@@ -1,6 +1,86 @@
 > **Editor's note (fresh build):** copied verbatim from the previous build's `05-demo-script.md`. The screens it names exist in the fresh build under the same names except Command (`Dashboard`); the walkthrough the videos follow is task S3.4, the recording task is S5.4.
 
-# Demo run sheets — v2.6 (25 Sep 2026, decision F70) — **record these**
+# Demo run sheets — v2.7 (27 Sep 2026, decisions F72–F77) — **record these**
+
+These supersede v2.6 below for recording. They add the four Phase 7 pieces:
+- the **analysis render** (S7.1, F74);
+- **vehicle thumbnails** on every read and a **full evidence frame on a watchlist hit** (S7.2, F73);
+- the **alert toast** (S7.3);
+- **production**: a hook, narration, captions, zoom-ins and an end card (S7.5).
+
+v2.6's `own01` mechanics are unchanged (a stock clip onboarded on camera and published once through, F56/F70/F71), except that its file and watch plate now come from S7.0's progress block. The route is still the labelled demo vehicle.
+
+**The judges' question for each video is "is this a working system?"** Every beat below answers it with something the backend produced on screen, in real time, with the IST clock visible.
+
+## Production rules (both videos)
+
+- **Allowed:**
+  - a hook card at the start and an end card at the finish (plain text on the product's dark background);
+  - captions that say what is on screen;
+  - zoom-ins (a crop of the recorded frame), to make a plate, a thumbnail or a toast readable;
+  - trimming dead air (page loads, waiting for the next vehicle);
+  - the render (S7.1) played as its own segment, full screen, with its burned-in label left visible.
+- **Not allowed:**
+  - reordering anything inside a take;
+  - a cut between a read and the alert it fires (the clock stays in shot across that moment);
+  - speed-ups while a clock is visible;
+  - any overlay that adds a box, plate, number or result the platform did not produce;
+  - hiding a `DEMO` badge;
+  - background music louder than the voice.
+- **Voice:** ~140 words a minute; each video's script below is ≤ 400 words, so 3:00 leaves room for pauses. Record the voice live or dub it afterwards, but keep every "this is live" sentence over a live shot.
+- **Screen:** unchanged from v2.6 — Chrome guest window, 1920×1080, zoom 100 %, bookmarks bar hidden, the Chrome window only. The render plays in VLC or Chrome full screen. No terminal, `.env`, log tail, password field or address bar with a credential appears in any frame.
+- **Tools:** OBS or Win+Alt+R to record; any editor you know to cut (Clipchamp ships with Windows 11). Export 1080p H.264, ≤ 3:00, then upload unlisted.
+
+## Before recording
+
+- The v2.6 checklist: `launch.py status` shows the worker alive and `feeds: 28/28`, and Command's feed strip shows **cam06 READING** before video 2.
+- S7.2 and S7.3 are on `main`, and the platform was restarted after they merged.
+- Chime on (header toggle). Sign in **before** starting the recorder, or show the login and sign in with the password masked.
+- Video 1 setup: v2.6 steps 2–3 (`SENTINEL_ACTIVE_CAMERAS=6`, restart; reset after every dry run). Step 1's file is **the one S7.0 names** (`own01.mp4` at 1080p, or `own01-1440.mp4`). The watch plate is **the one S7.0 and S7.4 name** (v2.6's default was `MH02EX1995` at ~41 s of the clip, i.e. ~71 s after publishing with the 30 s pre-roll).
+
+## Video 1 — our own feed (≤ 3:00)
+
+| # | Time | Beat | Says | Shows |
+|---|---|---|---|---|
+| 0 | 0:00–0:08 | **Hook** | "Gujarat's plan covers about eighty thousand cameras across many departments. No control room can watch them all. Sentinel watches for you — and only keeps what the law can justify." | Hook card: **"~80,000 cameras. No one can watch them all."** then the Sentinel wordmark |
+| 1 | 0:08–0:30 | **What the AI sees** | "This is Sentinel's own pipeline run on a recorded traffic clip at full frame rate. Every box, every track number and every plate you see comes from the same detector, tracker and plate reader that run live on the platform." | The S7.1 render, full screen, ~20 s of its densest stretch. **Leave its label visible.** Zoom once onto a plate label as it appears. Caption: *"Pipeline output on recorded stock footage — processed offline"* |
+| 2 | 0:30–0:35 | **Sign in** | "One platform, role-based access." | The header with user and role (already signed in) |
+| 3 | 0:35–0:58 | **Onboard a camera** | "Nothing is hard-coded. I'm onboarding a new camera now, through this form. The same works in bulk by CSV, or over the API." | Cameras → **Add camera** → `own01` as in v2.6 beat 2 → it appears in the table and as a pin on Map. Point at **Bulk import (CSV)** |
+| 4 | 0:58–1:10 | **The watchlist** | "Here's a representative watchlist. I'm adding a stolen vehicle to it now." | Watchlist → add the S7.0 plate (`stolen_vehicle`, high) |
+| 5 | 1:10–1:25 | **It is live** | "That camera is now a live feed — a different system from the government grid, in the same viewer. It replays a stock traffic clip once through; we didn't film it." | Start the feed off camera (v2.6 beat 4 command). Live Wall → the `own01` tile beside the sandbox tiles |
+| 6 | 1:25–2:05 | **Detection, then the hit** | "Every plate the pipeline reads lands here, with the vehicle it came from. … There — the watchlisted vehicle. The alert fires from that live read, and it reaches every screen." | Search filtered to `own01`: rows filling with **vehicle thumbnails**, plate crops, confidences, `LIVE`. Then the **toast + chime** (zoom in on it) → **View** → the evidence frame lightbox |
+| 7 | 2:05–2:18 | **Evidence, only on a hit** | "This full frame was stored for one reason: a watchlist match. Its SHA-256 is in the audit trail. Reads that don't match never keep a frame — watching is not storing." | The lightbox: the frame with the vehicle and plate boxes, the caption bar, the SHA-256. Caption: *"Full frame stored only on a watchlist hit · SHA-256 audited"* |
+| 8 | 2:18–2:35 | **The route** | "Where else has a vehicle been? Our clip is one location, so for the multi-camera route this is our injected demonstration vehicle — badged DEMO." | Route → `GJ01AB1234` with the numbered pins, departments crossed and the timeline; keep the DEMO badge in shot |
+| 9 | 2:35–2:48 | **The report** | "And everything exports with timestamps and where each row came from." | Reports → Detection report (HTML), `own01` rows `live`, provenance column visible |
+| 10 | 2:48–3:00 | **End card** | "Sentinel. One registry, one viewer, live number-plate recognition, and evidence only when it's justified." | End card (below) |
+
+## Video 2 — the government-provided feed (≤ 3:00)
+
+| # | Time | Beat | Says | Shows |
+|---|---|---|---|---|
+| 0 | 0:00–0:06 | **Hook** | "Now the government-provided feed — live." | Hook card: **"Live on the Government-provided feed"** |
+| 1 | 0:06–0:28 | **Onboarding** | "The organisers' catalogue is the contract. All thirty sandbox cameras were onboarded from it automatically — nothing is hard-coded. Departments and coordinates are seeded, because the catalogue carries none." | Cameras → the 30 rows with source **catalogue** → Map, pins by department |
+| 2 | 0:28–0:48 | **Viewing** | "Five cameras are analysed live over RTSP. The rest are viewed from the organisers' recording. We say which is which on every tile." | Live Wall → **Analysed 5** (`LIVE · RTSP`), then **Sandbox 30** (`CDN RECORDING`). Never call a recording live |
+| 3 | 0:48–1:28 | **ANPR on the live feed** | "This is camera six, read live. Every row is a real read: the vehicle, its plate, the confidence and the time — all from the government feed." | Search → a plate from *Most read live* on **cam06**: **vehicle thumbnails** and crops, confidences, IST times, all `LIVE`. Zoom onto one thumbnail so the plate box shows |
+| 4 | 1:28–1:48 | **Vehicles and people** | "Beyond plates, the same pass counts cars, motorcycles, trucks, buses and people on every analysed camera." | Reports → *Object detection per camera* |
+| 5 | 1:48–2:05 | **Line crossing** | "A virtual line across the bypass counts every crossing, live." | Zones → cam06's *Bypass crossing line*; Reports' line-cross column |
+| 6 | 2:05–2:25 | **A real alert on the government feed** *(if S7.2's acceptance left one)* | "This alert was fired by a live read on the government feed, against our watchlist. The evidence frame and its hash were stored because of the match — and only because of it." | Alerts → the S7.2 live cam06 alert → evidence lightbox with the SHA-256. If there is no such alert, drop this beat and give beat 3 the time |
+| 7 | 2:25–2:48 | **The report** | "The output report: every detected vehicle and plate, with timestamps, camera, department and provenance." | Reports → **Detection report (HTML)** opened on screen; scroll it |
+| 8 | 2:48–3:00 | **End card** | "Designed for about eighty thousand cameras. The design is in our HLD." | End card (below) |
+
+## End card (both videos, 10–12 s)
+
+> **SENTINEL** — Integrated Video Management & Analytics
+> Model 1 registry + GIS · Model 2 unified viewing & live ANPR · watchlist alerts · evidence on hits only
+> Measured on one laptop (GTX 1650): 5 live government cameras, 0 worker restarts `[measured, S4.1]`
+> Statewide design: ~80,000 cameras, text + plate crop over the WAN `[model, HLD §7]`
+> Aditya Shroff · Gujarat Police Sentinel Innovation Challenge 2026 · Category 1
+
+Every number on the card carries its label, as in the HLD. Nothing else is claimed.
+
+---
+
+# Demo run sheets — v2.6 (25 Sep 2026, decision F70) — *superseded for recording by v2.7 above; its `own01` mechanics still apply*
 
 These supersede the v2.3 tables below for recording: S3.6 closed without filming (F70), so "our own feed" is a stock traffic clip that **we onboard as our own camera on camera** and publish **once through**, which puts the real detection → watchlist → alert path on screen (F56's once-through rule, so every read is counted once). The multi-camera route is the labelled demonstration vehicle. Beat content and the rules at the bottom of this file are unchanged.
 
