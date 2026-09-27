@@ -2330,3 +2330,61 @@ Surprise:  1. DELETE /api/watchlist/{id} answered 500 for any entry that had
            when code must load, never just before a take.
 Next:      S7.3 (lane B): the alert toast.
 ```
+
+```
+## S7.0 — DONE (lane A; 4K read test — which clips, which resolution; F74, F75)
+When:      2026-09-27T18:09Z-20:21Z (23:39-01:51 IST), laptop lane A
+Observed:  scripts/analyze_footage.py gains --max-width / --frames /
+           --ocr-per-frame / --clips / --label (defaults unchanged, so the
+           25 Sep command still reproduces), vehicle_w_px + t_s + the
+           coerced plate on every read, OCR ms per crop printed per width,
+           a JSON checkpoint after every clip, and --table (folds runs into
+           Markdown). Ran as specified: 6 clips x 30 frames x 8 crops, at
+           1920 / 2560 / 3840 px, the same 30 frame indices at every width.
+           Wall-clock 2712 s / 2519 s / 2664 s. Table and narrative:
+           data/measurements/read-test-20260927.md; raw: read-test-w*.json.
+           full reads 1920 -> 2560 -> 3840 (distinct coerced; median plate px):
+             13270133  47 -> 56 -> 66  (32 -> 40 -> 43;  46 -> 59 -> 88, max 114)
+             13269027  50 -> 50 -> 60  (17 -> 22 -> 27;  54 -> 72 -> 108)
+             13172888  31 -> 30 -> 32  (13 -> 10 -> 15;  82 -> 108.5 -> 159, max 212)
+             13105330   9 ->  8 ->  8  ( 7 ->  8 ->  8;  53 -> 70 -> 104)
+             13009546, 12937197 (controls): 0 at every width.
+           GATE: passed (>= 5 distinct full plates on four clips at 3840).
+           RENDER CLIPS for S7.1 (distinct at best width): 13270133 (43,
+           3840), 13269027 (27, 3840), 13172888 (15, 3840), 13105330 (8,
+           2560/3840 tie). Best width: 3840 for all four (OCR crops cut
+           from the full 4K frame, F74).
+           OWN01 (F75 offline half): 13270133 at 2560 = 56 full reads vs 47
+           at 1920 = 1.19x < 1.5x -> NO 1440p candidate encoded; S7.4 uses
+           D:\projects\sentinel-footage\own01.mp4 (1080p, 30 s pre-roll).
+           WATCH PLATES (clip time; +30 s in own01):
+             1. MH02GB4920 - frames 30-611 (1.0-20.4 s), stationary in the
+                jam; 10 / 7 / 9 reads, mean conf 0.90; at 1920 it read
+                "MH02684920" x6 identically (coerces to MH02GB4920), so the
+                live two-agreeing-reads rule can fire at own01's 1080p.
+                PRIMARY.
+             2. MH02EZ1785 - frames 30-669 (1.0-22.3 s); 6 / 8 / 11 reads,
+                mean conf 0.91; at 1920 "MH02E21785" x5.
+             3. MH04HY7362 - frames 785-843 (26.2-28.1 s); 1 / 2 / 2 reads,
+                conf up to 1.00, identical text at every width.
+           v2.6's default MH02EX1995 was read at NO width in these frames
+           (only the misread MH02EK1995 at 2560/3840): do not watch it.
+           Smallest vehicle behind a full read: 246 source px (p10 ~330),
+           which sets S7.1's --min-vehicle-w 240.
+Surprise:  1. The laptop was paging the whole run (0.4-0.8 GB free, up to
+           9,500 pages/s, CPU 100 %): the live platform, lane B, S5.4's
+           dry-run session publishing own01 and this test shared 8 GB. OCR
+           ms per crop swung with load (w1920 1.33 s, w2560 1.13 s, w3840
+           1.36 s mean) - the timings are load-confounded, not a cost curve;
+           the read counts are not affected.
+           2. Resolution beat sampling: at 3840 the median plate on 13270133
+           is 88 px (target ~100), and full reads rise 40 % over 1920 on
+           the same pixels. The controls stay at zero - 4K adds reads where
+           plates are legible, it does not invent them.
+           3. The run's log (data/logs/read-test.log) stopped after 3 lines:
+           the grep filter went binary on Paddle's output. The per-clip
+           JSON checkpoints are the record; the render runner writes its
+           log unfiltered.
+Next:      S7.1 (lane A): render the four clips; S7.4 watches MH02GB4920 on
+           own01.mp4 (1080p).
+```

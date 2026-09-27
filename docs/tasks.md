@@ -92,7 +92,7 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S6.1b | **Overnight hosted soak, database backups, restart watchdog** — new in v2.3 | Sat 26 | 1 h + overnight | [~] Sun 27 (cloud): code half — `scripts/backup_db.py`, pre-migration snapshot in `migrate()`, `launch.py status` uptime + tunnel; 16 tests. Open: the Task Scheduler watchdog (laptop; `launch.py start` restarts everything, so it needs a restart-one-process mode), the overnight hosted run and its acceptance |
 | S6.2 | [Adi] Rehearsal, fallback footage of every screen | Sat 26 | 2 h | |
 | S6.3 | [Adi] Submit; verify every link from a private window | Sun 27 | 1 h | |
-| S7.0 | **4K read test: which clips, which resolution (gate)** — v2.6, lane A | Sun 27 night | 45 min | |
+| S7.0 | **4K read test: which clips, which resolution (gate)** — v2.6, lane A | Sun 27 night | 45 min | [x] done Mon 28 01:51 (lane A): gate passed; best width 3840 on all four clips (13270133 66 full / 43 distinct); own01 stays 1080p (2560 = 1.19x < 1.5x); watch MH02GB4920; ran 2.2 h, not 45 min, on a paging laptop |
 | S7.1 | **The analysis render** (F74) — lane A, after S7.0 | Sun 27 night | 2.5 h | |
 | S7.2 | **Evidence visuals: vehicle thumbnail on every read, full frame on a hit only** (F73) — lane B | Sun 27 night | 2.5 h | [x] done Mon 28 ~02:45 (lane B): live hit ALERT-20260927-0013 (GJ11S7924, cam06), evidence SHA-256 = certutil; review gate 14 findings, 12 fixed incl. a HIGH SMB/NTLM path in /evidence + /crops, 2 documented (F79); F78 watchlist-delete 500 fixed |
 | S7.3 | **The alert moment: global toast with the evidence** — lane B, after S7.2 | Sun 27 night | 1.25 h | |
@@ -530,7 +530,7 @@ Record the pick in the S7.6a progress block. Every later task, recording and the
 
 ---
 
-### S7.0 — 4K read test: which clips, which resolution (gate) `[ ]`
+### S7.0 — 4K read test: which clips, which resolution (gate) `[x]`
 *Lane A. Owns `scripts/analyze_footage.py` and `data/measurements/read-test-*.{json,md}`. Budget 45 min. Decisions F74, F75.*
 *Read first:* `docs/decisions.md` F72–F75; `data/footage_analysis.json` (the 25 Sep 1080p survey: 27 reads across 28 clips); `scripts/analyze_footage.py`.
 *Context:* the clips in `D:\projects\sentinel-footage\raw\` are almost all 3840×2160 at 30 fps. The 25 Sep survey analysed them at ≤ 1920 px, using 8 frames per clip and the 3 largest vehicles per frame. The wall copies (`feeds\localNN.mp4`) are 720p and are **not analysed at all**: every `local*` row is `fps_tier='registered'`, a view-only relay (F67). At 1080p, the largest plate in most clips was 35–65 px wide; ~100 px is the target.
