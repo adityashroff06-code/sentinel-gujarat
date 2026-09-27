@@ -1400,3 +1400,94 @@ tbody tr.selected { background: var(--surface-3); }
   word-break: break-all;
 }
 .evidence-close { margin-left: auto; }
+
+/* ======================================================================
+   S7.3 — the alert moment: a global toast stack (AlertToast.jsx), top
+   right, below the header / status strip / wall controls (its `top` is
+   measured in JS). A new toast animates in once (<= 200 ms), never loops.
+   ====================================================================== */
+
+.toast-stack {
+  position: fixed;
+  top: 72px; /* replaced by the measured offset once mounted */
+  right: var(--s-3);
+  z-index: 900; /* under the evidence lightbox (1000) */
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  width: 360px;
+  max-width: calc(100vw - 2 * var(--s-3));
+  pointer-events: none; /* only the toasts themselves take clicks */
+}
+.toast {
+  pointer-events: auto;
+  background: var(--surface-1);
+  border: 1px solid var(--surface-2);
+  border-left: 4px solid var(--sev-low);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-2);
+  padding: var(--s-2) var(--s-3);
+  animation: toast-in var(--t-med) var(--ease) 1;
+}
+.toast.sev-critical { border-left-color: var(--sev-critical); }
+.toast.sev-high { border-left-color: var(--sev-high); }
+.toast.sev-medium { border-left-color: var(--sev-medium); }
+.toast.sev-low { border-left-color: var(--sev-low); }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}
+.toast-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.toast-kind { font-weight: 600; }
+.toast-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: var(--fs-lg);
+  line-height: 1;
+  padding: 0 var(--s-1);
+  cursor: pointer;
+}
+.toast-close:hover { color: var(--text); }
+.toast-body {
+  display: flex;
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+}
+.toast-thumb {
+  display: block;
+  width: 128px;
+  max-height: 96px;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  flex: none;
+}
+.toast-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--fs-sm);
+}
+.toast-plate { font-size: var(--fs-lg); }
+.toast-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.toast-actions {
+  display: flex;
+  gap: var(--s-2);
+  justify-content: flex-end;
+  margin-top: var(--s-2);
+}
+.header .chime-toggle { white-space: nowrap; }

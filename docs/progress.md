@@ -2388,3 +2388,42 @@ Surprise:  1. The laptop was paging the whole run (0.4-0.8 GB free, up to
 Next:      S7.1 (lane A): render the four clips; S7.4 watches MH02GB4920 on
            own01.mp4 (1080p).
 ```
+
+```
+## S7.3 — PARTIAL (lane B; the alert toast) — code built, acceptance not run
+When:      2026-09-28 02:45–03:05 IST, laptop lane B (stopped at a usage limit)
+Done so far: frontend/src/components/AlertToast.jsx - mounted once in
+           Shell; its own EventSource (no Last-Event-ID, so no backlog)
+           plus a baseline max(alert_seq) at mount; up to 3 toasts, 8 s
+           each or dismissed; severity bar + word, evidence frame (else the
+           crop), plate, category, match chip, camera · department, IST
+           time, provenance badge; View (the S7.2 lightbox, else /alerts)
+           and Route ›; zone alerts show zone + camera, no route; two-tone
+           WebAudio chime (~250 ms, code only) on high/critical, unlocked by
+           any click; ChimeToggle in Header.jsx (localStorage in try/catch).
+           The stack measures .header/.status-strip/.wall-ctrl and sits
+           below them. Toast CSS in app.css (tokens only, 200 ms entry once,
+           prefers-reduced-motion). npm lint + build clean. Smoke gains the
+           S7.3 checks (no toast for backlog; a fresh alert toasts < 5 s,
+           carries the plate, gone ~8 s; below the wall controls at
+           1366x768; toasts dismissed before the /alerts ack click;
+           insert_fresh_alert avoids the cooldown; its alerts dropped before
+           the hero shots) - the run started but its result was NOT seen.
+           Header.jsx is owned by neither lane (the mute toggle lives there).
+Not done:  smoke result; review gate (F53); live acceptance in Chrome
+           (needs a signed-in browser and a real live hit - no password
+           was available to this session).
+BLOCKER seen: since the 01:44 IST restart ALL FIVE sandbox cameras get
+           RTSP 401 Unauthorized (1,987 lines by 01:57 IST, still at
+           attempt 24); the first restart's 401 wave cleared in ~5 min, this
+           one has not. Worker backs off per rule 7. No reads, so no live
+           hit is possible until the gateway accepts us again.
+Next:      [Adi] check the 401s (`python launch.py status`; if still 0
+           frames, stop/start once more later - or the credentials/gateway
+           changed). Then: run scripts/smoke_frontend.py; a /code-review +
+           /security-review pass on AlertToast/Shell/Header/app.css/smoke;
+           live acceptance: sign in (Chrome 1920x1080), watchlist a plate
+           cam06 reads often, screenshot the toast on Command and the Live
+           Wall to data/screens/s73-toast-*.png (no credential visible),
+           remove the entry (it is deactivated, F78). Tick S7.3.
+```

@@ -2,6 +2,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { api } from '../lib/api.js'
 import { roleAtLeast, SessionContext } from '../lib/session.js'
+import AlertToast from './AlertToast.jsx'
 import Header from './Header.jsx'
 import StatusStrip from './StatusStrip.jsx'
 
@@ -100,6 +101,8 @@ export default function Shell() {
             </Suspense>
           </div>
         </div>
+        {/* S7.3: new alerts announced on every signed-in screen */}
+        <AlertToast />
       </div>
     </SessionContext.Provider>
   )

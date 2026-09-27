@@ -361,6 +361,61 @@ def insert_live_alert():
         con.close()
 
 
+def insert_fresh_alert():
+    """S7.3: one more watchlist alert through the REAL create_alert, on the
+    newest demo sighting whose (plate, camera) pair has never alerted, so the
+    5-minute cooldown can never suppress it (the seeded cam09/cam10 alerts
+    may still be inside theirs). Returns the alert row or None."""
+    from backend.core import db as dbmod
+    from backend.core.alerts import create_alert
+
+    con = dbmod.connect()
+    try:
+        wl = con.execute("SELECT * FROM watchlist WHERE plate = 'GJ01AB1234'").fetchone()
+        candidates = con.execute(
+            "SELECT s.* FROM sightings s WHERE s.provenance = 'demo' AND NOT EXISTS"
+            " (SELECT 1 FROM alerts a WHERE a.plate_canonical = s.plate_canonical"
+            "  AND a.camera_id = s.camera_id) ORDER BY s.sighting_id DESC"
+        ).fetchall()
+        for sight in candidates if wl is not None else ():
+            row = create_alert(
+                con, kind="watchlist", camera_id=sight["camera_id"],
+                severity=wl["severity"], seen_at=datetime.now(timezone.utc),
+                clock_source="demo", sighting=sight, wl_row=wl, rule="exact",
+                distance=0.0,
+            )
+            if row is not None:
+                con.commit()
+                return row
+        return None
+    finally:
+        con.close()
+
+
+def drop_alerts(seqs: list[int]) -> None:
+    """Remove the temp-DB alerts the toast checks added, so the later hero
+    screenshots show exactly the seeded feed."""
+    from backend.core import db as dbmod
+
+    con = dbmod.connect()
+    try:
+        con.executemany("DELETE FROM alerts WHERE alert_seq = ?", [(s,) for s in seqs])
+        con.commit()
+    finally:
+        con.close()
+
+
+def dismiss_toasts(page) -> None:
+    """Close every alert toast (S7.3) so none sits over what a check clicks
+    next. A toast that times out between the lookup and the click is fine —
+    it is gone either way."""
+    for button in page.locator(".toast-close").all():
+        try:
+            button.click(timeout=2000)
+        except Exception:  # noqa: BLE001 - it expired on its own (8 s)
+            continue
+
+
 _EVIDENCE_FILES: list[Path] = []  # written by attach_evidence_visuals; cleaned in main()
 # The synthetic files land in the repo's shared data/ tree (the API serves
 # from there) while the hosted platform may be running on the same disk, so
@@ -1110,6 +1165,16 @@ def main() -> int:
                 time.sleep(0.1)
             check(appeared, "SSE alert card appeared within 3 s without reload")
             card_sel = f'.alert-card[data-alert-id="{new_alert["alert_id"]}"]'
+            # S7.3: the same alert raises the global toast; close it so it
+            # cannot sit over this card's ack button
+            try:
+                page.wait_for_selector(
+                    f'.toast[data-alert-id="{new_alert["alert_id"]}"]', timeout=5000)
+                toast_on_alerts = True
+            except Exception:  # noqa: BLE001 - playwright TimeoutError: reported below
+                toast_on_alerts = False
+            check(toast_on_alerts, "toast: the new alert is also announced by the global toast")
+            dismiss_toasts(page)
             page.click(f"{card_sel} button.ack")
             page.wait_for_selector(f"{card_sel}.acked", timeout=5000)
             page.reload()
@@ -1165,6 +1230,60 @@ def main() -> int:
                 page.locator(f"{card_sel} .evidence-thumb-btn").count() == 0,
                 "the smoke's synthetic evidence is undone before the hero screenshots",
             )
+
+            # --- S7.3 the alert moment: a global toast on every screen ----
+            # Backlog alerts at load raise no toast; a fresh alert toasts
+            # within 5 s, carries the plate and is gone after ~8 s; on the
+            # Live Wall at 1366x768 the stack sits below the grid controls.
+            page.set_viewport_size({"width": 1920, "height": 1080})
+            page.goto(f"{BASE}/command")
+            page.wait_for_selector("#start-here", timeout=15000)
+            page.wait_for_timeout(2500)  # EventSource subscribed + baseline read
+            check(page.locator(".toast").count() == 0,
+                  "toast: backlog alerts at load raise no toast")
+            toast_alert = insert_fresh_alert()
+            check(toast_alert is not None, "toast: create_alert inserted a fresh alert")
+            toast_sel = f'.toast[data-alert-id="{toast_alert["alert_id"]}"]'
+            t0 = time.monotonic()
+            try:
+                page.wait_for_selector(toast_sel, timeout=5000)
+                shown_after = time.monotonic() - t0
+            except Exception:  # noqa: BLE001 - playwright TimeoutError: reported below
+                shown_after = None
+            check(shown_after is not None,
+                  f"toast: appeared within 5 s of the alert ({shown_after and round(shown_after, 1)} s)")
+            if shown_after is not None:
+                check(toast_alert["plate"] in page.locator(toast_sel).inner_text(),
+                      f"toast: carries the plate ({toast_alert['plate']})")
+                page.screenshot(path=str(SCREENS / "s73-toast-smoke.png"))
+                try:
+                    page.wait_for_selector(toast_sel, state="detached", timeout=12000)
+                    gone_after = time.monotonic() - t0
+                except Exception:  # noqa: BLE001 - reported below
+                    gone_after = None
+                check(gone_after is not None and 7.0 <= gone_after <= 11.0,
+                      f"toast: gone after ~8 s ({gone_after and round(gone_after, 1)} s after the alert)")
+            # the wall at 1366x768: the stack never covers the grid controls
+            page.set_viewport_size({"width": 1366, "height": 768})
+            page.goto(f"{BASE}/wall")
+            page.wait_for_selector(".wall-ctrl", timeout=15000)
+            page.wait_for_timeout(2500)
+            wall_alert = insert_fresh_alert()
+            check(wall_alert is not None, "toast: create_alert inserted a second fresh alert")
+            wall_sel = f'.toast[data-alert-id="{wall_alert["alert_id"]}"]'
+            try:
+                page.wait_for_selector(wall_sel, timeout=5000)
+                page.wait_for_timeout(300)  # past the 200 ms entry animation
+                stack = page.locator(".toast-stack").bounding_box()
+                ctrl = page.locator(".wall-ctrl").bounding_box()
+                clear = (stack is not None and ctrl is not None
+                         and stack["y"] >= ctrl["y"] + ctrl["height"])
+            except Exception:  # noqa: BLE001 - reported below
+                clear = False
+            check(clear, "toast: on the Live Wall at 1366x768 the stack sits below the grid controls")
+            dismiss_toasts(page)
+            page.set_viewport_size({"width": 1920, "height": 1080})
+            drop_alerts([a["alert_seq"] for a in (toast_alert, wall_alert) if a is not None])
 
             # --- Live Wall: one pull per visible tile, paging destroys ---
             playlist_re = re.compile(r"/api/hls/([^/]+)/live\.m3u8")

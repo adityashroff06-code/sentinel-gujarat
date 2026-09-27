@@ -2,6 +2,7 @@ import { useLocation } from 'react-router-dom'
 import { api } from '../lib/api.js'
 import { usePolled } from '../lib/poll.js'
 import { useSession } from '../lib/session.js'
+import { ChimeToggle } from './AlertToast.jsx'
 
 // Header — live counts from /api/stats through the ONE shared poller, plus
 // the session menu (signed-in user, role, sign-out — decision F41).
@@ -48,6 +49,7 @@ export default function Header() {
       <div className="stat alert">
         <b>{s ? s.alerts_active : '—'}</b>active alerts
       </div>
+      <ChimeToggle />
       {session && (
         <div className="session">
           <div className="who">
