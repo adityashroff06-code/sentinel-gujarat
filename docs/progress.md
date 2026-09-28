@@ -2586,3 +2586,43 @@ Next:      S7.4 (Adi): the dry run. Watch plates that recur on cam06 by
            day (GJ11S7924, GJ32AG2883, GJ01HM7952, GJ23H1546 each hit
            within minutes this morning; re-adding one reactivates it, F78).
 ```
+
+```
+## S7.7 — PARTIAL (steps 1–2: deliverables refresh; verified and committed from the cloud)
+When:      2026-09-28 19:58–20:15 IST — desktop renders, then this cloud
+           session (branch main-f83vgh)
+Observed:  The desktop ran the S7.7 renders and exports at 19:58 IST and
+           moved the session to the cloud with the tree as a WIP snapshot;
+           this session verified the eight changed files (3-lens Workflow:
+           credentials, provenance, freshness) and committed them.
+           - HLD.pdf re-rendered: text recovered from the PDF streams
+             carries the S7.2 evidence passages ("SHA-256 is written to
+             the audit trail", "for a watchlist hit only") and the NVDEC
+             and backup sections; date line matches HLD.md.
+           - departmental-systems-unaffected.pdf (first render): 7/7
+             spot-checked phrases match its markdown.
+           - detection-report.csv/html: 1773 detections = 1749 live +
+             24 demo; every row has provenance + clock_source, values
+             only {live, demo}; all GJ01AB1234 rows demo; HTML count
+             matches the CSV and carries the B14 disclosure note. The
+             124 disclosed local01 looped reads (25 Sep) are still in.
+           - gap-analysis-report.html regenerated off-outage
+             (2026-09-28T14:28Z): 61 cameras, 56 online, 5 active-tier.
+           - sample-camera-dataset.csv: 61 cameras = 30 sandbox +
+             31 local-stock (own01–own03 now exported); disclosure line
+             updated; sandbox rows still export no URL or credential.
+           - frontend-dist.zip rebuilt: 15 files, no source maps, no
+             dev-server references, API paths relative only.
+           - Credential sweep over all eight files, including decoded
+             PDF text and the minified JS bundle: clean. Only IP
+             anywhere is 127.0.0.1.
+Surprise:  1. own03's registry row points at .../stream/own3 (missing
+           the 0) and own02/own03 omit the "seeded coordinates" phrase
+           own01 carries — DB data, cosmetic, disclosed at file level.
+           2. The gap report lists own01 offline with "Last seen: —"
+           while the CSV has one own01 live read (27 Sep 17:57 UTC) —
+           the health monitor's last-seen vs the detection store.
+Next:      [Adi] merge the draft PR for main-f83vgh into main, then S7.7
+           steps 3–5: deck slide 18, checklist tick, v2.0-submission tag,
+           portal form.
+```
