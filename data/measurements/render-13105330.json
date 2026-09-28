@@ -1,0 +1,113 @@
+{
+  "clip": "13105330_3840_2160_30fps.mp4",
+  "label": "SENTINEL \u00b7 pipeline output \u00b7 recorded stock clip \u00b7 processed offline at full frame rate",
+  "source": {
+    "width": 3840,
+    "height": 2160,
+    "fps": 30.0,
+    "frames": 319,
+    "duration_s": 10.633
+  },
+  "range_s": {
+    "start": 0.0,
+    "end": null
+  },
+  "output": {
+    "path": "D:\\projects\\sentinel-footage\\renders\\13105330.mp4",
+    "width": 1920,
+    "height": 1080,
+    "frames_written": 319,
+    "duration_s": 10.633
+  },
+  "still": {
+    "path": "D:\\projects\\sentinel-footage\\renders\\13105330.png",
+    "frame": 0,
+    "labelled_plates": 0
+  },
+  "provider": "DmlExecutionProvider",
+  "options": {
+    "detect_every": 2,
+    "ocr_gap_ms": 500.0,
+    "ocr_max": 4,
+    "min_vehicle_w": 240.0,
+    "ocr_width": null,
+    "ocr_track_max": 8,
+    "watch": [],
+    "progress_every": 150
+  },
+  "frames_processed": 319,
+  "frames_detected": 160,
+  "detect_ms": {
+    "mean": 76.8,
+    "p90": 135.8,
+    "n": 160
+  },
+  "ocr_ms": {
+    "mean": 1503.6,
+    "p90": 2377.6,
+    "n": 113,
+    "crops": 113
+  },
+  "runtime_s": 251.5,
+  "tracks": 48,
+  "plates_read": 3,
+  "plates_read_on_screen": 0,
+  "distinct_full_plates": [
+    "MH01CZ6589",
+    "MH43AR0890",
+    "MH61CR6585"
+  ],
+  "reads": [
+    {
+      "plate": "MH01CZ6589",
+      "raw": "MH01C26589",
+      "confidence": 0.493,
+      "kind": "full",
+      "track": 3,
+      "class": "car",
+      "watch": false,
+      "commit_frame": 318,
+      "commit_t_s": 10.6,
+      "first_frame": 0,
+      "first_t_s": 0.0,
+      "last_frame": 256,
+      "last_t_s": 8.53,
+      "plate_w_px": 92,
+      "plate_w_px_ocr": 92
+    },
+    {
+      "plate": "MH43AR0890",
+      "raw": "MH43AR0890",
+      "confidence": 0.937,
+      "kind": "full",
+      "track": 15,
+      "class": "car",
+      "watch": false,
+      "commit_frame": 318,
+      "commit_t_s": 10.6,
+      "first_frame": 0,
+      "first_t_s": 0.0,
+      "last_frame": 318,
+      "last_t_s": 10.6,
+      "plate_w_px": 110,
+      "plate_w_px_ocr": 110
+    },
+    {
+      "plate": "MH61CR6585",
+      "raw": "MHGICR658S",
+      "confidence": 0.631,
+      "kind": "full",
+      "track": 29,
+      "class": "truck",
+      "watch": false,
+      "commit_frame": 318,
+      "commit_t_s": 10.6,
+      "first_frame": 32,
+      "first_t_s": 1.07,
+      "last_frame": 318,
+      "last_t_s": 10.6,
+      "plate_w_px": 102,
+      "plate_w_px_ocr": 102
+    }
+  ]
+}

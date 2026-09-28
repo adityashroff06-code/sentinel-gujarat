@@ -33,7 +33,7 @@ Append a block after **every** task, in the format at the bottom. Record what wa
     - checklist 42/60;
     - the tag.
   - **Both videos are unrecorded**: no `own01` camera row exists, so the video-1 dry run never ran.
-- **Next task:** the pre-step is done (plan committed, `d26ee30`) and the lanes are running (from ~23:20 IST). **Lane B:** database pick DONE (`sentinel.db` = promoted `dryrun.db`, 618 sightings; platform restarted on the default, 5/5 alive), **S7.6a DONE**, **S7.2 DONE** (evidence visuals; the first real live watchlist alert, `ALERT-20260927-0013`, with its evidence frame and SHA-256; F78, F79) — now **S7.3**. Note for S7.4: removing a watchlist entry that has fired an alert now **deactivates** it (F78), and listing the plate again reactivates it. **Lane A:** S7.0 → S7.1 (its own Log blocks govern).
+- **Next task:** the pre-step is done (plan committed, `d26ee30`) and the lanes are running (from ~23:20 IST). **Lane B:** database pick DONE (`sentinel.db` = promoted `dryrun.db`, 618 sightings; platform restarted on the default, 5/5 alive), **S7.6a DONE**, **S7.2 DONE** (evidence visuals; the first real live watchlist alert, `ALERT-20260927-0013`, with its evidence frame and SHA-256; F78, F79) — now **S7.3**. Note for S7.4: removing a watchlist entry that has fired an alert now **deactivates** it (F78), and listing the plate again reactivates it. **Lane A: S7.0 DONE, S7.1 DONE** (render `D:\projects\sentinel-footage\renders\13270133.mp4`: 57.2 s, 53 plates, 8/10 exact, watch hit on `MH02GB4920`; the three other renders are below acceptance and stay out of the video). **For S7.4:** use `own01.mp4` (1080p, no 1440p) and watch **`MH02GB4920`** (clip 1.0–20.4 s, so ~31–50 s after publishing), then `MH02EZ1785`; never `MH02EX1995`.
 - **S5.4's video-1 dry run ran 23:20–23:47 IST (Log block "S5.4 — video 1 dry run"; it supersedes "the dry run never ran" above):**
   - beats 2, 3, 7 and 8 pass through the real UI;
   - one pass gave **one** live read (`22BH0641B`, 0.87) and **no watchlist hit**, because own01 was sampled at ~0.26 fps with the CPU at 93–96 %;
@@ -2464,4 +2464,56 @@ Next:      The renders of 13269027, 13172888, 13105330 were running
            the label; add the Part D row to docs/architecture.md; tick
            S7.1 and rewrite Current state (lane A: S7.4 watches MH02GB4920
            on own01.mp4 1080p). Keep the CPU free during S7.5 recording.
+```
+
+```
+## S7.1 — DONE for 13270133, the clip video 1 uses; the other three
+##        renders fall short of acceptance and stay out of the video
+When:      2026-09-28 02:00-02:11 IST (renders), 09:41-10:05 IST (checks),
+           laptop lane A. Supersedes the S7.1 PARTIAL block above.
+Observed:  All four renders ended rc=0 (data/logs/render.log). Budget as in
+           the PARTIAL block (--min-vehicle-w 240 --ocr-gap-ms 500
+           --ocr-max 4 --ocr-track-max 8; OCR on the full 3840 frame).
+           clip      frames in=out  duration (=src)  plates  exact/10  runtime  OCR crops
+           13270133  1716 = 1716    57.200 s        53      8/10      2040 s   910 x 1666 ms
+           13269027   299 =  299     9.967 s        10      7/10       272 s   253 x  785 ms
+           13172888   711 =  711    23.700 s         9      5/10       463 s   247 x 1074 ms
+           13105330   319 =  319    10.633 s         3      0/3        252 s   113 x 1504 ms
+           All four: h264 1920x1080 yuv420p 30/1. 13270133: High profile,
+           full ffmpeg decode 0 errors; labelled plates peak at 10 in view
+           (frame 800); MH02GB4920 marked WATCHLIST HIT.
+           LABEL: burned in at 00:00.0 / 00:28.6 / 00:57.1 of 13270133 and
+           at 00:09.9 of 13269027 (frames extracted and viewed).
+           PRECISION (plate crops + vehicle context viewed by eye, 10 evenly
+           spaced full commits a clip, 3 for 13105330): 20/33 exact overall;
+           quote 8/10 for 13270133. Misses are single-character confusions
+           the grammar cannot catch: W->N, X->I (x3), H->M, H->A, R->Z,
+           9->5, plus one occluded plate and 2 unresolvable at this size.
+           ACCEPTANCE vs S7.0's count at 3840: 13270133 53 >= 43 PASS;
+           13269027 10 < 27, 13172888 9 < 15, 13105330 3 < 8 FAIL. Reason:
+           S7.0 counts every single full read on 30 sampled frames (an upper
+           bound that includes misread variants, as its report says); the
+           render commits only the worker's consensus (>= 2 identical reads,
+           or a dying track with a full read) under a capped budget, and
+           the short clips give each track few reads. Not re-rendered: at
+           09:41 IST the CPU was at 95 % with the platform up ahead of the
+           10:30 freeze and S7.4/S7.5, and S5.4 showed a starved CPU costs
+           the live hit.
+           PLAYBACK: not verified in a player - VLC is not installed on the
+           laptop, and the built-in browser pane only shows local files as
+           static snapshots. Proxies: H.264 High / yuv420p / +faststart, and
+           the clean full decode above.
+           Deck stills not copied: all four PNGs are 1.77-2.80 MB > 1.5 MB.
+           Outputs: D:\projects\sentinel-footage\renders\<clip>.{mp4,png} and
+           <clip>-reads\ (spot-check crops); data/measurements/render-*.json.
+           Part D row added to docs/architecture.md.
+Surprise:  1. Precision follows plate quality: private cars' white/yellow
+           plates 7-8/10; autorickshaw plates 5/10 (H read as M or A).
+           2. A stationary car in the jam loses and regains its track, so
+           MH02GB4920 commits on 5 tracks; the HUD's "plates read" counts
+           distinct plates, so it is not inflated.
+Next:      [Adi] S7.5: use ONLY 13270133.mp4 for the render segment (quote
+           "8 of 10 spot-checked reads exact"); play it full-screen in
+           Chrome once before the take (the playback check above). Optional
+           after submission: re-render 13269027 with the default budget.
 ```
