@@ -33,7 +33,7 @@ Append a block after **every** task, in the format at the bottom. Record what wa
     - checklist 42/60;
     - the tag.
   - **Both videos are unrecorded**: no `own01` camera row exists, so the video-1 dry run never ran.
-- **Next task:** the pre-step is done (plan committed, `d26ee30`) and the lanes are running (from ~23:20 IST). **Lane B:** database pick DONE (`sentinel.db` = promoted `dryrun.db`, 618 sightings; platform restarted on the default, 5/5 alive), **S7.6a DONE**, **S7.2 DONE** (evidence visuals; the first real live watchlist alert, `ALERT-20260927-0013`, with its evidence frame and SHA-256; F78, F79) — now **S7.3**. Note for S7.4: removing a watchlist entry that has fired an alert now **deactivates** it (F78), and listing the plate again reactivates it. **Lane A: S7.0 DONE, S7.1 DONE** (render `D:\projects\sentinel-footage\renders\13270133.mp4`: 57.2 s, 53 plates, 8/10 exact, watch hit on `MH02GB4920`; the three other renders are below acceptance and stay out of the video). **For S7.4:** use `own01.mp4` (1080p, no 1440p) and watch **`MH02GB4920`** (clip 1.0–20.4 s, so ~31–50 s after publishing), then `MH02EZ1785`; never `MH02EX1995`.
+- **Next task:** the pre-step is done (plan committed, `d26ee30`) and the lanes are running (from ~23:20 IST). **Lane B:** database pick DONE (`sentinel.db` = promoted `dryrun.db`, 618 sightings; platform restarted on the default, 5/5 alive), **S7.6a DONE**, **S7.2 DONE** (evidence visuals; the first real live watchlist alert, `ALERT-20260927-0013`, with its evidence frame and SHA-256; F78, F79) and **S7.3 DONE** (10:05 IST: a live toast for `ALERT-20260928-0019` on Command and the Live Wall with its evidence frame, `data/screens/s73-toast-*.png`) — **lane B is finished**. 7 live watchlist alerts now exist (0013–0019), all with verified evidence; every test watchlist entry is removed or deactivated and the temporary test account is deleted. Note for S7.4: removing a watchlist entry that has fired an alert now **deactivates** it (F78), and listing the plate again reactivates it. **Lane A: S7.0 DONE, S7.1 DONE** (render `D:\projects\sentinel-footage\renders\13270133.mp4`: 57.2 s, 53 plates, 8/10 exact, watch hit on `MH02GB4920`; the three other renders are below acceptance and stay out of the video). **For S7.4:** use `own01.mp4` (1080p, no 1440p) and watch **`MH02GB4920`** (clip 1.0–20.4 s, so ~31–50 s after publishing), then `MH02EZ1785`; never `MH02EX1995`.
 - **S5.4's video-1 dry run ran 23:20–23:47 IST (Log block "S5.4 — video 1 dry run"; it supersedes "the dry run never ran" above):**
   - beats 2, 3, 7 and 8 pass through the real UI;
   - one pass gave **one** live read (`22BH0641B`, 0.87) and **no watchlist hit**, because own01 was sampled at ~0.26 fps with the CPU at 93–96 %;
@@ -2516,4 +2516,73 @@ Next:      [Adi] S7.5: use ONLY 13270133.mp4 for the render segment (quote
            "8 of 10 spot-checked reads exact"); play it full-screen in
            Chrome once before the take (the playback check above). Optional
            after submission: re-render 13269027 with the default budget.
+```
+
+```
+## S7.3 — DONE (lane B; the alert toast) — supersedes the PARTIAL block above
+When:      2026-09-28 09:40–10:05 IST, laptop lane B
+Observed:  CODE as the PARTIAL block lists (f84c8a7), plus the review fixes
+           (d5f050e). SMOKE 106/106 (toast checks: announced on /alerts;
+           no toast for the backlog; a fresh alert toasted 1.4 s after it
+           was committed and was gone 9.3 s after it; on the Live Wall at
+           1366x768 the stack sits below the grid controls). npm lint +
+           build clean.
+           REVIEW GATE (F53): Workflow fan-out, correctness + security
+           lenses, two adversarial verifiers per finding (not the
+           /code-review and /security-review skills themselves): 14
+           findings, 4 refuted 2-0 (demo alerts' heading - the spec asks
+           for the badge; a smoke provenance check; the pending buffer; a
+           smoke TypeError that check() already turns into a FAIL). Fixed
+           (d5f050e): the toast's EventSource died for good after one
+           non-2xx reconnect (API restart behind the tunnel, expired
+           session) - now re-opened with rule-7 backoff; alerts committed
+           while the stream was down were never toasted (the server sends
+           no id before the first alert) - a reconnect now catches up from
+           GET /api/alerts; the stack offset went stale (lazy wall, late
+           status strip) - re-measured on DOM changes; on Map, Leaflet's
+           controls (z 1000) painted over the toast - toast 1100, lightbox
+           1200; a burst queued chimes (and a suspended AudioContext played
+           them all at the first click) - one per 1.5 s, skipped until
+           audio is allowed; the lightbox lacked the provenance badge.
+           Accepted, documented here: the toast's EventSource is a second
+           long-lived connection on Command/Alerts (HTTP/1.1 allows 6 per
+           origin locally; the Funnel speaks HTTP/2) - sharing one stream
+           means reworking poll.js, which S7.3 may not touch; the backlog
+           baseline reads the 50 newest rows by fired_at, and the stream
+           itself never replays backlog.
+           LIVE ACCEPTANCE (the real platform, data/sentinel.db, worker
+           uptime ~8 h, gateway back since the 401 wave cleared): a
+           temporary viewer account (s73check, password generated and kept
+           outside the repo) signed in; 11 plates cam06 read most this
+           morning added stolen_vehicle/high as S7.3-TEST; six live hits
+           09:53-10:00 IST (ALERT-20260928-0014 ... -0019).
+           - data/screens/s73-toast-command.png (1920x1080, headless
+             Chromium): the toast for ALERT-20260928-0019, GJ11S7924 exact,
+             cam06 · GSRTC, 10:00:25 IST, LIVE, HIGH, the evidence frame as
+             its thumbnail (/evidence/cam06/ALERT-20260928-0019.jpg);
+           - data/screens/s73-toast-wall.png: the same toast still showing
+             after the switch to the Live Wall, below the grid controls.
+           - both checked: no credential on screen (the header shows the
+             test user name only; no password, no URL with a credential).
+           Not a real Chrome window: the wall tiles show "H.265 - open in
+           Chrome" because Playwright's Chromium has no HEVC; the toast is
+           what is under test. The chime was not verifiable headless.
+           F73 held throughout: 7 live watchlist alerts (0013-0019), 7
+           evidence files, every file's SHA-256 = its audit row.
+           CLEAN-UP: fired entries deactivated (GJ11S7924, GJ32AG2883,
+           GJ01HM7952, GJ23H1546 - F78), the other 7 deleted; s73check and
+           its 2 sessions deleted (users: ADITYA only); FK check [].
+Surprise:  1. Hits come in bursts: four of the watched vehicles passed
+           cam06 within 2 minutes (09:53-09:55), then two more at ~10:00 -
+           the same vehicles circulate. Good for a take: watch several.
+           2. The evidence frame of ALERT-...-0018 has its lower half
+           smeared - a partly decoded frame from the RTSP pull, stored as
+           received (the vehicle and plate are in the clean upper half).
+           For the video pick a hit whose frame decoded cleanly.
+           3. The 401 wave after the 01:44 IST restart lasted far longer
+           than the first (>13 min; the worker was reading again by
+           ~03:00); every restart risks one.
+Next:      S7.4 (Adi): the dry run. Watch plates that recur on cam06 by
+           day (GJ11S7924, GJ32AG2883, GJ01HM7952, GJ23H1546 each hit
+           within minutes this morning; re-adding one reactivates it, F78).
 ```

@@ -95,7 +95,7 @@ If context is running low: stop at a clean, compiling point, do steps 10–13 wi
 | S7.0 | **4K read test: which clips, which resolution (gate)** — v2.6, lane A | Sun 27 night | 45 min | [x] done Mon 28 01:51 (lane A): gate passed; best width 3840 on all four clips (13270133 66 full / 43 distinct); own01 stays 1080p (2560 = 1.19x < 1.5x); watch MH02GB4920; ran 2.2 h, not 45 min, on a paging laptop |
 | S7.1 | **The analysis render** (F74) — lane A, after S7.0 | Sun 27 night | 2.5 h | [x] done Mon 28 10:05 for 13270133 (video 1's clip): 57.2 s, 53 plates, 8/10 exact, label every frame; 13269027/13172888/13105330 rendered but below S7.0's count (10/9/3) and 7/10, 5/10, 0/3 exact: kept out of the video; Chrome/VLC playback not verified (VLC absent) |
 | S7.2 | **Evidence visuals: vehicle thumbnail on every read, full frame on a hit only** (F73) — lane B | Sun 27 night | 2.5 h | [x] done Mon 28 ~02:45 (lane B): live hit ALERT-20260927-0013 (GJ11S7924, cam06), evidence SHA-256 = certutil; review gate 14 findings, 12 fixed incl. a HIGH SMB/NTLM path in /evidence + /crops, 2 documented (F79); F78 watchlist-delete 500 fixed |
-| S7.3 | **The alert moment: global toast with the evidence** — lane B, after S7.2 | Sun 27 night | 1.25 h | [~] code built + lint/build clean; smoke result, review gate, live acceptance open (RTSP 401 on all sandbox cameras since 01:44 IST) |
+| S7.3 | **The alert moment: global toast with the evidence** — lane B, after S7.2 | Sun 27 night | 1.25 h | [x] done Mon 28 10:05 (lane B): live toast for ALERT-20260928-0019 on Command and the Live Wall with its evidence frame; smoke 106/106; review 14 findings, 7 fixed, 4 refuted, 3 accepted |
 | S7.4 | [Adi + Claude] Video-1 dry run with the new pieces (replaces S5.4's dry run) | Mon 28 08:30 | 1.5 h | |
 | S7.5 | [Adi] Recording and production, v2.7 run sheets (supersedes S5.4's recording) | Mon 28 10:30 | 3.5 h | |
 | S7.6 | S7.6a case-insensitive usernames (lane B, first; F76) · S7.6b [Adi] hosting go-live, the S3.5 remainder | Sun 27 night / Mon 28 09:00 | 20 min + 1 h | [~] S7.6a [x] done Sun 27 night (lane B, incl. the database pick — sentinel.db = promoted dryrun.db, 618 sightings; auth 27 green); S7.6b open [Adi] |
@@ -651,7 +651,7 @@ Record the pick in the S7.6a progress block. Every later task, recording and the
 - Review gate (F53): build + lint + smoke + pytest green, `/code-review` and `/security-review`, with findings fixed or answered.
 *Write-off:* progress block; commit `S7.2: evidence — thumbnails on every read; full frame + SHA-256 only on <alert_id>`.
 
-### S7.3 — The alert moment: a global toast with the evidence (point 5) `[~]` *(code built; smoke result, review gate and live acceptance open)*
+### S7.3 — The alert moment: a global toast with the evidence (point 5) `[x]`
 *Lane B, after S7.2. Owns `frontend/src/components/{Shell,AlertToast}.jsx`, `frontend/src/lib/poll.js` (read-only unless the hook needs a "since" cursor), and `frontend/src/styles/app.css` (toast rules). Budget 1.25 h.*
 *Read first:* `frontend/CLAUDE.md` ("a new alert animates in once (≤ 200 ms) and never loops"; tokens; no new dependency); `frontend/src/lib/poll.js` `useAlertStream`; `components/AlertCard.jsx`.
 *Build:*
