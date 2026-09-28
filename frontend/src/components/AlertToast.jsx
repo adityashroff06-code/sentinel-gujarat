@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { api, deptColor } from '../lib/api.js'
 import { formatTs } from '../lib/time.js'
 import { EvidenceLightbox } from './AlertCard.jsx'
@@ -89,10 +89,18 @@ function ensureAudio() {
   return audioCtx
 }
 
+let lastChimeAt = 0
+const CHIME_GAP_MS = 1500
+
 function chime() {
   try {
     const ctx = ensureAudio()
-    if (!ctx) return
+    // not allowed to sound yet (no click on this page): skip, never queue —
+    // a suspended context plays every queued tone at once on the first click
+    if (!ctx || ctx.state !== 'running') return
+    const nowMs = Date.now()
+    if (nowMs - lastChimeAt < CHIME_GAP_MS) return // a burst chimes once
+    lastChimeAt = nowMs
     const t0 = ctx.currentTime
     for (const [freq, at] of [
       [880, 0],
@@ -198,7 +206,6 @@ export default function AlertToast() {
   const mutedRef = useRef(isMuted)
   mutedRef.current = isMuted
   const timers = useRef(new Map())
-  const location = useLocation()
 
   const dismiss = useCallback((seq) => {
     setToasts((cur) => cur.filter((t) => Number(t.alert_seq) !== seq))
@@ -212,6 +219,15 @@ export default function AlertToast() {
     const pending = []
     const seen = new Set()
     const timersNow = timers.current
+    let es = null
+    let retry = null
+    let attempt = 0
+    let hadError = false
+
+    function accept(row) {
+      if (baseline === null) pending.push(row)
+      else consider(row)
+    }
 
     function consider(row) {
       const seq = Number(row.alert_seq)
@@ -243,18 +259,55 @@ export default function AlertToast() {
         for (const row of pending.splice(0)) consider(row)
       })
 
-    const es = new EventSource(api.alertStreamUrl)
-    es.addEventListener('alert', (e) => {
-      let row
-      try {
-        row = JSON.parse(e.data)
-      } catch (err) {
-        console.error('unparseable alert frame', err)
-        return
+    // Alerts committed while the stream was down. The server sends no
+    // event id before the first alert, so a reconnect cannot ask it to
+    // replay the gap; the list is read instead (seen/baseline dedupe it).
+    function catchUp() {
+      api
+        .alerts({ limit: 50 })
+        .then((rows) => {
+          for (const row of [...rows].reverse()) accept(row)
+        })
+        .catch(() => {
+          // reported on the status strip by the data layer
+        })
+    }
+
+    function connect() {
+      es = new EventSource(api.alertStreamUrl)
+      es.addEventListener('alert', (e) => {
+        let row
+        try {
+          row = JSON.parse(e.data)
+        } catch (err) {
+          console.error('unparseable alert frame', err)
+          return
+        }
+        accept(row)
+      })
+      es.onopen = () => {
+        attempt = 0
+        if (hadError) {
+          hadError = false
+          catchUp()
+        }
       }
-      if (baseline === null) pending.push(row)
-      else consider(row)
-    })
+      es.onerror = () => {
+        hadError = true
+        // a reconnect answered with a non-2xx (the API restarting behind
+        // the tunnel, an expired session) closes an EventSource for good:
+        // re-open it, backing off 2 s · 2^n, capped at 30 s, × 0.5–1.5
+        if (alive && es.readyState === EventSource.CLOSED) {
+          es.close()
+          const delay = Math.min(30000, 2000 * 2 ** attempt) * (0.5 + Math.random())
+          attempt += 1
+          retry = setTimeout(() => {
+            if (alive) connect()
+          }, delay)
+        }
+      }
+    }
+    connect()
 
     // any click unlocks audio for the rest of the page (autoplay policy)
     const unlock = () => {
@@ -268,7 +321,8 @@ export default function AlertToast() {
 
     return () => {
       alive = false
-      es.close()
+      clearTimeout(retry)
+      es?.close()
       window.removeEventListener('pointerdown', unlock)
       for (const t of timersNow.values()) clearTimeout(t)
       timersNow.clear()
@@ -276,9 +330,14 @@ export default function AlertToast() {
   }, [dismiss])
 
   // sit below whatever chrome this screen has, so the stack never covers
-  // the header, the status strip or the Live Wall's grid controls
+  // the header, the status strip or the Live Wall's grid controls. Those
+  // appear late (the lazy wall, its skeleton, a strip that mounts on an
+  // error), so the offset is re-measured on any DOM change while a toast
+  // shows, at most once a frame.
+  const hasToasts = toasts.length > 0
   useLayoutEffect(() => {
-    if (!toasts.length) return undefined
+    if (!hasToasts) return undefined
+    let frame = null
     function measure() {
       let bottom = 0
       for (const sel of CLEAR_SELECTORS) {
@@ -287,10 +346,27 @@ export default function AlertToast() {
       }
       setTop(Math.round(bottom) + 8)
     }
+    function schedule() {
+      if (frame == null) {
+        frame = requestAnimationFrame(() => {
+          frame = null
+          measure()
+        })
+      }
+    }
     measure()
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
-  }, [toasts.length, location.pathname])
+    const observer = new MutationObserver(schedule)
+    observer.observe(document.querySelector('.app') || document.body, {
+      childList: true,
+      subtree: true,
+    })
+    window.addEventListener('resize', schedule)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', schedule)
+      if (frame != null) cancelAnimationFrame(frame)
+    }
+  }, [hasToasts])
 
   return (
     <>

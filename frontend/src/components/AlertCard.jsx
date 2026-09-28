@@ -58,6 +58,7 @@ export function EvidenceLightbox({ alert: a, onClose }) {
             stored because: watchlist match (<b>{a.match_type}</b>) ·{' '}
             <span className="mono">{a.alert_id}</span>
           </span>
+          <ProvenanceBadge clockSource={a.clock_source} />
           {a.evidence_sha256 && (
             <span className="evidence-sha">
               SHA-256 <code className="mono">{a.evidence_sha256}</code>
